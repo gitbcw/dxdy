@@ -1,0 +1,12 @@
+{
+  "name": "dxdy",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev -w packages/admin",
+    "build:shared": "npm run build -w packages/shared"
+  }
+}
