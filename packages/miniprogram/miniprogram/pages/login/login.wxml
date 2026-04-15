@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="form">
+    <text class="title">{{isRegister ? '注册' : '登录'}}</text>
+    <input class="input" placeholder="手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
+    <input wx:if="{{isRegister}}" class="input" placeholder="昵称" value="{{nickname}}" bindinput="onNicknameInput" />
+    <view class="submit-btn" bindtap="onSubmit">{{isRegister ? '注册' : '登录'}}</view>
+    <text class="switch" bindtap="toggleMode">{{isRegister ? '已有账号？去登录' : '没有账号？去注册'}}</text>
+    <text class="hint">演示手机号：13821003456（机构）/ 13877005678（个人）</text>
+  </view>
+</view>

@@ -1,18 +1,16 @@
 // app.ts
 App<IAppOption>({
-  globalData: {},
+  globalData: {
+    userInfo: null,
+    token: '',
+  },
   onLaunch() {
-    // 展示本地存储能力
-    const logs = wx.getStorageSync('logs') || []
-    logs.unshift(Date.now())
-    wx.setStorageSync('logs', logs)
-
-    // 登录
-    wx.login({
-      success: res => {
-        console.log(res.code)
-        // 发送 res.code 到后台换取 openId, sessionKey, unionId
-      },
-    })
+    // 从本地存储恢复登录状态
+    const userStr = wx.getStorageSync('current_user') as string
+    if (userStr) {
+      try {
+        this.globalData.userInfo = JSON.parse(userStr)
+      } catch { /* ignore */ }
+    }
   },
 })

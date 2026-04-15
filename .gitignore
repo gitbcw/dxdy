@@ -1,5 +1,32 @@
+# dependencies
 node_modules/
+
+# build
 dist/
 .next/
-*.log
+out/
+build/
+
+# misc
 .DS_Store
+*.pem
+*.log
+
+# env
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude
+.claude/

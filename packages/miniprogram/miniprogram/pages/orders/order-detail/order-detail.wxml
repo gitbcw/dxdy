@@ -1,0 +1,26 @@
+<view class="page">
+  <view wx:if="{{isEmpty}}" class="empty">暂无订单</view>
+  <view wx:else class="order-list">
+    <view
+      wx:for="{{orders}}"
+      wx:key="id"
+      class="order-card"
+      data-id="{{item.id}}"
+      bindtap="onOrderTap"
+    >
+      <view class="order-header">
+        <text class="order-id">{{item.id}}</text>
+        <text class="order-status">{{item.statusText}}</text>
+      </view>
+      <view class="order-body">
+        <text wx:for="{{item.items}}" wx:for-item="prod" wx:key="productId" class="product-text">
+          {{prod.productName}} x{{prod.quantity}}
+        </text>
+      </view>
+      <view class="order-footer">
+        <text class="amount">¥{{item.totalText}}</text>
+        <text class="date">{{item.dateText}}</text>
+      </view>
+    </view>
+  </view>
+</view>

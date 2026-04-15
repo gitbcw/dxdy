@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <input
+      class="search-input"
+      placeholder="搜索商品"
+      value="{{keyword}}"
+      bindinput="onSearchInput"
+      bindconfirm="onSearch"
+    />
+  </view>
+
+  <!-- 分类栏 -->
+  <scroll-view class="categories" scroll-x>
+    <view
+      class="category-item {{activeCategory === '' ? 'active' : ''}}"
+      data-id=""
+      bindtap="onCategoryTap"
+    >全部</view>
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
+      class="category-item {{activeCategory === item.id ? 'active' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onCategoryTap"
+    >{{item.icon}} {{item.name}}</view>
+  </scroll-view>
+
+  <!-- 商品列表 -->
+  <view class="product-list">
+    <view
+      wx:for="{{products}}"
+      wx:key="id"
+      class="product-card"
+      data-id="{{item.id}}"
+      bindtap="onProductTap"
+    >
+      <view class="product-info">
+        <text class="product-name">{{item.name}}</text>
+        <text class="product-spec">{{item.specs[0].value}}</text>
+      </view>
+      <view class="product-price">
+        <text class="price">¥{{item.personalPrice || item.institutionPrice}}</text>
+      </view>
+    </view>
+    <view wx:if="{{products.length === 0}}" class="empty">
+      <text>暂无商品</text>
+    </view>
+  </view>
+</view>

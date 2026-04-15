@@ -1,0 +1,44 @@
+<view class="page">
+  <!-- 未登录 -->
+  <view wx:if="{{!isLogin}}" class="login-prompt">
+    <view class="avatar-empty">👤</view>
+    <text class="login-text" bindtap="onLoginTap">点击登录</text>
+  </view>
+
+  <!-- 已登录 -->
+  <view wx:else>
+    <view class="profile">
+      <view class="avatar">{{userInfo.nickname[0]}}</view>
+      <view class="info">
+        <text class="name">{{userInfo.nickname}}</text>
+        <text class="type">{{userInfo.customerType === 'institution' ? '机构客户' : '个人客户'}}</text>
+      </view>
+    </view>
+
+    <view class="stats">
+      <view class="stat">
+        <text class="stat-value">¥{{balance}}</text>
+        <text class="stat-label">余额</text>
+      </view>
+      <view class="stat">
+        <text class="stat-value">{{points}}</text>
+        <text class="stat-label">积分</text>
+      </view>
+    </view>
+
+    <view class="menu">
+      <view class="menu-item" bindtap="onOrdersTap">
+        <text>我的订单</text>
+        <text class="arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="onAddressTap">
+        <text>收货地址</text>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+
+    <view class="logout" bindtap="onLogout">
+      <text>退出登录</text>
+    </view>
+  </view>
+</view>

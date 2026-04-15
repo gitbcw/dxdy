@@ -1,0 +1,16 @@
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 120rpx; }
+.empty { text-align: center; padding: 200rpx 0; color: #999; }
+.cart-list { padding: 16rpx; }
+.cart-item { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.item-info { margin-bottom: 16rpx; }
+.name { display: block; font-size: 28rpx; font-weight: 500; }
+.spec { display: block; font-size: 24rpx; color: #999; margin-top: 4rpx; }
+.item-actions { display: flex; align-items: center; justify-content: space-between; }
+.quantity { display: flex; align-items: center; }
+.btn { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; border: 1rpx solid #ddd; border-radius: 8rpx; font-size: 28rpx; }
+.num { margin: 0 16rpx; font-size: 28rpx; }
+.price { font-size: 28rpx; color: #e4393c; font-weight: 600; }
+.remove { font-size: 24rpx; color: #999; }
+.footer { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 20rpx 24rpx; background: #fff; border-top: 1rpx solid #eee; }
+.total { font-size: 30rpx; font-weight: 600; }
+.checkout-btn { background: #333; color: #fff; padding: 16rpx 48rpx; border-radius: 32rpx; font-size: 28rpx; }

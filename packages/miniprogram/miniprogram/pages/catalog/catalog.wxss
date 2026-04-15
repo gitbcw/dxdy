@@ -1,0 +1,15 @@
+.page { height: 100vh; }
+.layout { display: flex; height: 100vh; }
+.sidebar { width: 180rpx; background: #f5f5f5; }
+.sidebar-item {
+  padding: 28rpx 16rpx;
+  font-size: 26rpx;
+  text-align: center;
+  color: #666;
+}
+.sidebar-item.active { background: #fff; color: #333; font-weight: 600; border-left: 6rpx solid #333; }
+.content { flex: 1; background: #fff; padding: 16rpx; }
+.product-item { padding: 24rpx; border-bottom: 1rpx solid #f0f0f0; }
+.name { display: block; font-size: 28rpx; color: #333; }
+.price { display: block; font-size: 28rpx; color: #e4393c; margin-top: 8rpx; font-weight: 600; }
+.empty { text-align: center; padding: 100rpx 0; color: #999; }

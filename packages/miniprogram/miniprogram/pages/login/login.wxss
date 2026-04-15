@@ -1,0 +1,7 @@
+.page { min-height: 100vh; background: #fff; display: flex; align-items: center; justify-content: center; }
+.form { width: 80%; }
+.title { display: block; font-size: 48rpx; font-weight: 700; margin-bottom: 48rpx; text-align: center; }
+.input { border: 1rpx solid #ddd; border-radius: 12rpx; padding: 24rpx; font-size: 30rpx; margin-bottom: 24rpx; }
+.submit-btn { background: #333; color: #fff; text-align: center; padding: 24rpx; border-radius: 12rpx; font-size: 32rpx; font-weight: 500; margin-top: 16rpx; }
+.switch { display: block; text-align: center; margin-top: 32rpx; font-size: 26rpx; color: #666; }
+.hint { display: block; text-align: center; margin-top: 48rpx; font-size: 22rpx; color: #999; }

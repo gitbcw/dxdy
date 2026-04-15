@@ -1,0 +1,28 @@
+<view class="page">
+  <view wx:if="{{product}}" class="content">
+    <view class="product-section">
+      <text class="name">{{product.name}}</text>
+      <text class="spec">{{product.specs[0].value}}</text>
+      <text class="price">¥{{unitPrice}}</text>
+    </view>
+
+    <view class="quantity-section">
+      <text class="label">数量</text>
+      <view class="quantity">
+        <view class="btn" data-delta="{{-1}}" bindtap="onQuantityChange">-</view>
+        <text class="num">{{quantity}}</text>
+        <view class="btn" data-delta="{{1}}" bindtap="onQuantityChange">+</view>
+      </view>
+    </view>
+
+    <view class="remark-section">
+      <text class="label">备注</text>
+      <input class="remark-input" placeholder="选填" value="{{remark}}" bindinput="onRemarkInput" />
+    </view>
+
+    <view class="footer">
+      <text class="total">合计：¥{{total}}</text>
+      <view class="submit-btn" bindtap="onSubmit">提交订单</view>
+    </view>
+  </view>
+</view>

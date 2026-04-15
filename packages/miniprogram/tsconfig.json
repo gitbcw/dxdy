@@ -12,14 +12,18 @@
     "noImplicitReturns": true,
     "alwaysStrict": true,
     "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "strict": true,
     "strictPropertyInitialization": true,
     "lib": ["ES2020"],
     "typeRoots": [
       "./typings"
-    ]
+    ],
+    "paths": {
+      "@shared/*": ["./miniprogram/shared/lib/*"]
+    },
+    "baseUrl": "."
   },
   "include": [
     "./**/*.ts"
