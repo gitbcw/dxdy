@@ -111,3 +111,45 @@ export async function reviewWithdrawal(id: string, approved: boolean, reviewerId
   if (approved) withdrawalRecords[idx].completedAt = new Date().toISOString();
   return withdrawalRecords[idx];
 }
+
+// ========== 业务员客户和佣金服务 ==========
+
+import type { CommissionSummary } from '../types/commission';
+import { salesmanCustomers, commissionSummary as mockCommissionSummary } from '../mock/salesman';
+
+/** 业务员客户项 */
+export interface SalesmanCustomer {
+  id: string;
+  nickname: string;
+  type: 'personal' | 'institution';
+  phone: string;
+  orderCount: number;
+  totalAmount: number;
+  exchangeCount: number;
+  boundAt: string;
+}
+
+/** 获取业务员客户列表 */
+export async function getSalesmanCustomers(): Promise<SalesmanCustomer[]> {
+  await delay();
+  return salesmanCustomers as SalesmanCustomer[];
+}
+
+/** 获取佣金汇总 */
+export async function getCommissionSummary(): Promise<CommissionSummary> {
+  await delay();
+  // 转换 Mock 数据格式到标准格式
+  return {
+    total: mockCommissionSummary.total,
+    available: mockCommissionSummary.withdrawable,
+    withdrawn: mockCommissionSummary.withdrawn,
+    pendingDeduction: mockCommissionSummary.pending,
+    pendingLock: 0,
+  };
+}
+
+/** 申请提现（小程序简化版，不依赖 salespersonId） */
+export async function requestWithdrawalByAmount(params: { amount: number }): Promise<{ success: boolean }> {
+  await delay();
+  return { success: true };
+}

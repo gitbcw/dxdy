@@ -1,6 +1,18 @@
 // ========== 制单员订单 ==========
 
-export const clerkPendingOrders = [
+export const clerkPendingOrders: Array<{
+  id: string;
+  orderNo: string;
+  type: 'normal' | 'exchange';
+  originalOrderNo?: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  items: { name: string; quantity: number; specs: string }[];
+  createdAt: string;
+  assignedAt: string;
+  status: string;
+}> = [
   {
     id: 'ord_clerk_001',
     orderNo: 'DD20260415001',
@@ -65,7 +77,22 @@ export const clerkPendingOrders = [
   },
 ]
 
-export const clerkShippedOrders = [
+export const clerkShippedOrders: Array<{
+  id: string;
+  orderNo: string;
+  type: 'normal' | 'exchange';
+  originalOrderNo?: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  items: { name: string; quantity: number; specs: string }[];
+  createdAt: string;
+  assignedAt: string;
+  shippedAt?: string;
+  expressCompany?: string;
+  expressNo?: string;
+  status: string;
+}> = [
   {
     id: 'ord_clerk_101',
     orderNo: 'DD20260412003',

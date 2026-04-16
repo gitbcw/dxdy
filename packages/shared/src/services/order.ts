@@ -124,6 +124,77 @@ export async function confirmBooking(orderId: string): Promise<Order | null> {
   return updateOrderStatus(orderId, 'confirmed');
 }
 
+// ========== 制单员订单服务 ==========
+
+import { clerkPendingOrders, clerkShippedOrders } from '../mock/clerk-orders';
+
+/** 制单员订单项 */
+export interface ClerkOrder {
+  id: string;
+  orderNo: string;
+  type: 'normal' | 'exchange';
+  originalOrderNo?: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  items: { name: string; quantity: number; specs: string }[];
+  createdAt: string;
+  assignedAt: string;
+  shippedAt?: string;
+  expressCompany?: string;
+  expressNo?: string;
+  status: 'pending' | 'shipped';
+}
+
+/** 获取制单员订单列表 */
+export async function getClerkOrders(options?: {
+  status?: 'pending' | 'shipped' | 'all';
+}): Promise<ClerkOrder[]> {
+  await delay();
+  if (!options?.status || options.status === 'all') {
+    return ([...clerkPendingOrders, ...clerkShippedOrders] as ClerkOrder[]).sort(
+      (a, b) => b.createdAt.localeCompare(a.createdAt)
+    );
+  }
+  if (options.status === 'pending') return clerkPendingOrders as ClerkOrder[];
+  return clerkShippedOrders as ClerkOrder[];
+}
+
+/** 获取制单员订单详情 */
+export async function getClerkOrderById(id: string): Promise<ClerkOrder | null> {
+  await delay(100);
+  return (
+    (clerkPendingOrders.find(o => o.id === id) as ClerkOrder | undefined) ??
+    (clerkShippedOrders.find(o => o.id === id) as ClerkOrder | undefined) ??
+    null
+  );
+}
+
+/** 制单员发货（简化版） */
+export async function clerkShipOrder(params: {
+  orderId: string;
+  expressCompany: string;
+  expressNo: string;
+}): Promise<{ success: boolean }> {
+  await delay();
+  const order = clerkPendingOrders.find(o => o.id === params.orderId);
+  if (!order) return { success: false };
+  // 移动到已发货列表
+  const idx = clerkPendingOrders.findIndex(o => o.id === params.orderId);
+  if (idx !== -1) {
+    const [shipped] = clerkPendingOrders.splice(idx, 1);
+    const updated: ClerkOrder = {
+      ...shipped,
+      status: 'shipped',
+      shippedAt: new Date().toISOString(),
+      expressCompany: params.expressCompany,
+      expressNo: params.expressNo,
+    } as ClerkOrder;
+    clerkShippedOrders.push(updated);
+  }
+  return { success: true };
+}
+
 /** 获取全部订单（后台用） */
 export async function getAllOrders(): Promise<Order[]> {
   await delay();
