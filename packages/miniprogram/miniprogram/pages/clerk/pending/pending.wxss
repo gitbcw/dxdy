@@ -1,0 +1,248 @@
+/* pending.wxss - 大熊动医华南医学检验实验室 - 制单员待处理订单页 */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-page);
+}
+
+/* ============ 页面顶部导航 ============ */
+.page-header {
+  background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
+  padding: 32rpx;
+  padding-top: calc(32rpx + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 2rpx;
+}
+
+.header-badge {
+  background: rgba(212, 168, 83, 1);
+  border-radius: var(--radius-full);
+  padding: 6rpx 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40rpx;
+}
+
+.badge-count {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* ============ 订单列表 ============ */
+.order-list {
+  padding: 20rpx;
+}
+
+/* ============ 订单卡片 ============ */
+.order-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: var(--shadow-sm);
+  border: 1rpx solid var(--border-color);
+  transition: all 0.25s ease;
+}
+
+.order-card:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+/* 订单头部 */
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx dashed var(--divider-color);
+  margin-bottom: 16rpx;
+}
+
+.order-id {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  font-family: monospace;
+  letter-spacing: 1rpx;
+}
+
+/* 状态标签 */
+.status-tag {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 8rpx 16rpx;
+  border-radius: var(--radius-full);
+}
+
+.status-tag.tag-normal {
+  background: rgba(10, 110, 124, 0.12);
+  color: var(--color-primary);
+}
+
+.status-tag.tag-booking {
+  background: rgba(212, 168, 83, 0.15);
+  color: #D4A853;
+}
+
+/* 订单商品 */
+.order-body {
+  padding: 8rpx 0;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 12rpx 0;
+}
+
+.item-icon {
+  width: 56rpx;
+  height: 56rpx;
+  background: var(--bg-section);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-qty {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  margin-top: 4rpx;
+}
+
+/* 客户信息 */
+.order-customer {
+  background: var(--bg-section);
+  border-radius: var(--radius-md);
+  padding: 16rpx 20rpx;
+  margin: 16rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.customer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.customer-label {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
+.customer-value {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 订单底部 */
+.order-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16rpx;
+  border-top: 1rpx dashed var(--divider-color);
+  margin-top: 8rpx;
+}
+
+.assign-time {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
+.view-detail {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.arrow {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+/* ============ 空状态 ============ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 160rpx 0;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  opacity: 0.4;
+  margin-bottom: 32rpx;
+}
+
+.empty-text {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12rpx;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: var(--text-tertiary);
+}
+
+/* ============ 动画 ============ */
+.page-header {
+  animation: fadeIn 0.3s ease;
+}
+
+.order-card {
+  animation: fadeInUp 0.4s ease backwards;
+}
+
+.order-card:nth-child(1) { animation-delay: 0.05s; }
+.order-card:nth-child(2) { animation-delay: 0.1s; }
+.order-card:nth-child(3) { animation-delay: 0.15s; }
+.order-card:nth-child(4) { animation-delay: 0.2s; }
+.order-card:nth-child(5) { animation-delay: 0.25s; }
