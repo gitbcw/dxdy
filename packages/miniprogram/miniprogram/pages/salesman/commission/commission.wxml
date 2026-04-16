@@ -1,0 +1,42 @@
+<view class="commission-page">
+  <!-- 页面顶部：标题 -->
+  <view class="page-header">
+    <text class="page-title">我的佣金</text>
+  </view>
+
+  <!-- 核心数字卡片 -->
+  <view class="main-card">
+    <view class="main-card-inner">
+      <text class="withdrawable-amount">¥{{summary.withdrawable}}</text>
+      <text class="withdrawable-label">可提现</text>
+    </view>
+  </view>
+
+  <!-- 三列统计卡片 -->
+  <view class="stat-row">
+    <view class="stat-item">
+      <text class="stat-value">¥{{summary.total}}</text>
+      <text class="stat-label">累计佣金</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">¥{{summary.withdrawn}}</text>
+      <text class="stat-label">已提现</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">¥{{summary.pending}}</text>
+      <text class="stat-label">待抵扣</text>
+    </view>
+  </view>
+
+  <!-- 底部申请提现按钮 -->
+  <view class="btn-wrap">
+    <button
+      class="btn-withdraw {{canWithdraw ? '' : 'btn-disabled'}}"
+      disabled="{{!canWithdraw}}"
+      bindtap="onWithdraw"
+    >申请提现</button>
+    <text class="withdraw-hint" wx:if="{{!canWithdraw}}">可提现金额需满100元</text>
+  </view>
+</view>

@@ -1,0 +1,132 @@
+/* commission.wxss - 业务员佣金页 */
+
+.commission-page {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============ 页面顶部标题 ============ */
+.page-header {
+  padding: 32rpx 24rpx 24rpx;
+  animation: fadeIn 0.3s ease;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 1rpx;
+}
+
+/* ============ 核心数字卡片 ============ */
+.main-card {
+  margin: 0 24rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1rpx solid var(--border-color);
+  animation: fadeInUp 0.35s ease 0.08s backwards;
+}
+
+.main-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 24rpx;
+  gap: 12rpx;
+}
+
+.withdrawable-amount {
+  font-size: 72rpx;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+  letter-spacing: -1rpx;
+}
+
+.withdrawable-label {
+  font-size: 26rpx;
+  color: var(--text-tertiary);
+  letter-spacing: 2rpx;
+}
+
+/* ============ 三列统计卡片 ============ */
+.stat-row {
+  margin: 0 24rpx 32rpx;
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1rpx solid var(--border-color);
+  animation: fadeInUp 0.35s ease 0.15s backwards;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28rpx 16rpx;
+  gap: 8rpx;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 48rpx;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+/* ============ 底部按钮 ============ */
+.btn-wrap {
+  margin: 48rpx 24rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  animation: fadeInUp 0.35s ease 0.22s backwards;
+}
+
+.btn-withdraw {
+  width: 100%;
+  padding: 28rpx 0;
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-withdraw:active {
+  transform: scale(0.98);
+  background: var(--color-primary-dark);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-withdraw.btn-disabled {
+  background: var(--bg-section);
+  color: var(--text-tertiary);
+  box-shadow: none;
+}
+
+.withdraw-hint {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
