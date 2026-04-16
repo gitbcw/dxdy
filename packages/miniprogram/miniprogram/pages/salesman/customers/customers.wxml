@@ -23,7 +23,7 @@
       <view class="customer-card">
         <!-- 头像区：首字圆形背景 -->
         <view class="avatar">
-          <text class="avatar-text">{{item.nickname.[0]}}</text>
+          <text class="avatar-text">{{item.avatarText}}</text>
         </view>
 
         <!-- 信息区 -->

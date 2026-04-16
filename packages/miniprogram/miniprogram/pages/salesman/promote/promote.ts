@@ -3,7 +3,7 @@ const icons = require('../../../services/icons')
 Page({
   data: {
     qrcodeUrl: '',
-    推广链接: '',
+    promoteLink: '',
     userId: '',
   },
 
@@ -15,7 +15,7 @@ Page({
     this.setData({
       userId,
       qrcodeUrl: link,
-      推广链接: link,
+      promoteLink: link,
     })
     // 启用分享
     wx.showShareMenu({ withShareTicket: true })
@@ -28,7 +28,7 @@ Page({
 
   onCopyLink() {
     wx.setClipboardData({
-      data: this.data.推广链接,
+      data: this.data.promoteLink,
       success: () => wx.showToast({ title: '链接已复制' }),
     })
   },

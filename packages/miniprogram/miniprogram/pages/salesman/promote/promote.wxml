@@ -29,7 +29,7 @@
     <view class="link-label">推广链接</view>
     <view class="link-row">
       <scroll-view class="link-text" scroll-x>
-        <text>{{推广链接}}</text>
+        <text>{{promoteLink}}</text>
       </scroll-view>
       <button class="btn-copy" bindtap="onCopyLink">复制</button>
     </view>
