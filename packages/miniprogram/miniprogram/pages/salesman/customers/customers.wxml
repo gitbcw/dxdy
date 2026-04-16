@@ -1,0 +1,52 @@
+<view class="page">
+  <!-- 页面顶部：标题 -->
+  <view class="page-header">
+    <text class="page-title">客户管理</text>
+  </view>
+
+  <!-- 统计栏 -->
+  <view class="stat-bar">
+    <view class="stat-item">
+      <text class="stat-value">{{totalCount}}</text>
+      <text class="stat-label">客户总数</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value accent">¥{{totalAmount}}</text>
+      <text class="stat-label">合计消费</text>
+    </view>
+  </view>
+
+  <!-- 客户列表 -->
+  <view class="customer-list">
+    <block wx:for="{{customers}}" wx:key="id">
+      <view class="customer-card">
+        <!-- 头像区：首字圆形背景 -->
+        <view class="avatar">
+          <text class="avatar-text">{{item.nickname.[0]}}</text>
+        </view>
+
+        <!-- 信息区 -->
+        <view class="info">
+          <!-- 姓名/医院名 + 客户类型标签 -->
+          <view class="name-row">
+            <text class="name">{{item.nickname}}</text>
+            <text class="type-tag tag-{{item.type}}">{{item.type === 'personal' ? '个人' : '机构'}}</text>
+          </view>
+
+          <!-- 下单次数 | 累计消费 -->
+          <view class="stats-row">
+            <text class="stat-text">下单 {{item.orderCount}} 次</text>
+            <text class="stat-divider">|</text>
+            <text class="stat-text">累计 ¥{{item.totalAmount}}</text>
+          </view>
+
+          <!-- 退换货标签（仅 exchangeCount > 0 时显示） -->
+          <view class="exchange-row" wx:if="{{item.exchangeCount > 0}}">
+            <text class="exchange-tag">退换 {{item.exchangeCount}} 次</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

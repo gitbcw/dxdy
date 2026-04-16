@@ -1,0 +1,196 @@
+/* customers.wxss - 业务员客户管理页 */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============ 页面顶部标题 ============ */
+.page-header {
+  padding: 32rpx 24rpx 24rpx;
+  animation: fadeIn 0.3s ease;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 1rpx;
+}
+
+/* ============ 统计栏 ============ */
+.stat-bar {
+  margin: 0 24rpx 24rpx;
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1rpx solid var(--border-color);
+  animation: fadeInUp 0.35s ease 0.08s backwards;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28rpx 16rpx;
+  gap: 8rpx;
+}
+
+.stat-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-value.accent {
+  color: var(--color-accent);
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  letter-spacing: 1rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 48rpx;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+/* ============ 客户列表 ============ */
+.customer-list {
+  padding: 0 20rpx;
+}
+
+/* ============ 客户卡片 ============ */
+.customer-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: var(--shadow-sm);
+  border: 1rpx solid var(--border-color);
+  transition: all 0.25s ease;
+  animation: fadeInUp 0.4s ease backwards;
+}
+
+.customer-card:nth-child(1) { animation-delay: 0.05s; }
+.customer-card:nth-child(2) { animation-delay: 0.1s; }
+.customer-card:nth-child(3) { animation-delay: 0.15s; }
+.customer-card:nth-child(4) { animation-delay: 0.2s; }
+.customer-card:nth-child(5) { animation-delay: 0.25s; }
+
+.customer-card:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+/* ============ 头像区 ============ */
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-text {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 1rpx;
+}
+
+/* ============ 信息区 ============ */
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 客户类型标签 */
+.type-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+  border-radius: var(--radius-sm);
+  font-size: 20rpx;
+  font-weight: 500;
+}
+
+.type-tag.tag-personal {
+  background: rgba(10, 110, 124, 0.12);
+  color: var(--color-primary);
+}
+
+.type-tag.tag-institution {
+  background: rgba(212, 168, 83, 0.15);
+  color: #B8923E;
+}
+
+/* 下单次数 | 累计消费 */
+.stats-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.stat-text {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
+.stats-row .stat-divider {
+  width: 1rpx;
+  height: 20rpx;
+  background: var(--border-color);
+}
+
+/* 退换货标签 */
+.exchange-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.exchange-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+  border-radius: var(--radius-sm);
+  font-size: 20rpx;
+  font-weight: 500;
+  background: rgba(220, 53, 69, 0.10);
+  color: var(--color-error);
+}
