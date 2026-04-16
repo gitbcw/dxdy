@@ -1,0 +1,37 @@
+<view class="page">
+  <!-- 页面顶部导航 -->
+  <view class="page-header">
+    <text class="header-title">推广工具</text>
+  </view>
+
+  <!-- 二维码区域 -->
+  <view class="qrcode-section">
+    <view class="qrcode-card">
+      <image class="qrcode-img" src="{{qrcodeUrl}}" mode="aspectFit" />
+      <text class="qrcode-hint">扫码注册</text>
+    </view>
+  </view>
+
+  <!-- 按钮区 -->
+  <view class="btn-row">
+    <button class="btn btn-save" bindtap="onSaveQrcode">
+      <image class="btn-icon" src="{{icons.clock}}" mode="aspectFit" />
+      <text>保存图片</text>
+    </button>
+    <button class="btn btn-share" open-type="share">
+      <image class="btn-icon" src="{{icons.share}}" mode="aspectFit" />
+      <text>分享给好友</text>
+    </button>
+  </view>
+
+  <!-- 推广链接区 -->
+  <view class="link-section">
+    <view class="link-label">推广链接</view>
+    <view class="link-row">
+      <scroll-view class="link-text" scroll-x>
+        <text>{{推广链接}}</text>
+      </scroll-view>
+      <button class="btn-copy" bindtap="onCopyLink">复制</button>
+    </view>
+  </view>
+</view>
