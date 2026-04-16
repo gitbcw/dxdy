@@ -1,0 +1,394 @@
+/* order-detail.wxss - 大熊动医华南医学检验实验室 - 制单员订单详情页 */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-page);
+}
+
+/* ============ 页面顶部导航 ============ */
+.page-header {
+  background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
+  padding: 32rpx;
+  padding-top: calc(32rpx + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.back-btn {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-arrow {
+  font-size: 48rpx;
+  color: #FFFFFF;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.header-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 2rpx;
+}
+
+.header-placeholder {
+  width: 56rpx;
+}
+
+/* ============ 状态栏 ============ */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx 32rpx;
+  background: var(--bg-card);
+  border-bottom: 1rpx solid var(--border-color);
+}
+
+.status-tag {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 8rpx 20rpx;
+  border-radius: var(--radius-full);
+}
+
+.tag-pending {
+  background: rgba(212, 168, 83, 0.15);
+  color: #D4A853;
+}
+
+.tag-shipped {
+  background: rgba(10, 110, 124, 0.12);
+  color: var(--color-primary);
+}
+
+.tag-normal {
+  background: rgba(10, 110, 124, 0.12);
+  color: var(--color-primary);
+}
+
+.tag-booking {
+  background: rgba(212, 168, 83, 0.15);
+  color: #D4A853;
+}
+
+/* ============ 订单内容区 ============ */
+.order-content {
+  padding: 20rpx;
+  padding-bottom: 120rpx;
+}
+
+/* ============ 通用卡片区块 ============ */
+.section-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: var(--shadow-sm);
+  border: 1rpx solid var(--border-color);
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx dashed var(--divider-color);
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12rpx 0;
+}
+
+.info-row:not(:last-child) {
+  border-bottom: 1rpx solid var(--divider-color);
+}
+
+.info-label {
+  font-size: 26rpx;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: right;
+  flex: 1;
+  margin-left: 24rpx;
+}
+
+.express-no {
+  font-family: monospace;
+  letter-spacing: 2rpx;
+  color: var(--color-primary);
+}
+
+/* ============ 商品清单 ============ */
+.product-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 0;
+}
+
+.product-item:not(:last-child) {
+  border-bottom: 1rpx solid var(--divider-color);
+}
+
+.product-icon {
+  width: 56rpx;
+  height: 56rpx;
+  background: var(--bg-section);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.product-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: block;
+}
+
+.product-price {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  margin-top: 4rpx;
+  display: block;
+}
+
+.product-qty {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.order-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20rpx;
+  margin-top: 12rpx;
+  border-top: 2rpx solid var(--divider-color);
+}
+
+.total-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.total-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* ============ 底部按钮 ============ */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: var(--bg-card);
+  border-top: 1rpx solid var(--border-color);
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06);
+  z-index: 50;
+}
+
+.btn-submit {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0D8A9A 100%);
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: 700;
+  text-align: center;
+  padding: 24rpx 0;
+  border-radius: var(--radius-xl);
+  letter-spacing: 2rpx;
+}
+
+.btn-submit:active {
+  opacity: 0.85;
+  transform: scale(0.99);
+}
+
+/* ============ 加载状态 ============ */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--text-tertiary);
+}
+
+/* ============ 快递录入面板 ============ */
+.express-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.panel-content {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+}
+
+.panel-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 1rpx;
+}
+
+.panel-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  color: var(--text-tertiary);
+  background: var(--bg-section);
+  border-radius: var(--radius-full);
+}
+
+/* 快递公司网格 */
+.company-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 32rpx;
+}
+
+.company-item {
+  min-width: 200rpx;
+  padding: 20rpx 28rpx;
+  background: var(--bg-section);
+  border-radius: var(--radius-md);
+  border: 2rpx solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.company-item text {
+  font-size: 28rpx;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.company-selected {
+  background: rgba(10, 110, 124, 0.1);
+  border-color: var(--color-primary);
+}
+
+.company-selected text {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* 单号输入 */
+.express-input-wrap {
+  margin-bottom: 32rpx;
+}
+
+.express-input {
+  width: 100%;
+  background: var(--bg-section);
+  border-radius: var(--radius-md);
+  padding: 24rpx 28rpx;
+  font-size: 30rpx;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.express-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* 提交按钮 */
+.btn-submit-panel {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0D8A9A 100%);
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: 700;
+  text-align: center;
+  padding: 24rpx 0;
+  border-radius: var(--radius-xl);
+  letter-spacing: 2rpx;
+}
+
+.btn-submit-panel:active {
+  opacity: 0.85;
+  transform: scale(0.99);
+}

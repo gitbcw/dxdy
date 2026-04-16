@@ -1,0 +1,132 @@
+<view class="page">
+  <!-- 页面顶部：返回 + 标题 -->
+  <view class="page-header">
+    <view class="back-btn" bindtap="navigateBack">
+      <text class="back-arrow">‹</text>
+    </view>
+    <text class="header-title">订单详情</text>
+    <view class="header-placeholder"></view>
+  </view>
+
+  <!-- 订单内容 -->
+  <view wx:if="{{order}}" class="order-content">
+
+    <!-- 订单状态标签 -->
+    <view class="status-bar">
+      <view class="status-tag {{order.status === 'shipped' ? 'tag-shipped' : 'tag-pending'}}">
+        <text>{{order.status === 'shipped' ? '已发货' : '待发货'}}</text>
+      </view>
+      <view class="status-tag {{order.type === 'booking' ? 'tag-booking' : 'tag-normal'}}">
+        <image wx:if="{{order.type === 'booking'}}" src="{{iconRefresh}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
+        <text>{{order.type === 'booking' ? '换货' : '普通'}}</text>
+      </view>
+    </view>
+
+    <!-- 客户信息区 -->
+    <view class="section-card">
+      <view class="section-title">客户信息</view>
+      <view class="info-row">
+        <text class="info-label">姓名</text>
+        <text class="info-value">{{order.customerName}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">电话</text>
+        <text class="info-value">{{order.customerPhone}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">地址</text>
+        <text class="info-value">{{order.address}}</text>
+      </view>
+    </view>
+
+    <!-- 商品列表 -->
+    <view class="section-card">
+      <view class="section-title">商品清单</view>
+      <view wx:for="{{order.items}}" wx:for-item="prod" wx:key="productId" class="product-item">
+        <view class="product-icon">
+          <image src="{{iconClock}}" mode="aspectFit" style="width:28rpx;height:28rpx;" />
+        </view>
+        <view class="product-details">
+          <text class="product-name">{{prod.productName}}</text>
+          <text class="product-price">¥{{prod.price}}</text>
+        </view>
+        <view class="product-qty">
+          <text>x{{prod.quantity}}</text>
+        </view>
+      </view>
+      <view class="order-total">
+        <text class="total-label">订单总价</text>
+        <text class="total-value">¥{{order.totalAmount}}</text>
+      </view>
+    </view>
+
+    <!-- 快递信息区（已发货时显示） -->
+    <view wx:if="{{order.status === 'shipped' && order.expressCompany}}" class="section-card">
+      <view class="section-title">快递信息</view>
+      <view class="info-row">
+        <text class="info-label">快递公司</text>
+        <text class="info-value">{{order.expressCompany}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">快递单号</text>
+        <text class="info-value express-no">{{order.expressNo}}</text>
+      </view>
+    </view>
+
+    <!-- 底部按钮（待发货时显示） -->
+    <view wx:if="{{order.status === 'pending'}}" class="bottom-bar">
+      <view class="btn-submit" bindtap="onInputExpress">
+        <text>录入快递</text>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{order === null}}" class="loading-state">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 快递录入面板 -->
+  <view wx:if="{{showExpressPanel}}" class="express-panel">
+    <view class="mask" bindtap="onClosePanel"></view>
+    <view class="panel-content">
+      <view class="panel-header">
+        <text class="panel-title">选择快递公司</text>
+        <view class="panel-close" bindtap="onClosePanel">
+          <text>✕</text>
+        </view>
+      </view>
+
+      <!-- 快递公司列表 -->
+      <view class="company-grid">
+        <view
+          wx:for="{{expressCompanies}}"
+          wx:key="index"
+          class="company-item {{selectedCompany === item ? 'company-selected' : ''}}"
+          data-company="{{item}}"
+          bindtap="onSelectCompany"
+        >
+          <text>{{item}}</text>
+        </view>
+      </view>
+
+      <!-- 单号输入 -->
+      <view class="express-input-wrap">
+        <input
+          class="express-input"
+          type="text"
+          placeholder="请输入快递单号"
+          value="{{expressNo}}"
+          bindinput="onExpressNoInput"
+        />
+      </view>
+
+      <!-- 提交按钮 -->
+      <view class="btn-submit-panel" bindtap="onSubmitExpress">
+        <text>确认提交</text>
+      </view>
+    </view>
+  </view>
+
+</view>
