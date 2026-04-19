@@ -55,7 +55,7 @@ Page({
     }
   },
 
-  onScanTap() {
+  async onScanTap() {
     try {
       const res = await wx.scanCode({ onlyFromCamera: true })
       if (res.result) {

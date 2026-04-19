@@ -1,46 +1,56 @@
 <view class="page">
-  <!-- 页面顶部：标题 + 徽章数字 -->
-  <view class="page-header">
-    <text class="header-title">待处理订单</text>
-    <view class="header-badge" wx:if="{{pendingCount > 0}}">
-      <text class="badge-count">{{pendingCount}}</text>
+  <view class="hero">
+    <view class="hero-top">
+      <text class="header-title">先把今天最急的单发出去</text>
+      <view class="header-badge" wx:if="{{pendingCount > 0}}">
+        <text class="badge-count">{{pendingCount}}</text>
+      </view>
+    </view>
+    <text class="hero-subtitle">待发货、换货优先单和物流同步都放在一页里，减少制单员来回切换页面。</text>
+  </view>
+
+  <view class="summary-grid">
+    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
+      <text class="summary-value">{{item.value}}</text>
+      <text class="summary-label">{{item.label}}</text>
+      <text class="summary-desc">{{item.desc}}</text>
     </view>
   </view>
 
-  <!-- 空状态 -->
   <view wx:if="{{isEmpty}}" class="empty-state">
     <image class="empty-icon" src="{{iconClock}}" mode="aspectFit" />
     <text class="empty-text">暂无待处理订单</text>
     <text class="empty-hint">所有订单已处理完毕</text>
   </view>
 
-  <!-- 订单列表 -->
   <view wx:else class="order-list">
     <block wx:for="{{orders}}" wx:key="id">
       <view class="order-card" data-id="{{item.id}}" bindtap="onOrderTap">
-        <!-- 订单头部：订单号 + 状态标签 -->
         <view class="order-header">
-          <text class="order-id">订单号：{{item.id}}</text>
-          <view class="status-tag {{item.type === 'booking' ? 'tag-booking' : 'tag-normal'}}">
-            <image wx:if="{{item.type === 'booking'}}" src="{{iconExchange}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
-            <text>{{item.type === 'booking' ? '换货' : '普通'}}</text>
+          <view>
+            <text class="order-id">订单号：{{item.orderNo}}</text>
+            <text class="order-badge">{{item.badgeText}}</text>
+          </view>
+          <view class="status-tag {{item.type === 'exchange' ? 'tag-booking' : 'tag-normal'}}">
+            <image wx:if="{{item.type === 'exchange'}}" src="{{iconExchange}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
+            <text>{{item.type === 'exchange' ? '换货' : '普通'}}</text>
           </view>
         </view>
 
-        <!-- 商品信息 -->
         <view class="order-body">
-          <view wx:for="{{item.items}}" wx:for-item="prod" wx:key="productId" class="order-item">
+          <view wx:for="{{item.items}}" wx:for-item="prod" wx:key="name" class="order-item">
             <view class="item-icon">
               <image src="{{iconClock}}" mode="aspectFit" style="width:28rpx;height:28rpx;" />
             </view>
             <view class="item-details">
-              <text class="item-name">{{prod.productName}}</text>
-              <text class="item-qty">x{{prod.quantity}}</text>
+              <text class="item-name">{{prod.name}}</text>
+              <text class="item-qty">{{prod.specs}} · x{{prod.quantity}}</text>
             </view>
           </view>
         </view>
 
-        <!-- 客户信息 -->
+        <text class="helper-text">{{item.helperText}}</text>
+
         <view class="order-customer">
           <view class="customer-row">
             <text class="customer-label">客户姓名</text>
@@ -50,9 +60,12 @@
             <text class="customer-label">联系电话</text>
             <text class="customer-value">{{item.customerPhone}}</text>
           </view>
+          <view class="customer-row">
+            <text class="customer-label">收货地址</text>
+            <text class="customer-value address">{{item.address}}</text>
+          </view>
         </view>
 
-        <!-- 指派时间 -->
         <view class="order-footer">
           <view class="assign-time">
             <image src="{{iconClock}}" mode="aspectFit" style="width:24rpx;height:24rpx;opacity:0.6;" />

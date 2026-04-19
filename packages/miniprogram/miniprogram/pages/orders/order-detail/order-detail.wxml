@@ -1,8 +1,16 @@
 <view class="page">
   <block wx:if="{{!isDetailMode}}">
     <view class="page-hero">
-      <text class="hero-title">订单闭环中心</text>
-      <text class="hero-subtitle">从待支付改价、客服接单、制单发货到售后提成调整，所有关键节点都在这里演示。</text>
+      <text class="hero-title">先看最需要处理的订单</text>
+      <text class="hero-subtitle">支付、改价、物流和售后都在这里，但首屏先帮你分清哪些单最该先看。</text>
+    </view>
+
+    <view class="summary-grid">
+      <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
+        <text class="summary-value">{{item.value}}</text>
+        <text class="summary-label">{{item.label}}</text>
+        <text class="summary-desc">{{item.desc}}</text>
+      </view>
     </view>
 
     <scroll-view scroll-x class="tabs">
@@ -31,6 +39,10 @@
           </view>
           <text class="order-status">{{item.statusText}}</text>
         </view>
+        <view class="priority-row">
+          <text class="priority-pill">{{item.priorityLabel}}</text>
+          <text class="priority-note">{{item.priorityNote}}</text>
+        </view>
         <view class="product-box">
           <text class="product-name">{{item.firstProductName}}</text>
           <text class="product-spec">{{item.firstProductSpec}} · 共 {{item.itemCount}} 件</text>
@@ -39,7 +51,7 @@
         <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}} · {{item.commissionText}}</view>
         <view class="order-footer">
           <text class="amount">¥{{item.totalText}}</text>
-          <text class="detail-link">查看闭环 ></text>
+          <text class="detail-link">查看详情 ></text>
         </view>
       </view>
     </view>

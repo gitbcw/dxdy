@@ -1,0 +1,93 @@
+"use strict";
+// ========== 业务员客户和佣金 ==========
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.commissionSummary = exports.salesmanCustomers = void 0;
+exports.salesmanCustomers = [
+    {
+        id: 'cust_001',
+        nickname: '瑞派宠物医院',
+        type: 'institution',
+        phone: '020-81558888',
+        orderCount: 3,
+        totalAmount: 1280.00,
+        exchangeCount: 0,
+        boundAt: '2026-03-01T10:00:00Z',
+    },
+    {
+        id: 'cust_002',
+        nickname: '阳光宠物医院',
+        type: 'institution',
+        phone: '020-88888888',
+        orderCount: 12,
+        totalAmount: 28600.00,
+        exchangeCount: 1,
+        boundAt: '2026-02-15T14:30:00Z',
+    },
+    {
+        id: 'cust_003',
+        nickname: '何雨桐',
+        type: 'personal',
+        phone: '13612344321',
+        orderCount: 5,
+        totalAmount: 3680.00,
+        exchangeCount: 0,
+        boundAt: '2026-03-10T09:00:00Z',
+    },
+    {
+        id: 'cust_004',
+        nickname: '爱心宠物诊所',
+        type: 'institution',
+        phone: '020-66666666',
+        orderCount: 8,
+        totalAmount: 15200.00,
+        exchangeCount: 2,
+        boundAt: '2026-02-20T11:00:00Z',
+    },
+    {
+        id: 'cust_005',
+        nickname: '陈嘉宁',
+        type: 'personal',
+        phone: '13722221111',
+        orderCount: 1,
+        totalAmount: 560.00,
+        exchangeCount: 0,
+        boundAt: '2026-03-25T15:00:00Z',
+    },
+    {
+        id: 'cust_006',
+        nickname: '宠颐生动物医院',
+        type: 'institution',
+        phone: '0755-22222222',
+        orderCount: 20,
+        totalAmount: 52000.00,
+        exchangeCount: 1,
+        boundAt: '2026-01-10T10:00:00Z',
+    },
+    {
+        id: 'cust_007',
+        nickname: '王星野',
+        type: 'personal',
+        phone: '13855557777',
+        orderCount: 2,
+        totalAmount: 890.00,
+        exchangeCount: 1,
+        boundAt: '2026-03-28T14:00:00Z',
+    },
+    {
+        id: 'cust_008',
+        nickname: '福宠宠物医院',
+        type: 'institution',
+        phone: '020-33333333',
+        orderCount: 6,
+        totalAmount: 9800.00,
+        exchangeCount: 0,
+        boundAt: '2026-02-28T16:00:00Z',
+    },
+];
+exports.commissionSummary = {
+    total: 8520.00,
+    withdrawable: 3200.00,
+    withdrawn: 5000.00,
+    pending: 320.00,
+};
+//# sourceMappingURL=salesman.js.map

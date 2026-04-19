@@ -48,7 +48,7 @@ export function AppSidebar({ user }: { user: AdminUser }) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-6 py-4">
-        <h2 className="text-lg font-semibold">DXDY 演示后台</h2>
+        <h2 className="text-lg font-semibold">大熊动医华南医学检验实验室</h2>
         <p className="text-xs text-muted-foreground">{user.realName} · <Badge variant="secondary" className="text-xs">{user.role}</Badge></p>
       </SidebarHeader>
       <SidebarContent>

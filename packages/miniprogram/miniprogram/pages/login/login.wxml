@@ -1,13 +1,13 @@
 <view class="page">
   <view class="form">
-    <text class="title">{{isRegister ? '注册' : '登录'}} DXDY</text>
-    <text class="subtitle">宠物医疗供应链演示账号可直接一键带入，不需要真实短信验证码。</text>
+    <text class="title">{{isRegister ? '注册' : '登录'}} 大熊动医华南医学检验实验室</text>
+    <text class="subtitle">测试环境支持直接带入预置账号，无需真实短信验证码。</text>
     <input class="input" placeholder="手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
     <input wx:if="{{isRegister}}" class="input" placeholder="昵称" value="{{nickname}}" bindinput="onNicknameInput" />
     <view class="submit-btn" bindtap="onSubmit">{{isRegister ? '注册' : '登录'}}</view>
     <text class="switch" bindtap="toggleMode">{{isRegister ? '已有账号？去登录' : '没有账号？去注册'}}</text>
     <view class="demo-box">
-      <text class="demo-title">演示账号</text>
+      <text class="demo-title">预置账号</text>
       <view class="demo-list">
         <view wx:for="{{demoAccounts}}" wx:key="phone" class="demo-item" data-phone="{{item.phone}}" bindtap="useDemoAccount">
           <text class="demo-label">{{item.label}}</text>

@@ -46,6 +46,7 @@ Page({
       { key: 'completed', label: '已完成' },
     ],
     activeTab: 'all',
+    summaryCards: [] as any[],
     flowSteps: [] as any[],
     detailActions: [] as any[],
   },
@@ -76,6 +77,7 @@ Page({
       orders: mapped,
       visibleOrders: this.filterOrders(mapped, this.data.activeTab),
       isEmpty: mapped.length === 0,
+      summaryCards: this.getSummaryCards(mapped),
       selectedOrder: null,
       selectedReturn: null,
       isDetailMode: false,
@@ -115,6 +117,28 @@ Page({
       firstProductSpec: firstItem.spec,
       itemCount: order.items.reduce((sum: number, item: any) => sum + item.quantity, 0),
       priceChanged,
+      priorityLabel: priceChanged
+        ? '改价待确认'
+        : returnRecord
+          ? '售后跟进中'
+          : order.status === 'pending_payment'
+            ? '优先支付'
+            : order.status === 'pending_receipt'
+              ? '等待收货'
+              : order.type === 'booking' && order.status === 'pending_confirmation'
+                ? '预约待确认'
+                : '订单跟进',
+      priorityNote: priceChanged
+        ? `已优惠 ¥${formatMoney(Math.max(0, order.pricing.originalAmount - order.pricing.actualAmount))}，建议尽快确认支付`
+        : returnRecord
+          ? `售后状态：${this.getReturnStatusText(returnRecord.status)}`
+          : order.status === 'pending_payment'
+            ? '完成支付后才会进入后续履约'
+            : order.status === 'pending_receipt'
+              ? '物流状态和签收进度会持续更新'
+              : order.type === 'booking' && order.status === 'pending_confirmation'
+                ? '等待客服确认预约时间和库存'
+                : '可继续查看订单详情',
       returnRecord,
       returnStatusText: returnRecord ? this.getReturnStatusText(returnRecord.status) : '',
       commissionText: this.getCommissionText(order, returnRecord),
@@ -122,6 +146,14 @@ Page({
         ? `${order.shipping.company} ${order.shipping.trackingNo}`
         : '等待制单员录入快递单号',
     }
+  },
+
+  getSummaryCards(orders: any[]) {
+    return [
+      { value: String(orders.length), label: '全部订单', desc: '统一查看支付与售后' },
+      { value: String(orders.filter((item: any) => item.status === 'pending_payment').length), label: '待支付', desc: '优先处理改价单' },
+      { value: String(orders.filter((item: any) => item.returnRecord).length), label: '售后中', desc: '退款与换货进度' },
+    ]
   },
 
   getReturnStatusText(status: string) {
@@ -202,6 +234,7 @@ Page({
     this.setData({
       activeTab,
       visibleOrders: this.filterOrders(this.data.orders, activeTab),
+      isEmpty: this.filterOrders(this.data.orders, activeTab).length === 0,
     })
   },
 
@@ -256,7 +289,7 @@ Page({
       await createReturn({
         orderId: order.id,
         type: 'exchange',
-        reason: '演示：规格调整，申请换货',
+        reason: '规格调整，申请换货',
         items: [{
           productId: firstItem.productId,
           productName: firstItem.productName,

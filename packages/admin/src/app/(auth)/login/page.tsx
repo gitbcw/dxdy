@@ -32,7 +32,7 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle className="text-2xl">DXDY 管理后台</CardTitle>
+        <CardTitle className="text-2xl">大熊动医华南医学检验实验室管理后台</CardTitle>
         <CardDescription>请输入账号密码登录</CardDescription>
       </CardHeader>
       <CardContent>
@@ -61,7 +61,7 @@ export default function LoginPage() {
             {loading ? '登录中...' : '登录'}
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            演示账号：service / product_manager / system_admin（密码任意）
+            测试账号：service / product_manager / system_admin（密码任意）
           </p>
         </form>
       </CardContent>

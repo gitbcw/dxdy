@@ -1,23 +1,23 @@
 <view class="page">
   <view class="hero">
     <view class="hero-top">
-      <view>
-        <text class="eyebrow">宠物医院采购与用血预约平台</text>
-        <text class="title">DXDY 宠物医疗供应链</text>
+      <view class="hero-copy">
+        <text class="eyebrow">大熊动医华南医学检验实验室</text>
+        <text class="title">{{pageTitle}}</text>
       </view>
-      <view class="role-pill" bindtap="onSwitchRole">{{roleLabel}}</view>
+      <view class="role-pill">{{roleLabel}}</view>
     </view>
     <text class="subtitle">{{heroSubtitle}}</text>
     <view class="hero-actions">
       <view class="primary-action" bindtap="onPrimaryAction">{{primaryActionText}}</view>
-      <view class="ghost-action" bindtap="onOrdersTap">查看订单闭环</view>
+      <view class="ghost-action" bindtap="onSecondaryAction">{{secondaryActionText}}</view>
     </view>
   </view>
 
   <view class="identity-card">
     <view class="identity-main">
       <view class="avatar">{{avatarText}}</view>
-      <view>
+      <view class="identity-copy">
         <text class="identity-name">{{displayName}}</text>
         <text class="identity-desc">{{identityDesc}}</text>
       </view>
@@ -25,85 +25,78 @@
     <view class="identity-status {{verificationClass}}">{{verificationText}}</view>
   </view>
 
-  <view class="flow-card">
-    <view class="section-head">
-      <text class="section-title">演示闭环</text>
-      <text class="section-more" bindtap="onOrdersTap">订单流转 ></text>
-    </view>
-    <view class="flow-line">
-      <view wx:for="{{flowSteps}}" wx:key="label" class="flow-step">
-        <view class="flow-dot {{item.active ? 'active' : ''}}">{{index + 1}}</view>
-        <text class="flow-label">{{item.label}}</text>
-      </view>
+  <view class="summary-grid">
+    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
+      <text class="summary-value">{{item.value}}</text>
+      <text class="summary-label">{{item.label}}</text>
+      <text class="summary-desc">{{item.desc}}</text>
     </view>
   </view>
 
-  <view class="stats-grid">
-    <view wx:for="{{stats}}" wx:key="label" class="stat-card">
-      <text class="stat-value">{{item.value}}</text>
-      <text class="stat-label">{{item.label}}</text>
-      <text class="stat-desc">{{item.desc}}</text>
-    </view>
-  </view>
-
-  <view class="scenario-section">
+  <view class="panel">
     <view class="section-head">
-      <text class="section-title">老板最关心的场景</text>
-      <text class="section-more" bindtap="onCatalogTap">全部商品 ></text>
+      <text class="section-title">现在先做什么</text>
+      <text class="section-note">把最该处理的动作放到首屏</text>
     </view>
-    <view class="scenario-list">
-      <view wx:for="{{scenarios}}" wx:key="title" class="scenario-card {{item.tone}}" data-action="{{item.action}}" bindtap="onScenarioTap">
-        <view class="scenario-icon">{{item.icon}}</view>
-        <view class="scenario-content">
-          <text class="scenario-title">{{item.title}}</text>
-          <text class="scenario-desc">{{item.desc}}</text>
-        </view>
-        <text class="scenario-cta">{{item.cta}}</text>
-      </view>
-    </view>
-  </view>
-
-  <view class="product-section">
-    <view class="section-head">
-      <text class="section-title">推荐采购</text>
-      <text class="section-more" bindtap="onCatalogTap">进入分类 ></text>
-    </view>
-    <scroll-view scroll-x class="product-scroll">
+    <view class="task-list">
       <view
-        wx:for="{{featuredProducts}}"
-        wx:key="id"
-        class="product-card"
-        data-id="{{item.id}}"
-        bindtap="onProductTap"
+        wx:for="{{taskCards}}"
+        wx:key="title"
+        class="task-card"
+        data-action="{{item.action}}"
+        bindtap="onTaskTap"
       >
-        <view class="product-badge">{{item.badge}}</view>
-        <text class="product-name">{{item.name}}</text>
-        <text class="product-spec">{{item.spec}}</text>
-        <view class="product-bottom">
-          <text class="product-price">¥{{item.price}}</text>
-          <text class="product-stock">库存 {{item.stock}}</text>
+        <view class="task-head">
+          <text class="task-badge">{{item.badge}}</text>
+          <text class="task-action">{{item.actionText}}</text>
         </view>
+        <text class="task-title">{{item.title}}</text>
+        <text class="task-desc">{{item.desc}}</text>
+        <text class="task-meta">{{item.meta}}</text>
       </view>
-    </scroll-view>
+    </view>
   </view>
 
-  <view class="role-panel">
+  <view class="panel">
     <view class="section-head">
-      <text class="section-title">角色工作台</text>
-      <text class="section-more" bindtap="onMineTap">切换身份 ></text>
+      <text class="section-title">快捷入口</text>
+      <text class="section-note">按角色直接去目标页</text>
     </view>
-    <view class="role-grid">
-      <view class="role-card" data-role="customer_institution" bindtap="onRoleCardTap">
-        <text class="role-title">机构客户</text>
-        <text class="role-desc">认证后看机构价和宠物血制品</text>
+    <view class="quick-grid">
+      <view
+        wx:for="{{quickActions}}"
+        wx:key="title"
+        class="quick-card"
+        data-action="{{item.action}}"
+        bindtap="onQuickActionTap"
+      >
+        <view class="quick-icon">{{item.icon}}</view>
+        <text class="quick-title">{{item.title}}</text>
+        <text class="quick-desc">{{item.desc}}</text>
       </view>
-      <view class="role-card" data-role="salesperson" bindtap="onRoleCardTap">
-        <text class="role-title">业务员</text>
-        <text class="role-desc">推广、客户、提成一体化</text>
-      </view>
-      <view class="role-card" data-role="clerk" bindtap="onRoleCardTap">
-        <text class="role-title">制单员</text>
-        <text class="role-desc">接单、发货、物流同步</text>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="section-head">
+      <text class="section-title">{{boardTitle}}</text>
+      <text class="section-more" bindtap="onBoardMoreTap">{{boardMoreText}} ></text>
+    </view>
+    <view class="board-list">
+      <view
+        wx:for="{{boardItems}}"
+        wx:key="title"
+        class="board-card"
+        data-action="{{item.action}}"
+        bindtap="onBoardItemTap"
+      >
+        <view class="board-row">
+          <text class="board-badge">{{item.badge}}</text>
+          <text class="board-action">{{item.actionText}}</text>
+        </view>
+        <text class="board-title">{{item.title}}</text>
+        <text class="board-desc">{{item.desc}}</text>
+        <text class="board-meta">{{item.meta}}</text>
       </view>
     </view>
   </view>

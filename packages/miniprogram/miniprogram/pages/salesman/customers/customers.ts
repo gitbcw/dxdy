@@ -1,10 +1,15 @@
-const { getSalesmanCustomers } = require('../../../services/index')
+const { getSalesmanCustomers, formatMoney } = require('../../../services/index')
 
 Page({
   data: {
-    customers: [],
-    totalAmount: 0,
+    customers: [] as any[],
+    visibleCustomers: [] as any[],
+    totalAmount: '0.00',
     totalCount: 0,
+    summaryCards: [] as any[],
+    focusCustomers: [] as any[],
+    filters: [] as any[],
+    activeFilter: 'all',
   },
 
   onShow() {
@@ -13,16 +18,54 @@ Page({
 
   async loadCustomers() {
     const customers = await getSalesmanCustomers()
-    // 处理头像首字
-    const customersWithAvatar = customers.map((c: any) => ({
-      ...c,
-      avatarText: c.nickname.charAt(0),
-    }))
-    const totalAmount = customers.reduce((sum: number, c: any) => sum + c.totalAmount, 0)
+    const sortedCustomers = customers
+      .map((customer: any) => ({
+        ...customer,
+        avatarText: customer.nickname.charAt(0),
+        amountText: formatMoney(customer.totalAmount),
+        priorityTag: customer.type === 'institution' ? '机构客户' : '个人客户',
+        priorityText: customer.orderCount >= 3
+          ? '适合推动复购'
+          : customer.type === 'institution'
+            ? '适合继续经营'
+            : '适合补充服务说明',
+      }))
+      .sort((a: any, b: any) => b.totalAmount - a.totalAmount)
+
+    const filters = [
+      { key: 'all', label: '全部', count: sortedCustomers.length },
+      { key: 'institution', label: '机构客户', count: sortedCustomers.filter((item: any) => item.type === 'institution').length },
+      { key: 'active', label: '高活跃', count: sortedCustomers.filter((item: any) => item.orderCount >= 3).length },
+      { key: 'afterSale', label: '售后关注', count: sortedCustomers.filter((item: any) => item.exchangeCount > 0).length },
+    ]
+
     this.setData({
-      customers: customersWithAvatar,
-      totalAmount,
-      totalCount: customers.length,
+      customers: sortedCustomers,
+      visibleCustomers: this.filterCustomers(sortedCustomers, this.data.activeFilter),
+      totalAmount: formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0)),
+      totalCount: sortedCustomers.length,
+      summaryCards: [
+        { value: String(sortedCustomers.length), label: '绑定客户', desc: '优先经营机构客户' },
+        { value: `¥${formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0))}`, label: '累计采购', desc: '可作为跟进强度参考' },
+        { value: String(sortedCustomers.filter((item: any) => item.exchangeCount > 0).length), label: '售后关注', desc: '先看会影响满意度的客户' },
+      ],
+      focusCustomers: sortedCustomers.slice(0, 3),
+      filters,
+    })
+  },
+
+  filterCustomers(customers: any[], filterKey: string) {
+    if (filterKey === 'institution') return customers.filter((item: any) => item.type === 'institution')
+    if (filterKey === 'active') return customers.filter((item: any) => item.orderCount >= 3)
+    if (filterKey === 'afterSale') return customers.filter((item: any) => item.exchangeCount > 0)
+    return customers
+  },
+
+  onFilterTap(e: any) {
+    const filterKey = e.currentTarget.dataset.key
+    this.setData({
+      activeFilter: filterKey,
+      visibleCustomers: this.filterCustomers(this.data.customers, filterKey),
     })
   },
 })

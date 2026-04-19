@@ -1,86 +1,134 @@
-/* pending.wxss - 大熊动医华南医学检验实验室 - 制单员待处理订单页 */
-
 .page {
   min-height: 100vh;
-  background: var(--bg-page);
+  padding: 24rpx;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(10, 110, 124, 0.12), transparent 34%),
+    linear-gradient(180deg, #f4fbfa 0%, #ffffff 100%);
+  box-sizing: border-box;
 }
 
-/* ============ 页面顶部导航 ============ */
-.page-header {
-  background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
-  padding: 32rpx;
-  padding-top: calc(32rpx + env(safe-area-inset-top));
+.hero {
+  padding: 30rpx;
+  border-radius: 32rpx;
+  color: #ffffff;
+  background: linear-gradient(160deg, #063e46 0%, #0a6e7c 58%, #0d8a9a 100%);
+  box-shadow: 0 20rpx 48rpx rgba(6, 62, 70, 0.18);
+}
+
+.hero-top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16rpx;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .header-title {
   font-size: 36rpx;
-  font-weight: 700;
-  color: #FFFFFF;
-  letter-spacing: 2rpx;
+  line-height: 1.35;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.hero-subtitle {
+  display: block;
+  margin-top: 14rpx;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 23rpx;
+  line-height: 1.65;
 }
 
 .header-badge {
-  background: rgba(212, 168, 83, 1);
-  border-radius: var(--radius-full);
+  background: #d4a853;
+  border-radius: 999rpx;
   padding: 6rpx 16rpx;
+  min-width: 40rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40rpx;
 }
 
 .badge-count {
   font-size: 24rpx;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
-/* ============ 订单列表 ============ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.summary-card {
+  padding: 22rpx 18rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14rpx 34rpx rgba(23, 61, 64, 0.07);
+}
+
+.summary-value {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 900;
+  color: #0a6e7c;
+}
+
+.summary-label {
+  display: block;
+  margin-top: 8rpx;
+  color: #173236;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.summary-desc {
+  display: block;
+  margin-top: 8rpx;
+  color: #78888a;
+  font-size: 20rpx;
+  line-height: 1.45;
+}
+
 .order-list {
-  padding: 20rpx;
+  margin-top: 18rpx;
 }
 
-/* ============ 订单卡片 ============ */
 .order-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 28rpx;
   padding: 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: var(--shadow-sm);
-  border: 1rpx solid var(--border-color);
-  transition: all 0.25s ease;
+  margin-bottom: 18rpx;
+  box-shadow: 0 14rpx 36rpx rgba(23, 61, 64, 0.07);
 }
 
-.order-card:active {
-  transform: scale(0.99);
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-primary-light);
-}
-
-/* 订单头部 */
 .order-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 16rpx;
   padding-bottom: 16rpx;
-  border-bottom: 1rpx dashed var(--divider-color);
-  margin-bottom: 16rpx;
+  border-bottom: 1rpx dashed #dbe7e6;
 }
 
 .order-id {
+  display: block;
   font-size: 24rpx;
-  color: var(--text-tertiary);
+  color: #6d7f82;
   font-family: monospace;
-  letter-spacing: 1rpx;
 }
 
-/* 状态标签 */
+.order-badge {
+  display: inline-block;
+  margin-top: 10rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #0a6e7c;
+  font-size: 20rpx;
+  font-weight: 800;
+  background: #def7ed;
+}
+
 .status-tag {
   display: flex;
   align-items: center;
@@ -88,22 +136,21 @@
   font-size: 22rpx;
   font-weight: 600;
   padding: 8rpx 16rpx;
-  border-radius: var(--radius-full);
+  border-radius: 999rpx;
 }
 
 .status-tag.tag-normal {
   background: rgba(10, 110, 124, 0.12);
-  color: var(--color-primary);
+  color: #0a6e7c;
 }
 
 .status-tag.tag-booking {
   background: rgba(212, 168, 83, 0.15);
-  color: #D4A853;
+  color: #d4a853;
 }
 
-/* 订单商品 */
 .order-body {
-  padding: 8rpx 0;
+  padding: 10rpx 0 0;
 }
 
 .order-item {
@@ -116,8 +163,8 @@
 .item-icon {
   width: 56rpx;
   height: 56rpx;
-  background: var(--bg-section);
-  border-radius: var(--radius-sm);
+  background: #f3f8f7;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,23 +178,31 @@
 
 .item-name {
   font-size: 28rpx;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: #173236;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .item-qty {
-  font-size: 24rpx;
-  color: var(--text-tertiary);
+  display: block;
   margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #6d7f82;
 }
 
-/* 客户信息 */
+.helper-text {
+  display: block;
+  margin-top: 10rpx;
+  color: #607174;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
 .order-customer {
-  background: var(--bg-section);
-  border-radius: var(--radius-md);
+  background: #f6faf9;
+  border-radius: 22rpx;
   padding: 16rpx 20rpx;
   margin: 16rpx 0;
   display: flex;
@@ -157,29 +212,34 @@
 
 .customer-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 18rpx;
 }
 
 .customer-label {
+  flex-shrink: 0;
   font-size: 24rpx;
-  color: var(--text-tertiary);
+  color: #6d7f82;
 }
 
 .customer-value {
   font-size: 26rpx;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #173236;
+  text-align: right;
 }
 
-/* 订单底部 */
+.customer-value.address {
+  line-height: 1.5;
+}
+
 .order-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-top: 16rpx;
-  border-top: 1rpx dashed var(--divider-color);
-  margin-top: 8rpx;
+  border-top: 1rpx dashed #dbe7e6;
 }
 
 .assign-time {
@@ -187,7 +247,7 @@
   align-items: center;
   gap: 8rpx;
   font-size: 24rpx;
-  color: var(--text-tertiary);
+  color: #6d7f82;
 }
 
 .view-detail {
@@ -195,8 +255,8 @@
   align-items: center;
   gap: 4rpx;
   font-size: 26rpx;
-  font-weight: 500;
-  color: var(--color-primary);
+  font-weight: 600;
+  color: #0a6e7c;
 }
 
 .arrow {
@@ -204,7 +264,6 @@
   font-weight: 700;
 }
 
-/* ============ 空状态 ============ */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -223,26 +282,11 @@
 .empty-text {
   font-size: 34rpx;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #173236;
   margin-bottom: 12rpx;
 }
 
 .empty-hint {
   font-size: 26rpx;
-  color: var(--text-tertiary);
+  color: #7b8b8d;
 }
-
-/* ============ 动画 ============ */
-.page-header {
-  animation: fadeIn 0.3s ease;
-}
-
-.order-card {
-  animation: fadeInUp 0.4s ease backwards;
-}
-
-.order-card:nth-child(1) { animation-delay: 0.05s; }
-.order-card:nth-child(2) { animation-delay: 0.1s; }
-.order-card:nth-child(3) { animation-delay: 0.15s; }
-.order-card:nth-child(4) { animation-delay: 0.2s; }
-.order-card:nth-child(5) { animation-delay: 0.25s; }

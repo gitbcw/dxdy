@@ -96,7 +96,7 @@ export default function DashboardPage() {
       icon: ShieldCheck,
     },
     {
-      title: '可演示交易额',
+      title: '累计交易额',
       value: `¥${formatMoney(revenue)}`,
       desc: `含 ${personalCount} 位个人宠物客户和机构采购`,
       icon: CreditCard,
@@ -109,11 +109,11 @@ export default function DashboardPage() {
     },
   ];
 
-  const demoTasks = [
+  const operationalTasks = [
     {
       title: '待支付订单改价',
       desc: adjustedOrders[0]
-        ? `${adjustedOrders[0].customerName} 已有改价记录，可演示通知与日志`
+        ? `${adjustedOrders[0].customerName} 已有改价记录，可继续跟进通知与日志`
         : '客服可对待支付订单降价并重置支付倒计时',
       href: '/orders',
       badge: `${pendingPayment} 单`,
@@ -150,19 +150,19 @@ export default function DashboardPage() {
         <div className="grid gap-8 p-8 lg:grid-cols-[1.4fr_0.8fr]">
           <div className="space-y-6">
             <Badge className="w-fit bg-teal-400/15 text-teal-100 ring-1 ring-teal-200/20">
-              宠物医疗供应链 Demo 驾驶舱
+              大熊动医华南医学检验实验室运营总览
             </Badge>
             <div className="space-y-3">
               <h1 className="max-w-3xl text-4xl font-semibold tracking-tight">
-                从宠物医院采购、用血预约到发货售后，一条业务线闭环演示。
+                围绕宠物医院采购、用血预约、发货与售后，统一管理核心业务流程。
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                这个后台用于辅助老板看全局：客户是否完成认证、订单是否推进、宠物血液制品是否受控、退换货是否影响业务员提成。
+                后台聚焦客户认证、订单推进、血液制品预约管控，以及退换货对业务员提成的联动影响。
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button className="bg-teal-300 text-slate-950 hover:bg-teal-200" nativeButton={false} render={<Link href="/orders" />}>
-                查看订单闭环 <ArrowRight />
+                查看订单进度 <ArrowRight />
               </Button>
               <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" nativeButton={false} render={<Link href="/products" />}>
                 查看商品分层
@@ -172,11 +172,11 @@ export default function DashboardPage() {
 
           <div className="rounded-3xl border border-white/10 bg-white/8 p-5 backdrop-blur">
             <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-slate-300">今日演示重点</span>
-              <Badge className="bg-amber-300 text-slate-950">老板视角</Badge>
+              <span className="text-sm text-slate-300">今日重点任务</span>
+              <Badge className="bg-amber-300 text-slate-950">运营跟进</Badge>
             </div>
             <div className="space-y-3">
-              {demoTasks.slice(0, 3).map(task => (
+              {operationalTasks.slice(0, 3).map(task => (
                 <Link
                   key={task.title}
                   href={task.href}
@@ -241,7 +241,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="size-5 text-amber-600" />
-              需要老板关注的异常
+              当前待关注异常
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -265,10 +265,10 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-teal-950/10">
           <CardHeader>
-            <CardTitle>演示场景入口</CardTitle>
+            <CardTitle>快捷工作入口</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
-            {demoTasks.map(task => (
+            {operationalTasks.map(task => (
               <Link key={task.title} href={task.href} className="rounded-2xl border bg-white p-4 transition hover:-translate-y-0.5 hover:border-teal-700/40 hover:shadow-md">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="rounded-xl bg-teal-700/10 p-2 text-teal-800">

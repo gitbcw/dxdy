@@ -1,8 +1,33 @@
 <view class="page">
   <view class="catalog-hero">
-    <text class="hero-title">分层商品展示</text>
-    <text class="hero-subtitle">机构客户可查看宠物医院专属价格和宠物血液制品，个人客户只看到零售可售商品。</text>
+    <view class="hero-top">
+      <view>
+        <text class="hero-eyebrow">{{roleLabel}}</text>
+        <text class="hero-title">{{pageTitle}}</text>
+      </view>
+    </view>
+    <text class="hero-subtitle">{{pageSubtitle}}</text>
   </view>
+
+  <view class="summary-grid">
+    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
+      <text class="summary-value">{{item.value}}</text>
+      <text class="summary-label">{{item.label}}</text>
+      <text class="summary-desc">{{item.desc}}</text>
+    </view>
+  </view>
+
+  <scroll-view scroll-x class="quick-filters">
+    <view
+      wx:for="{{quickFilters}}"
+      wx:key="key"
+      class="filter-pill {{activeQuickFilter === item.key ? 'active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onQuickFilterTap"
+    >
+      {{item.label}} {{item.count}}
+    </view>
+  </scroll-view>
 
   <view class="layout">
     <scroll-view class="sidebar" scroll-y>
@@ -21,22 +46,23 @@
       <view
         wx:for="{{products}}"
         wx:key="id"
-        class="product-item"
+        class="product-item {{item.lowStock ? 'warn' : ''}}"
         data-id="{{item.id}}"
         bindtap="onProductTap"
       >
         <view class="product-top">
           <text class="tag">{{item.tagText}}</text>
-          <text class="stock">库存 {{item.stock}}</text>
+          <text class="stock {{item.lowStock ? 'warn' : ''}}">库存 {{item.stock}}</text>
         </view>
         <text class="name">{{item.name}}</text>
         <text class="spec">{{item.specText}}</text>
+        <text class="lead">{{item.leadText}}</text>
         <view class="product-bottom">
           <text class="price">¥{{item.priceText}}</text>
-          <text class="cta">立即下单</text>
+          <text class="cta">{{item.isBloodPack ? '立即预约' : '立即下单'}}</text>
         </view>
       </view>
-      <view wx:if="{{products.length === 0}}" class="empty">当前分类暂无商品</view>
+      <view wx:if="{{products.length === 0}}" class="empty">{{emptyText}}</view>
     </scroll-view>
   </view>
 </view>

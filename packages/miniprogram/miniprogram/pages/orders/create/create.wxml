@@ -16,13 +16,9 @@
     </view>
 
     <view class="type-switch">
-      <view class="type-item {{orderType === 'normal' ? 'active' : ''}}" data-type="normal" bindtap="onSwitchOrderType">
-        <text class="type-title">普通采购</text>
-        <text class="type-desc">药品/保健品发货履约</text>
-      </view>
-      <view class="type-item {{orderType === 'booking' ? 'active' : ''}} {{!canBooking ? 'disabled' : ''}}" data-type="booking" bindtap="onSwitchOrderType">
-        <text class="type-title">预约服务</text>
-        <text class="type-desc">用血/检测排期确认</text>
+      <view class="type-item active">
+        <text class="type-title">{{orderType === 'booking' ? '预约采购' : '普通采购'}}</text>
+        <text class="type-desc">{{orderType === 'booking' ? '宠物用血需提前预约排期' : '常规商品按下单后履约发货'}}</text>
       </view>
     </view>
 
@@ -70,8 +66,15 @@
 
     <view class="card">
       <text class="card-title">履约信息</text>
+      <view class="field">
+        <text class="field-label">{{orderType === 'booking' ? '联系地址' : '收货地址'}}</text>
+        <picker wx:if="{{addressOptions.length}}" mode="selector" range="{{addressOptions}}" value="{{selectedAddressIndex}}" bindchange="onAddressChange">
+          <view class="field-input">{{addressOptions[selectedAddressIndex]}}</view>
+        </picker>
+        <view wx:else class="field-input">暂无可用地址</view>
+      </view>
       <view class="address-box">
-        <text class="address-title">{{orderType === 'booking' ? '默认联系地址' : '默认收货地址'}}</text>
+        <text class="address-title">{{orderType === 'booking' ? '已选联系地址' : '已选收货地址'}}</text>
         <text class="address-text">{{addressText}}</text>
       </view>
       <view class="field">
@@ -89,7 +92,7 @@
         </view>
         <view class="pay-item {{payMethod === 'wallet' ? 'active' : ''}}" data-method="wallet" bindtap="onPayMethodChange">
           <text>钱包余额</text>
-          <text>可演示</text>
+          <text>账户余额</text>
         </view>
       </view>
       <view class="rule-box">

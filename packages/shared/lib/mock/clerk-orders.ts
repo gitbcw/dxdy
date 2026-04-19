@@ -1,0 +1,129 @@
+// ========== 制单员订单 ==========
+
+export const clerkPendingOrders: Array<{
+  id: string;
+  orderNo: string;
+  type: 'normal' | 'exchange';
+  originalOrderNo?: string;
+  mainOrderId?: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  items: { name: string; quantity: number; specs: string }[];
+  createdAt: string;
+  assignedAt: string;
+  status: string;
+}> = [
+  {
+    id: 'ord_clerk_001',
+    orderNo: 'DD20260415001',
+    type: 'normal',
+    customerName: '瑞派宠物医院',
+    customerPhone: '02081558888',
+    address: '广东省广州市天河区珠江新城花城大道88号瑞派宠物医院',
+    items: [{ name: '犬用悬浮红细胞（DEA1.1）', quantity: 1, specs: '100mL/袋' }],
+    createdAt: '2026-04-15T10:30:00Z',
+    assignedAt: '2026-04-15T11:00:00Z',
+    status: 'pending',
+  },
+  {
+    id: 'ord_clerk_002',
+    orderNo: 'DD20260415002',
+    type: 'exchange',
+    originalOrderNo: 'DD20260410008',
+    customerName: '阳光宠物医院',
+    customerPhone: '02088888888',
+    address: '广东省深圳市福田区华强北路100号阳光宠物医院',
+    items: [{ name: '宠物术后凝血支持片', quantity: 2, specs: '60片/盒' }],
+    createdAt: '2026-04-14T14:20:00Z',
+    assignedAt: '2026-04-15T09:00:00Z',
+    status: 'pending',
+  },
+  {
+    id: 'ord_clerk_003',
+    orderNo: 'DD20260415003',
+    type: 'normal',
+    customerName: '爱心宠物诊所',
+    customerPhone: '02066666666',
+    address: '广东省东莞市南城区鸿福路200号爱心宠物诊所',
+    items: [{ name: '猫用浓缩红细胞（A型）', quantity: 2, specs: '60mL/袋' }],
+    createdAt: '2026-04-15T08:00:00Z',
+    assignedAt: '2026-04-15T10:00:00Z',
+    status: 'pending',
+  },
+  {
+    id: 'ord_clerk_004',
+    orderNo: 'DD20260415004',
+    type: 'normal',
+    customerName: '福宠宠物医院',
+    customerPhone: '13577778888',
+    address: '广东省佛山市顺德区大良镇凤山西路10号福宠宠物医院',
+    items: [{ name: '宠物基础血型检测服务', quantity: 1, specs: '到院检测' }],
+    createdAt: '2026-04-14T16:00:00Z',
+    assignedAt: '2026-04-15T09:30:00Z',
+    status: 'pending',
+  },
+  {
+    id: 'ord_clerk_005',
+    orderNo: 'DD20260415005',
+    type: 'exchange',
+    originalOrderNo: 'DD20260409005',
+    customerName: '宠颐生动物医院',
+    customerPhone: '13788889999',
+    address: '广东省广州市越秀区中山五路88号宠颐生动物医院',
+    items: [{ name: '犬猫贫血营养膏', quantity: 1, specs: '120g/支' }],
+    createdAt: '2026-04-13T11:00:00Z',
+    assignedAt: '2026-04-15T08:00:00Z',
+    status: 'pending',
+  },
+]
+
+export const clerkShippedOrders: Array<{
+  id: string;
+  orderNo: string;
+  type: 'normal' | 'exchange';
+  originalOrderNo?: string;
+  mainOrderId?: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  items: { name: string; quantity: number; specs: string }[];
+  createdAt: string;
+  assignedAt: string;
+  shippedAt?: string;
+  expressCompany?: string;
+  expressNo?: string;
+  status: string;
+}> = [
+  {
+    id: 'ord_clerk_101',
+    orderNo: 'DD20260412003',
+    type: 'normal',
+    customerName: '何雨桐',
+    customerPhone: '13722223333',
+    address: '广东省佛山市禅城区季华五路50号',
+    items: [{ name: '宠物肝脏保健片', quantity: 1, specs: '90片/瓶' }],
+    createdAt: '2026-04-12T08:00:00Z',
+    assignedAt: '2026-04-12T10:00:00Z',
+    shippedAt: '2026-04-13T15:30:00Z',
+    expressCompany: '顺丰速运',
+    expressNo: 'SF1234567890',
+    status: 'shipped',
+  },
+  {
+    id: 'ord_clerk_102',
+    orderNo: 'DD20260411002',
+    type: 'exchange',
+    originalOrderNo: 'DD20260408001',
+    customerName: '毛球宠物专科医院',
+    customerPhone: '13899990000',
+    address: '广东省深圳市南山区科技园路100号毛球宠物专科医院',
+    items: [{ name: '犬用悬浮红细胞（DEA1.1）', quantity: 1, specs: '100mL/袋' }],
+    createdAt: '2026-04-11T09:00:00Z',
+    assignedAt: '2026-04-11T11:00:00Z',
+    shippedAt: '2026-04-12T14:00:00Z',
+    expressCompany: '中通快递',
+    expressNo: 'ZTK9876543210',
+    status: 'shipped',
+  },
+]

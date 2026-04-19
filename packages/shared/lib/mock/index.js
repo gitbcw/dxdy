@@ -1,0 +1,25 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.mockNotifications = exports.mockLogs = exports.defaultSystemConfig = exports.commissionSummary = exports.salesmanCustomers = exports.clerkShippedOrders = exports.clerkPendingOrders = exports.mockReturns = exports.mockOrders = exports.mockProducts = exports.mockCategories = exports.mockAdminUsers = exports.mockClerks = exports.mockSalespersons = exports.mockCustomers = void 0;
+var users_1 = require("./users");
+Object.defineProperty(exports, "mockCustomers", { enumerable: true, get: function () { return users_1.mockCustomers; } });
+Object.defineProperty(exports, "mockSalespersons", { enumerable: true, get: function () { return users_1.mockSalespersons; } });
+Object.defineProperty(exports, "mockClerks", { enumerable: true, get: function () { return users_1.mockClerks; } });
+Object.defineProperty(exports, "mockAdminUsers", { enumerable: true, get: function () { return users_1.mockAdminUsers; } });
+var products_1 = require("./products");
+Object.defineProperty(exports, "mockCategories", { enumerable: true, get: function () { return products_1.mockCategories; } });
+Object.defineProperty(exports, "mockProducts", { enumerable: true, get: function () { return products_1.mockProducts; } });
+var orders_1 = require("./orders");
+Object.defineProperty(exports, "mockOrders", { enumerable: true, get: function () { return orders_1.mockOrders; } });
+Object.defineProperty(exports, "mockReturns", { enumerable: true, get: function () { return orders_1.mockReturns; } });
+var clerk_orders_1 = require("./clerk-orders");
+Object.defineProperty(exports, "clerkPendingOrders", { enumerable: true, get: function () { return clerk_orders_1.clerkPendingOrders; } });
+Object.defineProperty(exports, "clerkShippedOrders", { enumerable: true, get: function () { return clerk_orders_1.clerkShippedOrders; } });
+var salesman_1 = require("./salesman");
+Object.defineProperty(exports, "salesmanCustomers", { enumerable: true, get: function () { return salesman_1.salesmanCustomers; } });
+Object.defineProperty(exports, "commissionSummary", { enumerable: true, get: function () { return salesman_1.commissionSummary; } });
+var system_1 = require("./system");
+Object.defineProperty(exports, "defaultSystemConfig", { enumerable: true, get: function () { return system_1.defaultSystemConfig; } });
+Object.defineProperty(exports, "mockLogs", { enumerable: true, get: function () { return system_1.mockLogs; } });
+Object.defineProperty(exports, "mockNotifications", { enumerable: true, get: function () { return system_1.mockNotifications; } });
+//# sourceMappingURL=index.js.map

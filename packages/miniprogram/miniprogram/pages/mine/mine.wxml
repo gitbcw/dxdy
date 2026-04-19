@@ -1,9 +1,9 @@
 <view class="page">
   <view wx:if="{{!userInfo}}" class="login-prompt">
     <view class="avatar-empty">DX</view>
-    <text class="login-title">进入演示账号</text>
-    <text class="login-desc">一键体验宠物医院、个人客户、业务员、制单员多角色闭环。</text>
-    <view class="login-btn" bindtap="onLoginTap">选择账号</view>
+    <text class="login-title">登录工作账号</text>
+    <text class="login-desc">进入采购、订单、业务员和制单员对应工作台。</text>
+    <view class="login-btn" bindtap="onLoginTap">立即登录</view>
   </view>
 
   <view wx:else>
@@ -14,9 +14,11 @@
           <text class="name">{{userInfo.nickname}}</text>
           <text class="type">{{userRoleLabel}}</text>
         </view>
-        <view class="switch-pill" bindtap="onSwitchRole">切换</view>
+        <view class="switch-pill" bindtap="onSwitchRole">工作身份</view>
       </view>
       <text class="role-desc">{{roleDesc}}</text>
+      <text class="headline">{{pageHeadline}}</text>
+      <text class="subhead">{{pageSubhead}}</text>
     </view>
 
     <view class="stats">
@@ -29,8 +31,32 @@
 
     <view class="section">
       <view class="section-head">
-        <text class="section-title">角色工作台</text>
-        <text class="section-more" bindtap="onSwitchRole">演示身份 ></text>
+        <text class="section-title">{{focusTitle}}</text>
+        <text class="section-more" bindtap="onSwitchRole">切换身份 ></text>
+      </view>
+      <view class="focus-list">
+        <view
+          wx:for="{{focusItems}}"
+          wx:key="id"
+          class="focus-card"
+          data-id="{{item.id}}"
+          bindtap="onFocusItemTap"
+        >
+          <view class="focus-top">
+            <text class="focus-badge">{{item.badge}}</text>
+            <text class="focus-arrow">›</text>
+          </view>
+          <text class="focus-title">{{item.title}}</text>
+          <text class="focus-desc">{{item.desc}}</text>
+          <text class="focus-meta">{{item.meta}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <text class="section-title">常用入口</text>
+        <text class="section-more" bindtap="onSwitchRole">换个视角 ></text>
       </view>
       <view class="menu">
         <view
@@ -49,11 +75,6 @@
       </view>
     </view>
 
-    <view class="demo-note">
-      <text class="note-title">演示提示</text>
-      <text class="note-text">建议演示顺序：宠物医院采购下单 → 后台改价/指派 → 制单员发货 → 客户查看订单 → 售后影响提成。</text>
-    </view>
-
-    <view class="logout" bindtap="onLogout">退出当前演示账号</view>
+    <view class="logout" bindtap="onLogout">退出当前账号</view>
   </view>
 </view>

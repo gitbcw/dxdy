@@ -258,7 +258,7 @@ export default function ProductsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="prodCat">分类</Label>
-              <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
+              <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v ?? '' }))}>
                 <SelectTrigger><SelectValue placeholder="选择分类" /></SelectTrigger>
                 <SelectContent>
                   {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}

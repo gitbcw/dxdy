@@ -38,6 +38,43 @@
   white-space: nowrap;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.summary-card {
+  padding: 22rpx 18rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14rpx 34rpx rgba(23, 61, 64, 0.07);
+}
+
+.summary-value {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 900;
+  color: #0a6e7c;
+}
+
+.summary-label {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  color: #173236;
+}
+
+.summary-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  line-height: 1.45;
+  color: #7b8a8c;
+}
+
 .tab {
   display: inline-block;
   margin-right: 14rpx;
@@ -116,6 +153,28 @@
   padding: 22rpx;
   border-radius: 24rpx;
   background: #f6faf9;
+}
+
+.priority-row {
+  margin-top: 18rpx;
+}
+
+.priority-pill {
+  display: inline-block;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #0a6e7c;
+  font-size: 20rpx;
+  font-weight: 800;
+  background: #def7ed;
+}
+
+.priority-note {
+  display: block;
+  margin-top: 10rpx;
+  color: #607174;
+  font-size: 22rpx;
+  line-height: 1.5;
 }
 
 .product-name,

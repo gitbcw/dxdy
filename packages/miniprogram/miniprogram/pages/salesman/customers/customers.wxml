@@ -1,49 +1,71 @@
 <view class="page">
-  <!-- 页面顶部：标题 -->
-  <view class="page-header">
-    <text class="page-title">客户管理</text>
+  <view class="hero">
+    <text class="hero-eyebrow">业务员客户工作台</text>
+    <text class="hero-title">先跟进最值得成交的客户</text>
+    <text class="hero-subtitle">把高活跃客户、机构客户和售后关注客户分开看，比单纯列清单更适合真实跟进。</text>
   </view>
 
-  <!-- 统计栏 -->
-  <view class="stat-bar">
-    <view class="stat-item">
-      <text class="stat-value">{{totalCount}}</text>
-      <text class="stat-label">客户总数</text>
-    </view>
-    <view class="stat-divider"></view>
-    <view class="stat-item">
-      <text class="stat-value accent">¥{{totalAmount}}</text>
-      <text class="stat-label">合计消费</text>
+  <view class="summary-grid">
+    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
+      <text class="summary-value">{{item.value}}</text>
+      <text class="summary-label">{{item.label}}</text>
+      <text class="summary-desc">{{item.desc}}</text>
     </view>
   </view>
 
-  <!-- 客户列表 -->
+  <view class="section">
+    <view class="section-head">
+      <text class="section-title">今天优先关注</text>
+      <text class="section-more">按成交潜力排序</text>
+    </view>
+    <view class="focus-list">
+      <view wx:for="{{focusCustomers}}" wx:key="id" class="focus-card">
+        <view class="focus-top">
+          <text class="focus-badge">{{item.priorityTag}}</text>
+          <text class="focus-amount">¥{{item.amountText}}</text>
+        </view>
+        <text class="focus-name">{{item.nickname}}</text>
+        <text class="focus-desc">{{item.priorityText}}</text>
+        <text class="focus-meta">下单 {{item.orderCount}} 次 · 售后 {{item.exchangeCount}} 次</text>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view scroll-x class="filters">
+    <view
+      wx:for="{{filters}}"
+      wx:key="key"
+      class="filter-pill {{activeFilter === item.key ? 'active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onFilterTap"
+    >
+      {{item.label}} {{item.count}}
+    </view>
+  </scroll-view>
+
   <view class="customer-list">
-    <block wx:for="{{customers}}" wx:key="id">
+    <block wx:for="{{visibleCustomers}}" wx:key="id">
       <view class="customer-card">
-        <!-- 头像区：首字圆形背景 -->
         <view class="avatar">
           <text class="avatar-text">{{item.avatarText}}</text>
         </view>
 
-        <!-- 信息区 -->
         <view class="info">
-          <!-- 姓名/医院名 + 客户类型标签 -->
           <view class="name-row">
             <text class="name">{{item.nickname}}</text>
             <text class="type-tag tag-{{item.type}}">{{item.type === 'personal' ? '个人' : '医院'}}</text>
           </view>
 
-          <!-- 下单次数 | 累计消费 -->
           <view class="stats-row">
             <text class="stat-text">下单 {{item.orderCount}} 次</text>
-            <text class="stat-divider">|</text>
-            <text class="stat-text">累计 ¥{{item.totalAmount}}</text>
+            <text class="stat-divider"></text>
+            <text class="stat-text">累计 ¥{{item.amountText}}</text>
           </view>
 
-          <!-- 退换货标签（仅 exchangeCount > 0 时显示） -->
+          <text class="priority-text">{{item.priorityText}}</text>
+
           <view class="exchange-row" wx:if="{{item.exchangeCount > 0}}">
-            <text class="exchange-tag">退换 {{item.exchangeCount}} 次</text>
+            <text class="exchange-tag">售后 {{item.exchangeCount}} 次</text>
           </view>
         </view>
       </view>

@@ -13,7 +13,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { getAllOrders, adjustOrderPrice, updateOrderStatus, assignOrderToClerk, getClerks, clerkPendingOrders } from '@dxdy/shared';
+import {
+  getAllOrders,
+  adjustOrderPrice,
+  updateOrderStatusWithLog,
+  assignOrderToClerkWithLog,
+  getClerks,
+  clerkPendingOrders,
+} from '@dxdy/shared';
 import { formatMoney, formatDateTime } from '@dxdy/shared';
 import type { AdminUser } from '@dxdy/shared';
 import type { Order, OrderStatus } from '@dxdy/shared';
@@ -93,21 +100,36 @@ export default function OrdersPage() {
   }
 
   async function handleCancel(orderId: string) {
-    const updated = await updateOrderStatus(orderId, 'cancelled');
+    if (!adminUser) return;
+    const updated = await updateOrderStatusWithLog(orderId, 'cancelled', {
+      id: adminUser.id,
+      name: adminUser.realName,
+      role: adminUser.role,
+    });
     if (updated) {
       setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
     }
   }
 
   async function handleConfirmBooking(orderId: string) {
-    const updated = await updateOrderStatus(orderId, 'confirmed');
+    if (!adminUser) return;
+    const updated = await updateOrderStatusWithLog(orderId, 'confirmed', {
+      id: adminUser.id,
+      name: adminUser.realName,
+      role: adminUser.role,
+    });
     if (updated) {
       setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
     }
   }
 
   async function handleAdvanceStatus(orderId: string, nextStatus: OrderStatus) {
-    const updated = await updateOrderStatus(orderId, nextStatus);
+    if (!adminUser) return;
+    const updated = await updateOrderStatusWithLog(orderId, nextStatus, {
+      id: adminUser.id,
+      name: adminUser.realName,
+      role: adminUser.role,
+    });
     if (updated) {
       setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
     }
@@ -153,7 +175,7 @@ export default function OrdersPage() {
                   <TableCell>¥{formatMoney(order.pricing.actualAmount)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex min-w-[220px] flex-wrap gap-2">
                       <Link href={`/orders/${order.id}`}>
                         <Button variant="outline" size="sm">详情</Button>
                       </Link>
@@ -249,7 +271,12 @@ export default function OrdersPage() {
                       className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-accent"
                       onClick={async () => {
                         if (!assignOrder) return;
-                        const updated = await assignOrderToClerk(assignOrder.id, clerk.id);
+                        if (!adminUser) return;
+                        const updated = await assignOrderToClerkWithLog(assignOrder.id, clerk.id, {
+                          id: adminUser.id,
+                          name: adminUser.realName,
+                          role: adminUser.role,
+                        });
                         if (updated) {
                           setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
                         }
@@ -257,7 +284,7 @@ export default function OrdersPage() {
                       }}
                     >
                       <div>
-                        <p className="font-medium">{clerk.name}</p>
+                        <p className="font-medium">{clerk.realName || clerk.nickname}</p>
                         <p className="text-sm text-muted-foreground">{clerk.phone}</p>
                       </div>
                       <Badge variant="secondary">{pendingCount} 待处理</Badge>
