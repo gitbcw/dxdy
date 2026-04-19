@@ -2,6 +2,7 @@ import type { Order, OrderStatus, NormalOrderStatus, BookingOrderStatus, OrderIt
 import type { Customer } from '../types/user';
 import { mockOrders } from '../mock';
 import { getCustomers } from './auth';
+import { addLog } from './system';
 
 let orders = [...mockOrders];
 
@@ -70,13 +71,35 @@ export async function createOrder(data: {
   return order;
 }
 
-/** 改价（客服） */
-export async function adjustOrderPrice(orderId: string, newPrice: number, operatorId: string, operatorName: string): Promise<Order | null> {
+/** 改价（客服）- 带权限校验 */
+export async function adjustOrderPrice(
+  orderId: string,
+  newPrice: number,
+  operatorId: string,
+  operatorName: string,
+  permissions?: Record<string, boolean>,
+): Promise<{ success: boolean; order?: Order; error?: string }> {
   await delay();
+
+  // 权限校验
+  if (permissions && permissions.order_price_adjust !== true) {
+    return { success: false, error: '无改价权限' };
+  }
+
   const idx = orders.findIndex(o => o.id === orderId);
-  if (idx === -1) return null;
+  if (idx === -1) return { success: false, error: '订单不存在' };
   const order = orders[idx];
-  if (order.status !== 'pending_payment') return null;
+
+  // 价格校验：只能降价
+  if (newPrice > order.pricing.actualAmount) {
+    return { success: false, error: '改价只能低于原价' };
+  }
+
+  if (order.status !== 'pending_payment') {
+    return { success: false, error: '仅待支付订单可改价' };
+  }
+
+  // 记录改价日志
   order.pricing.priceLog.push({
     originalPrice: order.pricing.actualAmount,
     modifiedPrice: newPrice,
@@ -87,7 +110,18 @@ export async function adjustOrderPrice(orderId: string, newPrice: number, operat
   order.pricing.actualAmount = newPrice;
   order.commission.amount = Math.round(newPrice * 0.2 * 100) / 100;
   order.updatedAt = new Date().toISOString();
-  return order;
+
+  addLog({
+    operatorId,
+    operatorName,
+    operatorRole: '客服',
+    action: '订单改价',
+    target: `订单 ${orderId}`,
+    detail: `¥${order.pricing.priceLog[order.pricing.priceLog.length - 1].originalPrice} → ¥${newPrice}`,
+    result: 'success',
+  });
+
+  return { success: true, order };
 }
 
 /** 更新订单状态 */
@@ -97,6 +131,12 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
   if (idx === -1) return null;
   orders[idx].status = status;
   orders[idx].updatedAt = new Date().toISOString();
+
+  // 确认收货时触发提成锁定
+  if (status === 'completed' && orders[idx].commission.status === 'pending') {
+    orders[idx].commission.status = 'locked';
+  }
+
   return orders[idx];
 }
 
@@ -134,6 +174,7 @@ export interface ClerkOrder {
   orderNo: string;
   type: 'normal' | 'exchange';
   originalOrderNo?: string;
+  mainOrderId?: string;
   customerName: string;
   customerPhone: string;
   address: string;
@@ -170,16 +211,17 @@ export async function getClerkOrderById(id: string): Promise<ClerkOrder | null> 
   );
 }
 
-/** 制单员发货（简化版） */
+/** 制单员发货 — 同时更新制单员订单和主订单 */
 export async function clerkShipOrder(params: {
   orderId: string;
   expressCompany: string;
   expressNo: string;
 }): Promise<{ success: boolean }> {
   await delay();
-  const order = clerkPendingOrders.find(o => o.id === params.orderId);
-  if (!order) return { success: false };
-  // 移动到已发货列表
+  const clerkOrder = clerkPendingOrders.find(o => o.id === params.orderId);
+  if (!clerkOrder) return { success: false };
+
+  // 1. 更新制单员订单：移动到已发货列表
   const idx = clerkPendingOrders.findIndex(o => o.id === params.orderId);
   if (idx !== -1) {
     const [shipped] = clerkPendingOrders.splice(idx, 1);
@@ -192,11 +234,110 @@ export async function clerkShipOrder(params: {
     } as ClerkOrder;
     clerkShippedOrders.push(updated);
   }
+
+  // 2. 同步更新主订单
+  const mainId = clerkOrder.mainOrderId;
+  if (mainId) {
+    const mainIdx = orders.findIndex(o => o.id === mainId);
+    if (mainIdx !== -1) {
+      const mainOrder = orders[mainIdx];
+      mainOrder.shipping.trackingNo = params.expressNo;
+      mainOrder.shipping.company = params.expressCompany;
+      mainOrder.shipping.logistics.push({
+        time: new Date().toISOString(),
+        description: '已发货',
+        location: '仓库',
+      });
+      mainOrder.status = mainOrder.type === 'booking' ? 'in_service' : 'pending_receipt';
+      mainOrder.updatedAt = new Date().toISOString();
+    }
+  }
+
   return { success: true };
+}
+
+/** 回写订单的退换货记录 ID（供 return 服务调用） */
+export function setOrderReturnRecordId(orderId: string, returnRecordId: string): void {
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx !== -1) {
+    orders[idx] = { ...orders[idx], returnRecordId };
+  }
 }
 
 /** 获取全部订单（后台用） */
 export async function getAllOrders(): Promise<Order[]> {
   await delay();
   return [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** 指派订单给制单员 — 同时在制单员待办列表创建条目 */
+export async function assignOrderToClerk(orderId: string, clerkId: string): Promise<Order | null> {
+  await delay();
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx === -1) return null;
+  const order = orders[idx];
+  // 普通订单状态：pending_shipment，预约订单状态：confirmed
+  if (order.status !== 'pending_shipment' && order.status !== 'confirmed') {
+    return null;
+  }
+  order.clerkId = clerkId;
+  order.updatedAt = new Date().toISOString();
+
+  // 同步创建制单员待办
+  const existing = clerkPendingOrders.find(c => c.mainOrderId === orderId);
+  if (!existing) {
+    const customer = getCustomers().find(c => c.id === order.customerId);
+    clerkPendingOrders.push({
+      id: `clerk_${orderId}`,
+      orderNo: orderId,
+      type: order.type === 'booking' ? 'normal' : 'normal',
+      mainOrderId: orderId,
+      customerName: order.customerName ?? customer?.nickname ?? '',
+      customerPhone: customer?.phone ?? '',
+      address: order.shipping.address
+        ? `${order.shipping.address.full}`
+        : '',
+      items: order.items.map(i => ({
+        name: i.productName,
+        quantity: i.quantity,
+        specs: i.spec,
+      })),
+      createdAt: order.createdAt,
+      assignedAt: new Date().toISOString(),
+      status: 'pending',
+    });
+  }
+
+  return order;
+}
+
+/** 创建换货制单员待办（供 return 服务调用） */
+export function createExchangeClerkOrder(params: {
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  exchangeItem: { productName: string; quantity: number; spec: string };
+}): void {
+  const existing = clerkPendingOrders.find(
+    c => c.mainOrderId === `exchange_${params.orderId}`,
+  );
+  if (existing) return;
+  clerkPendingOrders.push({
+    id: `clerk_exchange_${params.orderId}`,
+    orderNo: `换货_${params.orderId}`,
+    type: 'exchange' as any,
+    mainOrderId: `exchange_${params.orderId}`,
+    customerName: params.customerName,
+    customerPhone: params.customerPhone,
+    address: params.address,
+    items: [{
+      name: params.exchangeItem.productName,
+      quantity: params.exchangeItem.quantity,
+      specs: params.exchangeItem.spec,
+    }],
+    createdAt: new Date().toISOString(),
+    assignedAt: new Date().toISOString(),
+    status: 'pending',
+  });
 }

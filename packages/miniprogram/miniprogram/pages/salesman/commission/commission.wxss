@@ -130,3 +130,86 @@
   font-size: 24rpx;
   color: var(--text-tertiary);
 }
+
+/* ============ 提成明细列表 ============ */
+.records-section {
+  margin: 0 24rpx 24rpx;
+  animation: fadeInUp 0.35s ease 0.28s backwards;
+}
+
+.section-header {
+  margin-bottom: 16rpx;
+  padding: 0 4rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-records {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 64rpx 24rpx;
+  text-align: center;
+  border: 1rpx solid var(--border-color);
+}
+
+.empty-text {
+  font-size: 26rpx;
+  color: var(--text-tertiary);
+}
+
+.record-item {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24rpx 28rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-xs);
+  border: 1rpx solid var(--border-color);
+}
+
+.record-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.record-source {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.record-desc {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+.record-date {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
+
+.record-right {
+  flex-shrink: 0;
+  margin-left: 24rpx;
+}
+
+.record-amount {
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.record-amount.positive {
+  color: var(--color-primary);
+}
+
+.record-amount.negative {
+  color: #DC3545;
+}

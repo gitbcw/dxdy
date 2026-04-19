@@ -13,13 +13,14 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { getAllUsers, reviewVerification } from '@dxdy/shared';
+import { getAllUsers, reviewVerification, getClerks } from '@dxdy/shared';
 import { maskPhone, formatDate } from '@dxdy/shared';
-import type { Customer, Salesperson } from '@dxdy/shared';
+import type { Customer, Salesperson, Clerk } from '@dxdy/shared';
 
 export default function UsersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salespersons, setSalespersons] = useState<Salesperson[]>([]);
+  const [clerks, setClerks] = useState<Clerk[]>([]);
   const [reviewTarget, setReviewTarget] = useState<{ type: 'customer' | 'salesperson'; user: Customer | Salesperson } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -28,6 +29,7 @@ export default function UsersPage() {
       setCustomers(customers);
       setSalespersons(salespersons);
     });
+    setClerks(getClerks());
   }, []);
 
   const verifyLabel: Record<string, string> = {
@@ -65,6 +67,7 @@ export default function UsersPage() {
         <TabsList>
           <TabsTrigger value="customers">客户 ({customers.length})</TabsTrigger>
           <TabsTrigger value="salespersons">业务员 ({salespersons.length})</TabsTrigger>
+          <TabsTrigger value="clerks">制单员 ({clerks.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="customers">
@@ -89,7 +92,7 @@ export default function UsersPage() {
                       <TableCell className="font-mono text-sm">{c.id}</TableCell>
                       <TableCell>{c.nickname}</TableCell>
                       <TableCell>{maskPhone(c.phone)}</TableCell>
-                      <TableCell>{c.customerType === 'institution' ? '机构' : '个人'}</TableCell>
+                      <TableCell>{c.customerType === 'institution' ? '医院' : '个人'}</TableCell>
                       <TableCell>
                         <Badge variant={verifyVariant[c.verificationStatus]}>{verifyLabel[c.verificationStatus]}</Badge>
                       </TableCell>
@@ -141,6 +144,35 @@ export default function UsersPage() {
                           <Button variant="outline" size="sm" onClick={() => setReviewTarget({ type: 'salesperson', user: s })}>审核</Button>
                         )}
                       </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="clerks">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>姓名</TableHead>
+                    <TableHead>手机</TableHead>
+                    <TableHead>待处理订单</TableHead>
+                    <TableHead>注册时间</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clerks.map(cl => (
+                    <TableRow key={cl.id}>
+                      <TableCell className="font-mono text-sm">{cl.id}</TableCell>
+                      <TableCell>{cl.realName}</TableCell>
+                      <TableCell>{maskPhone(cl.phone)}</TableCell>
+                      <TableCell>{cl.assignedOrderIds.length}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(cl.createdAt)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

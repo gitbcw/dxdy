@@ -28,11 +28,13 @@ export interface Product {
   institutionPrice: number;
   personalPrice: number;
   pointsPrice?: number;
+  exchangePoints?: number;
   visibility: ProductVisibility;
   stock: number;
   status: ProductStatus;
   returnPolicy: ReturnPolicy;
-  isBloodPack: boolean;
+  isPrescription?: boolean;
+  isBloodPack?: boolean;
   testInfoUrl?: string;
   createdAt: string;
   updatedAt: string;

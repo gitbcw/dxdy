@@ -1,4 +1,4 @@
-import type { Customer, Salesperson, Clerk, AdminUser, UserRole } from '../types/user';
+import type { Customer, Salesperson, Clerk, AdminUser, AdminRole, UserRole } from '../types/user';
 import { mockCustomers, mockSalespersons, mockClerks, mockAdminUsers } from '../mock';
 
 // 内存数据副本
@@ -57,7 +57,7 @@ export function logout() {
 }
 
 /** 模拟注册（客户） */
-export async function registerCustomer(phone: string, nickname: string): Promise<LoginResult> {
+export async function registerCustomer(phone: string, nickname: string, customerType: 'personal' | 'institution' = 'personal'): Promise<LoginResult> {
   await delay();
   if (customers.find(c => c.phone === phone)) return { success: false, error: '手机号已注册' };
   const newCustomer: Customer = {
@@ -66,8 +66,8 @@ export async function registerCustomer(phone: string, nickname: string): Promise
     nickname,
     avatar: '',
     role: 'customer',
-    customerType: 'personal',
-    verificationStatus: 'none',
+    customerType,
+    verificationStatus: customerType === 'institution' ? 'none' : 'none',
     boundSalespersonId: null,
     wallet: { balance: 0, rechargeHistory: [] },
     points: { balance: 0, history: [] },
@@ -86,3 +86,77 @@ export function getClerks() { return clerks; }
 export function getAdminUsers() { return adminUsers; }
 export function setCustomers(list: Customer[]) { customers = list; }
 export function setSalespersons(list: Salesperson[]) { salespersons = list; }
+
+// ========================
+// 后台账号管理
+// ========================
+
+/** 创建后台账号 */
+export async function createAdminUser(data: {
+  username: string;
+  password: string;
+  realName: string;
+  phone: string;
+  role: AdminRole;
+}): Promise<AdminUser> {
+  await delay();
+  // 检查 username 是否已存在
+  if (adminUsers.find(a => a.username === data.username)) {
+    throw new Error('用户名已存在');
+  }
+  const newUser: AdminUser = {
+    id: `admin_${Date.now().toString(36)}`,
+    username: data.username,
+    password: data.password,
+    realName: data.realName,
+    phone: data.phone,
+    role: data.role,
+    permissions: {},
+    status: 'active',
+  };
+  adminUsers.push(newUser);
+  return newUser;
+}
+
+/** 更新后台账号 */
+export async function updateAdminUser(id: string, data: Partial<{
+  realName: string;
+  phone: string;
+  role: AdminRole;
+  status: 'active' | 'disabled';
+  password: string;
+}>): Promise<AdminUser | null> {
+  await delay();
+  const idx = adminUsers.findIndex(a => a.id === id);
+  if (idx === -1) return null;
+  const target = adminUsers[idx];
+  const updated: AdminUser = {
+    ...target,
+    realName: data.realName ?? target.realName,
+    phone: data.phone ?? target.phone,
+    role: data.role ?? target.role,
+    status: data.status ?? target.status,
+    password: data.password ?? target.password,
+  };
+  adminUsers[idx] = updated;
+  return updated;
+}
+
+/** 删除后台账号 */
+export async function deleteAdminUser(id: string): Promise<boolean> {
+  await delay();
+  const idx = adminUsers.findIndex(a => a.id === id);
+  if (idx === -1) return false;
+  adminUsers.splice(idx, 1);
+  return true;
+}
+
+/** 更新角色权限（批量更新所有该角色的账号） */
+export async function updateRolePermissions(role: AdminRole, permissions: Record<string, boolean>): Promise<void> {
+  await delay();
+  for (let i = 0; i < adminUsers.length; i++) {
+    if (adminUsers[i].role === role) {
+      adminUsers[i] = { ...adminUsers[i], permissions };
+    }
+  }
+}

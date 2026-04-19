@@ -30,6 +30,26 @@
     </view>
   </view>
 
+  <!-- 提成明细列表 -->
+  <view class="records-section">
+    <view class="section-header">
+      <text class="section-title">提成明细</text>
+    </view>
+    <view wx:if="{{records.length === 0}}" class="empty-records">
+      <text class="empty-text">暂无提成记录</text>
+    </view>
+    <view wx:for="{{records}}" wx:key="id" class="record-item">
+      <view class="record-left">
+        <text class="record-source">{{item.sourceLabel}}</text>
+        <text class="record-desc">{{item.description}}</text>
+        <text class="record-date">{{item.createdAt}}</text>
+      </view>
+      <view class="record-right">
+        <text class="record-amount {{item.amountClass}}">{{item.amountText}}</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 底部申请提现按钮 -->
   <view class="btn-wrap">
     <button

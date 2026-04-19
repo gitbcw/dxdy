@@ -9,24 +9,28 @@ import type { AdminUser } from '@dxdy/shared';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [user] = useState<AdminUser | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const stored = window.localStorage.getItem('admin_user');
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    const stored = window.localStorage.getItem('admin_user');
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch {
+        // ignore
+      }
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !user) {
       router.replace('/login');
     }
-  }, [router, user]);
+  }, [router, user, mounted]);
 
-  if (!user) return null;
+  if (!mounted || !user) return null;
 
   return (
     <SidebarProvider>

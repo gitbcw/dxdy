@@ -5,6 +5,7 @@ export const clerkPendingOrders: Array<{
   orderNo: string;
   type: 'normal' | 'exchange';
   originalOrderNo?: string;
+  mainOrderId?: string;
   customerName: string;
   customerPhone: string;
   address: string;
@@ -82,6 +83,7 @@ export const clerkShippedOrders: Array<{
   orderNo: string;
   type: 'normal' | 'exchange';
   originalOrderNo?: string;
+  mainOrderId?: string;
   customerName: string;
   customerPhone: string;
   address: string;

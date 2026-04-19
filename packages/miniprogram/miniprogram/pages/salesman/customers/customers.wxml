@@ -31,7 +31,7 @@
           <!-- 姓名/医院名 + 客户类型标签 -->
           <view class="name-row">
             <text class="name">{{item.nickname}}</text>
-            <text class="type-tag tag-{{item.type}}">{{item.type === 'personal' ? '个人' : '机构'}}</text>
+            <text class="type-tag tag-{{item.type}}">{{item.type === 'personal' ? '个人' : '医院'}}</text>
           </view>
 
           <!-- 下单次数 | 累计消费 -->

@@ -161,10 +161,10 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button className="bg-teal-300 text-slate-950 hover:bg-teal-200" render={<Link href="/orders" />}>
+              <Button className="bg-teal-300 text-slate-950 hover:bg-teal-200" nativeButton={false} render={<Link href="/orders" />}>
                 查看订单闭环 <ArrowRight />
               </Button>
-              <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" render={<Link href="/products" />}>
+              <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" nativeButton={false} render={<Link href="/products" />}>
                 查看商品分层
               </Button>
             </div>

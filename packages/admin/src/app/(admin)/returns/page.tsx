@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { getAllReturns, reviewReturn } from '@dxdy/shared';
+import { getAllReturns, reviewReturn, updateReturnStatus } from '@dxdy/shared';
 import { formatMoney, formatDateTime } from '@dxdy/shared';
 import type { ReturnRecord } from '@dxdy/shared';
 
@@ -46,6 +46,13 @@ export default function ReturnsPage() {
     }
     setReviewTarget(null);
     setReviewNote('');
+  }
+
+  async function handleAdvance(id: string, status: string) {
+    const updated = await updateReturnStatus(id, status as any);
+    if (updated) {
+      setReturns(prev => prev.map(r => r.id === updated.id ? updated : r));
+    }
   }
 
   return (
@@ -82,11 +89,43 @@ export default function ReturnsPage() {
                   <TableCell>{record.refundAmount ? `¥${formatMoney(record.refundAmount)}` : '-'}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDateTime(record.createdAt)}</TableCell>
                   <TableCell>
-                    {record.status === 'pending_review' && (
-                      <Button variant="outline" size="sm" onClick={() => { setReviewTarget(record); setReviewNote(''); }}>
-                        审核
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      {record.status === 'pending_review' && (
+                        <Button variant="outline" size="sm" onClick={() => { setReviewTarget(record); setReviewNote(''); }}>
+                          审核
+                        </Button>
+                      )}
+                      {record.status === 'returned' && (
+                        <Button variant="outline" size="sm" onClick={() => handleAdvance(record.id, 'verifying')}>
+                          开始验货
+                        </Button>
+                      )}
+                      {record.type === 'return' && record.status === 'verifying' && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => handleAdvance(record.id, 'refunding')}>
+                            验货合格
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleAdvance(record.id, 'rejected')}>
+                            不合格
+                          </Button>
+                        </>
+                      )}
+                      {record.status === 'refunding' && (
+                        <Button variant="default" size="sm" onClick={() => handleAdvance(record.id, 'return_completed')}>
+                          确认退款
+                        </Button>
+                      )}
+                      {record.type === 'exchange' && record.status === 'verifying' && (
+                        <Button variant="default" size="sm" onClick={() => handleAdvance(record.id, 'exchange_shipping')}>
+                          换货发货
+                        </Button>
+                      )}
+                      {record.type === 'exchange' && record.status === 'exchange_shipping' && (
+                        <Button variant="default" size="sm" onClick={() => handleAdvance(record.id, 'exchange_completed')}>
+                          确认收货
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -120,6 +159,12 @@ export default function ReturnsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">退款金额</p>
                   <p>¥{formatMoney(reviewTarget.refundAmount)}</p>
+                </div>
+              )}
+              {reviewTarget.sendLogistics && (
+                <div>
+                  <p className="text-sm text-muted-foreground">寄回物流</p>
+                  <p>{reviewTarget.sendLogistics.company} {reviewTarget.sendLogistics.trackingNo}</p>
                 </div>
               )}
               <div className="space-y-2">

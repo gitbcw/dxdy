@@ -16,9 +16,9 @@
       <view class="status-tag {{order.status === 'shipped' ? 'tag-shipped' : 'tag-pending'}}">
         <text>{{order.status === 'shipped' ? '已发货' : '待发货'}}</text>
       </view>
-      <view class="status-tag {{order.type === 'booking' ? 'tag-booking' : 'tag-normal'}}">
-        <image wx:if="{{order.type === 'booking'}}" src="{{iconRefresh}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
-        <text>{{order.type === 'booking' ? '换货' : '普通'}}</text>
+      <view class="status-tag {{order.type === 'exchange' ? 'tag-booking' : 'tag-normal'}}">
+        <image wx:if="{{order.type === 'exchange'}}" src="{{iconRefresh}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
+        <text>{{order.type === 'exchange' ? '换货' : '普通'}}</text>
       </view>
     </view>
 
@@ -75,6 +75,9 @@
 
     <!-- 底部按钮（待发货时显示） -->
     <view wx:if="{{order.status === 'pending'}}" class="bottom-bar">
+      <view class="btn-scan" bindtap="onScanTap">
+        <text>扫码</text>
+      </view>
       <view class="btn-submit" bindtap="onInputExpress">
         <text>录入快递</text>
       </view>

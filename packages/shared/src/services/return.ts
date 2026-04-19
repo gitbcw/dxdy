@@ -1,5 +1,8 @@
 import type { ReturnRecord, ReturnStatus } from '../types/system';
 import { mockReturns } from '../mock';
+import { setOrderReturnRecordId, createExchangeClerkOrder } from './order';
+import { getOrderById } from './order';
+import { addLog } from './system';
 
 let returns = [...mockReturns];
 
@@ -48,6 +51,10 @@ export async function createReturn(data: {
     updatedAt: new Date().toISOString(),
   };
   returns.push(record);
+
+  // 回写订单的 returnRecordId
+  setOrderReturnRecordId(data.orderId, record.id);
+
   return record;
 }
 
@@ -66,6 +73,19 @@ export async function reviewReturn(
   record.reviewNote = note;
   record.status = approved ? 'approved' : 'rejected';
   record.updatedAt = new Date().toISOString();
+
+  addLog({
+    operatorId: reviewerId,
+    operatorName: '客服',
+    operatorRole: '客服',
+    action: approved
+      ? (record.type === 'exchange' ? '换货审核通过' : '退货审核通过')
+      : (record.type === 'exchange' ? '换货审核拒绝' : '退货审核拒绝'),
+    target: `退换货 ${id}（订单 ${record.orderId}）`,
+    detail: note || '',
+    result: 'success',
+  });
+
   return record;
 }
 
@@ -74,7 +94,40 @@ export async function updateReturnStatus(id: string, status: ReturnStatus): Prom
   await delay();
   const idx = returns.findIndex(r => r.id === id);
   if (idx === -1) return null;
-  returns[idx].status = status;
+  const record = returns[idx];
+  record.status = status;
+  record.updatedAt = new Date().toISOString();
+
+  // 换货发货时，为制单员创建换货发货待办
+  if (status === 'exchange_shipping' && record.type === 'exchange' && record.exchangeItem) {
+    const order = await getOrderById(record.orderId);
+    createExchangeClerkOrder({
+      orderId: record.orderId,
+      customerName: order?.customerName ?? '',
+      customerPhone: '',
+      address: order?.shipping.address?.full ?? '',
+      exchangeItem: {
+        productName: record.exchangeItem.productName,
+        quantity: record.exchangeItem.quantity,
+        spec: record.exchangeItem.spec,
+      },
+    });
+  }
+
+  return record;
+}
+
+/** 提交退货物流信息并更新状态 */
+export async function submitReturnLogistics(
+  id: string,
+  company: string,
+  trackingNo: string,
+): Promise<ReturnRecord | null> {
+  await delay();
+  const idx = returns.findIndex(r => r.id === id);
+  if (idx === -1) return null;
+  returns[idx].sendLogistics = { company, trackingNo };
+  returns[idx].status = 'returned';
   returns[idx].updatedAt = new Date().toISOString();
   return returns[idx];
 }

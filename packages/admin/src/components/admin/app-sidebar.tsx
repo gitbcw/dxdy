@@ -24,6 +24,8 @@ import {
   Settings,
   FileText,
   LogOut,
+  Shield,
+  Key,
 } from 'lucide-react';
 import type { AdminUser } from '@dxdy/shared';
 
@@ -33,6 +35,8 @@ const navItems = [
   { title: '订单管理', href: '/orders', icon: ShoppingCart, roles: ['service', 'system_admin'] },
   { title: '退换货', href: '/returns', icon: RotateCcw, roles: ['service', 'system_admin'] },
   { title: '用户管理', href: '/users', icon: Users, roles: ['system_admin'] },
+  { title: '账号管理', href: '/accounts', icon: Shield, roles: ['system_admin'] },
+  { title: '角色管理', href: '/roles', icon: Key, roles: ['system_admin'] },
   { title: '系统配置', href: '/system', icon: Settings, roles: ['system_admin'] },
   { title: '操作日志', href: '/logs', icon: FileText, roles: ['system_admin'] },
 ];

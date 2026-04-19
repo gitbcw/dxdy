@@ -1,6 +1,7 @@
 import type { Customer, Salesperson, Address, VerificationStatus } from '../types/user';
 import { getCustomers, getSalespersons, setCustomers, setSalespersons } from './auth';
 import { mockAdminUsers } from '../mock';
+import { addLog } from './system';
 
 const delay = (ms = 200) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -71,6 +72,15 @@ export async function reviewVerification(
       customers[custIdx].verificationInfo!.rejectReason = rejectReason;
     }
     setCustomers(customers);
+    addLog({
+      operatorId: 'admin',
+      operatorName: '系统管理员',
+      operatorRole: '系统管理员',
+      action: approved ? '实名认证通过' : '实名认证驳回',
+      target: `客户 ${customers[custIdx].nickname} (${userId})`,
+      detail: approved ? '' : (rejectReason ?? ''),
+      result: 'success',
+    });
     return customers[custIdx];
   }
   // 尝试业务员
@@ -82,6 +92,15 @@ export async function reviewVerification(
       salespersons[spIdx].verificationInfo.rejectReason = rejectReason;
     }
     setSalespersons(salespersons);
+    addLog({
+      operatorId: 'admin',
+      operatorName: '系统管理员',
+      operatorRole: '系统管理员',
+      action: approved ? '实名认证通过' : '实名认证驳回',
+      target: `业务员 ${salespersons[spIdx].nickname} (${userId})`,
+      detail: approved ? '' : (rejectReason ?? ''),
+      result: 'success',
+    });
     return salespersons[spIdx];
   }
   return null;

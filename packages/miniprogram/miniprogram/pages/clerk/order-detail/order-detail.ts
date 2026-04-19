@@ -55,6 +55,18 @@ Page({
     }
   },
 
+  onScanTap() {
+    try {
+      const res = await wx.scanCode({ onlyFromCamera: true })
+      if (res.result) {
+        this.setData({ expressNo: res.result })
+        wx.showToast({ title: '扫码成功', icon: 'success' })
+      }
+    } catch (e) {
+      wx.showToast({ title: '扫码失败，请手动输入', icon: 'none' })
+    }
+  },
+
   onClosePanel() {
     this.setData({ showExpressPanel: false, selectedCompany: '', expressNo: '' })
   },
