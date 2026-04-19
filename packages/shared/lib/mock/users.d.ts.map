@@ -1,1 +1,0 @@
-{"version":3,"file":"users.d.ts","sourceRoot":"","sources":["../../src/mock/users.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,QAAQ,EAAE,WAAW,EAAE,KAAK,EAAE,SAAS,EAAE,MAAM,eAAe,CAAC;AAM7E,eAAO,MAAM,aAAa,EAAE,QAAQ,EA2TnC,CAAC;AAMF,eAAO,MAAM,gBAAgB,EAAE,WAAW,EAqDzC,CAAC;AAMF,eAAO,MAAM,UAAU,EAAE,KAAK,EAwB7B,CAAC;AAMF,eAAO,MAAM,cAAc,EAAE,SAAS,EAqErC,CAAC"}

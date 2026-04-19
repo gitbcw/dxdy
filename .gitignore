@@ -28,5 +28,13 @@ next-env.d.ts
 *.swp
 *.swo
 
+# WeChat DevTools generated page bundles
+packages/miniprogram/miniprogram/app.js
+packages/miniprogram/miniprogram/pages/**/*.js
+
+# Shared package build output
+packages/shared/lib/
+packages/shared/dist/
+
 # Claude
 .claude/

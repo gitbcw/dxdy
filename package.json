@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev:admin": "npm run dev -w packages/admin",
-    "build:shared": "npm run build -w packages/shared"
+    "build:shared": "npm run build -w packages/shared",
+    "prepare:mini:devtools": "npm run prepare:devtools -w packages/miniprogram"
   }
 }
