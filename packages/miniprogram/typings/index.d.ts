@@ -1,8 +1,11 @@
 /// <reference path="./types/index.d.ts" />
 
-interface IAppOption {
+interface IAppOption extends Record<string, any> {
   globalData: {
-    userInfo?: WechatMiniprogram.UserInfo,
+    userInfo?: any,
+    token?: string,
+    userRole?: string,
   }
+  switchDemoRole?: (role: string) => void,
   userInfoReadyCallback?: WechatMiniprogram.GetUserInfoSuccessCallback,
 }

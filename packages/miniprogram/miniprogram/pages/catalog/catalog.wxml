@@ -1,6 +1,10 @@
 <view class="page">
+  <view class="catalog-hero">
+    <text class="hero-title">分层商品展示</text>
+    <text class="hero-subtitle">机构客户可查看宠物医院专属价格和宠物血液制品，个人客户只看到零售可售商品。</text>
+  </view>
+
   <view class="layout">
-    <!-- 左侧分类 -->
     <scroll-view class="sidebar" scroll-y>
       <view
         wx:for="{{categories}}"
@@ -8,9 +12,11 @@
         class="sidebar-item {{activeCategory === item.id ? 'active' : ''}}"
         data-id="{{item.id}}"
         bindtap="onCategoryTap"
-      >{{item.name}}</view>
+      >
+        <text class="sidebar-name">{{item.name}}</text>
+      </view>
     </scroll-view>
-    <!-- 右侧商品 -->
+
     <scroll-view class="content" scroll-y>
       <view
         wx:for="{{products}}"
@@ -19,10 +25,18 @@
         data-id="{{item.id}}"
         bindtap="onProductTap"
       >
+        <view class="product-top">
+          <text class="tag">{{item.tagText}}</text>
+          <text class="stock">库存 {{item.stock}}</text>
+        </view>
         <text class="name">{{item.name}}</text>
-        <text class="price">¥{{item.personalPrice || item.institutionPrice}}</text>
+        <text class="spec">{{item.specText}}</text>
+        <view class="product-bottom">
+          <text class="price">¥{{item.priceText}}</text>
+          <text class="cta">立即下单</text>
+        </view>
       </view>
-      <view wx:if="{{products.length === 0}}" class="empty">暂无商品</view>
+      <view wx:if="{{products.length === 0}}" class="empty">当前分类暂无商品</view>
     </scroll-view>
   </view>
 </view>

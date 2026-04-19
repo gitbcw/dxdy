@@ -1,28 +1,109 @@
 <view class="page">
   <view wx:if="{{product}}" class="content">
-    <view class="product-section">
-      <text class="name">{{product.name}}</text>
-      <text class="spec">{{product.specs[0].value}}</text>
-      <text class="price">¥{{unitPrice}}</text>
-    </view>
-
-    <view class="quantity-section">
-      <text class="label">数量</text>
-      <view class="quantity">
-        <view class="btn" data-delta="{{-1}}" bindtap="onQuantityChange">-</view>
-        <text class="num">{{quantity}}</text>
-        <view class="btn" data-delta="{{1}}" bindtap="onQuantityChange">+</view>
+    <view class="hero-card">
+      <view class="hero-top">
+        <view>
+          <text class="eyebrow">{{customerTypeLabel}} · {{priceLabel}}</text>
+          <text class="name">{{product.name}}</text>
+        </view>
+        <view class="product-tag">{{isBloodProduct ? '用血预约' : orderTypeLabel}}</view>
+      </view>
+      <text class="desc">{{product.description}}</text>
+      <view class="hero-meta">
+        <text>{{product.specs[0].name}}：{{product.specs[0].value}}</text>
+        <text>库存 {{product.stock}}</text>
       </view>
     </view>
 
-    <view class="remark-section">
-      <text class="label">备注</text>
-      <input class="remark-input" placeholder="选填" value="{{remark}}" bindinput="onRemarkInput" />
+    <view class="type-switch">
+      <view class="type-item {{orderType === 'normal' ? 'active' : ''}}" data-type="normal" bindtap="onSwitchOrderType">
+        <text class="type-title">普通采购</text>
+        <text class="type-desc">药品/保健品发货履约</text>
+      </view>
+      <view class="type-item {{orderType === 'booking' ? 'active' : ''}} {{!canBooking ? 'disabled' : ''}}" data-type="booking" bindtap="onSwitchOrderType">
+        <text class="type-title">预约服务</text>
+        <text class="type-desc">用血/检测排期确认</text>
+      </view>
     </view>
 
-    <view class="footer">
-      <text class="total">合计：¥{{total}}</text>
-      <view class="submit-btn" bindtap="onSubmit">提交订单</view>
+    <view class="card">
+      <view class="row">
+        <view>
+          <text class="label">采购数量</text>
+          <text class="hint">结算时会校验库存</text>
+        </view>
+        <view class="quantity">
+          <view class="qty-btn" data-delta="{{-1}}" bindtap="onQuantityChange">-</view>
+          <text class="num">{{quantity}}</text>
+          <view class="qty-btn" data-delta="{{1}}" bindtap="onQuantityChange">+</view>
+        </view>
+      </view>
+      <view class="price-line">
+        <text>单价</text>
+        <text>¥{{unitPrice}}</text>
+      </view>
+      <view class="price-line strong">
+        <text>预计合计</text>
+        <text>¥{{total}}</text>
+      </view>
     </view>
+
+    <view wx:if="{{orderType === 'booking'}}" class="card">
+      <text class="card-title">预约信息</text>
+      <view class="field">
+        <text class="field-label">预约日期</text>
+        <input class="field-input" data-field="bookingDate" value="{{bookingDate}}" bindinput="onBookingInput" />
+      </view>
+      <view class="field">
+        <text class="field-label">预约地点</text>
+        <input class="field-input" data-field="bookingLocation" value="{{bookingLocation}}" bindinput="onBookingInput" />
+      </view>
+      <view class="field">
+        <text class="field-label">联系人</text>
+        <input class="field-input" data-field="contactName" value="{{contactName}}" bindinput="onContactInput" />
+      </view>
+      <view class="field">
+        <text class="field-label">联系电话</text>
+        <input class="field-input" data-field="contactPhone" value="{{contactPhone}}" bindinput="onContactInput" />
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">履约信息</text>
+      <view class="address-box">
+        <text class="address-title">{{orderType === 'booking' ? '默认联系地址' : '默认收货地址'}}</text>
+        <text class="address-text">{{addressText}}</text>
+      </view>
+      <view class="field">
+        <text class="field-label">订单备注</text>
+        <input class="field-input" placeholder="如宠物品种、用血血型、发票要求等" value="{{remark}}" bindinput="onRemarkInput" />
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">支付与规则</text>
+      <view class="pay-list">
+        <view class="pay-item {{payMethod === 'wechat' ? 'active' : ''}}" data-method="wechat" bindtap="onPayMethodChange">
+          <text>微信支付</text>
+          <text>推荐</text>
+        </view>
+        <view class="pay-item {{payMethod === 'wallet' ? 'active' : ''}}" data-method="wallet" bindtap="onPayMethodChange">
+          <text>钱包余额</text>
+          <text>可演示</text>
+        </view>
+      </view>
+      <view class="rule-box">
+        <text class="rule-title">售后规则</text>
+        <text class="rule-text">{{policyText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer" wx:if="{{product}}">
+    <view>
+      <text class="footer-label">应付金额</text>
+      <text class="total">¥{{total}}</text>
+    </view>
+    <view class="submit-btn" bindtap="onSubmit">{{primaryButtonText}}</view>
   </view>
 </view>

@@ -5,6 +5,12 @@ Page({
     phone: '',
     isRegister: false,
     nickname: '',
+    demoAccounts: [
+      { label: '宠物医院', phone: '13821003456' },
+      { label: '个人客户', phone: '13877005678' },
+      { label: '业务员', phone: '13811001234' },
+      { label: '制单员', phone: '13833007890' },
+    ],
   },
 
   onPhoneInput(e: any) {
@@ -17,6 +23,17 @@ Page({
 
   toggleMode() {
     this.setData({ isRegister: !this.data.isRegister })
+  },
+
+  useDemoAccount(e: any) {
+    this.setData({ phone: e.currentTarget.dataset.phone, isRegister: false })
+  },
+
+  inferRole(user: any) {
+    if (user?.role === 'salesperson') return 'salesperson'
+    if (user?.role === 'clerk') return 'clerk'
+    if (user?.customerType === 'institution') return 'customer_institution'
+    return 'customer_personal'
   },
 
   async onSubmit() {
@@ -43,8 +60,11 @@ Page({
     wx.hideLoading()
 
     if (result.success) {
-      getApp().globalData.userInfo = result.user
+      const app = getApp()
+      app.globalData.userInfo = result.user
+      app.globalData.userRole = this.inferRole(result.user)
       wx.setStorageSync('current_user', JSON.stringify(result.user))
+      wx.setStorageSync('demo_role', app.globalData.userRole)
       wx.showToast({ title: isRegister ? '注册成功' : '登录成功', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 500)
     } else {
@@ -52,3 +72,5 @@ Page({
     }
   },
 })
+
+export {}

@@ -1,4 +1,4 @@
-const { getCategories, getProducts } = require('../../services/index')
+const { getCategories, getProducts, formatMoney } = require('../../services/index')
 
 Page({
   data: {
@@ -25,7 +25,15 @@ Page({
     const user = getApp().globalData.userInfo
     const visibility = user?.customerType === 'institution' ? 'institution' : 'personal'
     const products = await getProducts({ visibility, categoryId: this.data.activeCategory })
-    this.setData({ products })
+    const isInstitution = visibility === 'institution'
+    this.setData({
+      products: products.map((product: any) => ({
+        ...product,
+        priceText: formatMoney(isInstitution ? product.institutionPrice : (product.personalPrice || product.institutionPrice)),
+        specText: product.specs?.[0]?.value || '标准规格',
+        tagText: product.visibility === 'institution_only' ? '机构专属' : product.isBloodPack ? '用血预约' : '可采购',
+      })),
+    })
   },
 
   onCategoryTap(e: any) {
@@ -37,3 +45,5 @@ Page({
     wx.navigateTo({ url: `/pages/orders/create/create?productId=${e.currentTarget.dataset.id}` })
   },
 })
+
+export {}

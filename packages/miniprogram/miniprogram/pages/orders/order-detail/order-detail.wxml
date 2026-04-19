@@ -1,26 +1,132 @@
 <view class="page">
-  <view wx:if="{{isEmpty}}" class="empty">暂无订单</view>
-  <view wx:else class="order-list">
-    <view
-      wx:for="{{orders}}"
-      wx:key="id"
-      class="order-card"
-      data-id="{{item.id}}"
-      bindtap="onOrderTap"
-    >
-      <view class="order-header">
-        <text class="order-id">{{item.id}}</text>
-        <text class="order-status">{{item.statusText}}</text>
-      </view>
-      <view class="order-body">
-        <text wx:for="{{item.items}}" wx:for-item="prod" wx:key="productId" class="product-text">
-          {{prod.productName}} x{{prod.quantity}}
-        </text>
-      </view>
-      <view class="order-footer">
-        <text class="amount">¥{{item.totalText}}</text>
-        <text class="date">{{item.dateText}}</text>
+  <block wx:if="{{!isDetailMode}}">
+    <view class="page-hero">
+      <text class="hero-title">订单闭环中心</text>
+      <text class="hero-subtitle">从待支付改价、客服接单、制单发货到售后提成调整，所有关键节点都在这里演示。</text>
+    </view>
+
+    <scroll-view scroll-x class="tabs">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="tab {{activeTab === item.key ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onTabTap"
+      >{{item.label}}</view>
+    </scroll-view>
+
+    <view wx:if="{{isEmpty}}" class="empty">暂无订单</view>
+    <view wx:else class="order-list">
+      <view
+        wx:for="{{visibleOrders}}"
+        wx:key="id"
+        class="order-card"
+        data-id="{{item.id}}"
+        bindtap="onOrderTap"
+      >
+        <view class="order-header">
+          <view>
+            <text class="order-id">{{item.id}}</text>
+            <text class="date">{{item.dateText}}</text>
+          </view>
+          <text class="order-status">{{item.statusText}}</text>
+        </view>
+        <view class="product-box">
+          <text class="product-name">{{item.firstProductName}}</text>
+          <text class="product-spec">{{item.firstProductSpec}} · 共 {{item.itemCount}} 件</text>
+        </view>
+        <view wx:if="{{item.priceChanged}}" class="notice">后台已改价，优惠 ¥{{item.savedText}}，支付倒计时已重置</view>
+        <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}} · {{item.commissionText}}</view>
+        <view class="order-footer">
+          <text class="amount">¥{{item.totalText}}</text>
+          <text class="detail-link">查看闭环 ></text>
+        </view>
       </view>
     </view>
-  </view>
+  </block>
+
+  <block wx:else>
+    <view class="detail-hero">
+      <view class="detail-top">
+        <view>
+          <text class="order-id light">{{selectedOrder.id}}</text>
+          <text class="detail-title">{{selectedOrder.statusText}}</text>
+        </view>
+        <view class="back-btn" bindtap="onBackToList">返回列表</view>
+      </view>
+      <text class="detail-desc">{{selectedOrder.statusDesc}}</text>
+      <view class="detail-amount">
+        <text>应付金额</text>
+        <text>¥{{selectedOrder.totalText}}</text>
+      </view>
+    </view>
+
+    <view class="flow-card">
+      <text class="card-title">业务流转</text>
+      <view class="flow-line">
+        <view wx:for="{{flowSteps}}" wx:key="key" class="flow-step">
+          <view class="flow-dot {{item.active ? 'active' : ''}}">{{index + 1}}</view>
+          <text class="flow-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">商品与履约</text>
+      <view wx:for="{{selectedOrder.items}}" wx:key="productId" class="item-row">
+        <view>
+          <text class="item-name">{{item.productName}}</text>
+          <text class="item-spec">{{item.spec}} x{{item.quantity}}</text>
+        </view>
+        <text class="item-price">¥{{item.totalPrice}}</text>
+      </view>
+      <view class="info-row">
+        <text>履约地址</text>
+        <text>{{selectedOrder.shipping.address.full}}</text>
+      </view>
+      <view wx:if="{{selectedOrder.booking}}" class="info-row">
+        <text>预约信息</text>
+        <text>{{selectedOrder.booking.date}} · {{selectedOrder.booking.location}}</text>
+      </view>
+      <view class="info-row">
+        <text>物流信息</text>
+        <text>{{selectedOrder.logisticsText}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{selectedOrder.priceChanged}}" class="card">
+      <text class="card-title">后台改价记录</text>
+      <view wx:for="{{selectedOrder.pricing.priceLog}}" wx:key="operatedAt" class="price-log">
+        <view>
+          <text class="item-name">{{item.operatorName}} 调整价格</text>
+          <text class="item-spec">{{item.operatedAt}}</text>
+        </view>
+        <text class="item-price">¥{{item.originalPrice}} -> ¥{{item.modifiedPrice}}</text>
+      </view>
+      <text class="notice in-card">改价后会通知客户重新确认支付，并重置待支付倒计时。</text>
+    </view>
+
+    <view class="card">
+      <text class="card-title">售后与提成</text>
+      <view class="info-row">
+        <text>售后状态</text>
+        <text>{{selectedOrder.returnRecord ? selectedOrder.returnStatusText : '暂无售后申请'}}</text>
+      </view>
+      <view class="info-row">
+        <text>提成状态</text>
+        <text>{{selectedOrder.commissionText}}</text>
+      </view>
+      <text wx:if="{{selectedOrder.returnRecord}}" class="notice amber in-card">{{selectedOrder.returnRecord.reason}}</text>
+    </view>
+
+    <view class="action-bar">
+      <view
+        wx:for="{{detailActions}}"
+        wx:key="key"
+        class="action-btn {{item.primary ? 'primary' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onActionTap"
+      >{{item.label}}</view>
+    </view>
+  </block>
 </view>

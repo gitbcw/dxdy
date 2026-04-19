@@ -9,14 +9,14 @@ export const mockCustomers: Customer[] = [
   {
     id: 'cust_001',
     phone: '13821003456',
-    nickname: '鼎盛酒业旗舰店',
+    nickname: '广慈宠物医院',
     avatar: '',
     role: 'customer',
     customerType: 'institution',
     verificationStatus: 'approved',
     verificationInfo: {
       businessLicense: '91310115MA1K4XYZ3R',
-      contactName: '陈建国',
+      contactName: '陈院长',
       contactPhone: '13821003456',
     },
     boundSalespersonId: 'sp_001',
@@ -59,22 +59,22 @@ export const mockCustomers: Customer[] = [
     addresses: [
       {
         id: 'addr_001',
-        name: '陈建国',
+        name: '陈院长',
         phone: '13821003456',
         province: '上海市',
         city: '上海市',
         district: '浦东新区',
-        detail: '张杨路500号华润时代广场12层',
+        detail: '张杨路500号宠物医疗中心12层',
         isDefault: true,
       },
       {
         id: 'addr_002',
-        name: '李秀芬',
+        name: '刘医生',
         phone: '13821007890',
         province: '上海市',
         city: '上海市',
         district: '徐汇区',
-        detail: '漕溪北路398号',
+        detail: '漕溪北路398号宠物专科门诊',
         isDefault: false,
       },
     ],
@@ -85,14 +85,14 @@ export const mockCustomers: Customer[] = [
   {
     id: 'cust_002',
     phone: '13833001122',
-    nickname: '恒通商贸',
+    nickname: '安安宠物诊疗中心',
     avatar: '',
     role: 'customer',
     customerType: 'institution',
     verificationStatus: 'pending',
     verificationInfo: {
       businessLicense: '91440300MA5FGB123H',
-      contactName: '王志远',
+      contactName: '王院长',
       contactPhone: '13833001122',
     },
     boundSalespersonId: null,
@@ -115,12 +115,12 @@ export const mockCustomers: Customer[] = [
     addresses: [
       {
         id: 'addr_003',
-        name: '王志远',
+        name: '王院长',
         phone: '13833001122',
         province: '广东省',
         city: '深圳市',
         district: '南山区',
-        detail: '科技园路1号科兴科学园B3栋6层',
+        detail: '科技园路1号动物医疗大楼B3栋6层',
         isDefault: true,
       },
     ],
@@ -131,16 +131,16 @@ export const mockCustomers: Customer[] = [
   {
     id: 'cust_003',
     phone: '13855004488',
-    nickname: '鑫源贸易',
+    nickname: '毛球宠物专科医院',
     avatar: '',
     role: 'customer',
     customerType: 'institution',
     verificationStatus: 'rejected',
     verificationInfo: {
       businessLicense: '91330206MA2AGHXXX',
-      contactName: '刘海涛',
+      contactName: '刘院长',
       contactPhone: '13855004488',
-      rejectReason: '营业执照照片模糊，请重新上传清晰的营业执照原件照片',
+      rejectReason: '营业执照副本照片模糊，请重新上传清晰的宠物医院执照照片',
     },
     boundSalespersonId: null,
     wallet: {
@@ -162,7 +162,7 @@ export const mockCustomers: Customer[] = [
     addresses: [
       {
         id: 'addr_004',
-        name: '刘海涛',
+        name: '刘院长',
         phone: '13855004488',
         province: '浙江省',
         city: '宁波市',
@@ -178,7 +178,7 @@ export const mockCustomers: Customer[] = [
   {
     id: 'cust_004',
     phone: '13877005678',
-    nickname: '张小明',
+    nickname: '林小北',
     avatar: '',
     role: 'customer',
     customerType: 'personal',
@@ -224,7 +224,7 @@ export const mockCustomers: Customer[] = [
     addresses: [
       {
         id: 'addr_005',
-        name: '张小明',
+        name: '林小北',
         phone: '13877005678',
         province: '江苏省',
         city: '南京市',
@@ -240,7 +240,7 @@ export const mockCustomers: Customer[] = [
   {
     id: 'cust_005',
     phone: '13888002233',
-    nickname: '微信用户8223',
+    nickname: '周可可',
     avatar: '',
     role: 'customer',
     customerType: 'personal',
@@ -262,7 +262,7 @@ export const mockCustomers: Customer[] = [
   {
     id: 'cust_006',
     phone: '13899006677',
-    nickname: '赵婷',
+    nickname: '许青禾',
     avatar: '',
     role: 'customer',
     customerType: 'personal',
@@ -308,7 +308,7 @@ export const mockCustomers: Customer[] = [
     addresses: [
       {
         id: 'addr_006',
-        name: '赵婷',
+        name: '许青禾',
         phone: '13899006677',
         province: '四川省',
         city: '成都市',
@@ -330,12 +330,12 @@ export const mockSalespersons: Salesperson[] = [
   {
     id: 'sp_001',
     phone: '13811001234',
-    nickname: '李明辉',
+    nickname: '陈一舟',
     avatar: '',
     role: 'salesperson',
     verificationStatus: 'approved',
     verificationInfo: {
-      realName: '李明辉',
+      realName: '陈一舟',
       idCard: '310115199208XXXXXXX',
     },
     commission: {
@@ -360,12 +360,12 @@ export const mockSalespersons: Salesperson[] = [
   {
     id: 'sp_002',
     phone: '13822005678',
-    nickname: '周晓峰',
+    nickname: '罗岚',
     avatar: '',
     role: 'salesperson',
     verificationStatus: 'pending',
     verificationInfo: {
-      realName: '周晓峰',
+      realName: '罗岚',
       idCard: '320106199505XXXXXXX',
     },
     commission: {

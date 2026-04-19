@@ -1,44 +1,59 @@
 <view class="page">
-  <!-- 未登录 -->
-  <view wx:if="{{!isLogin}}" class="login-prompt">
-    <view class="avatar-empty">👤</view>
-    <text class="login-text" bindtap="onLoginTap">点击登录</text>
+  <view wx:if="{{!userInfo}}" class="login-prompt">
+    <view class="avatar-empty">DX</view>
+    <text class="login-title">进入演示账号</text>
+    <text class="login-desc">一键体验宠物医院、个人客户、业务员、制单员多角色闭环。</text>
+    <view class="login-btn" bindtap="onLoginTap">选择账号</view>
   </view>
 
-  <!-- 已登录 -->
   <view wx:else>
-    <view class="profile">
-      <view class="avatar">{{userInfo.nickname[0]}}</view>
-      <view class="info">
-        <text class="name">{{userInfo.nickname}}</text>
-        <text class="type">{{userInfo.customerType === 'institution' ? '机构客户' : '个人客户'}}</text>
+    <view class="profile-card">
+      <view class="profile-top">
+        <view class="avatar">{{avatarText}}</view>
+        <view class="info">
+          <text class="name">{{userInfo.nickname}}</text>
+          <text class="type">{{userRoleLabel}}</text>
+        </view>
+        <view class="switch-pill" bindtap="onSwitchRole">切换</view>
       </view>
+      <text class="role-desc">{{roleDesc}}</text>
     </view>
 
     <view class="stats">
-      <view class="stat">
-        <text class="stat-value">¥{{balance}}</text>
-        <text class="stat-label">余额</text>
-      </view>
-      <view class="stat">
-        <text class="stat-value">{{points}}</text>
-        <text class="stat-label">积分</text>
+      <view wx:for="{{stats}}" wx:key="label" class="stat">
+        <text class="stat-value">{{item.value}}</text>
+        <text class="stat-label">{{item.label}}</text>
+        <text class="stat-desc">{{item.desc}}</text>
       </view>
     </view>
 
-    <view class="menu">
-      <view class="menu-item" bindtap="onOrdersTap">
-        <text>我的订单</text>
-        <text class="arrow">›</text>
+    <view class="section">
+      <view class="section-head">
+        <text class="section-title">角色工作台</text>
+        <text class="section-more" bindtap="onSwitchRole">演示身份 ></text>
       </view>
-      <view class="menu-item" bindtap="onAddressTap">
-        <text>收货地址</text>
-        <text class="arrow">›</text>
+      <view class="menu">
+        <view
+          wx:for="{{menuItems}}"
+          wx:key="id"
+          class="menu-item {{item.accent ? 'accent' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onMenuItemTap"
+        >
+          <view>
+            <text class="menu-title">{{item.title}}</text>
+            <text class="menu-desc">{{item.desc}}</text>
+          </view>
+          <text class="arrow">›</text>
+        </view>
       </view>
     </view>
 
-    <view class="logout" bindtap="onLogout">
-      <text>退出登录</text>
+    <view class="demo-note">
+      <text class="note-title">演示提示</text>
+      <text class="note-text">建议演示顺序：宠物医院采购下单 → 后台改价/指派 → 制单员发货 → 客户查看订单 → 售后影响提成。</text>
     </view>
+
+    <view class="logout" bindtap="onLogout">退出当前演示账号</view>
   </view>
 </view>

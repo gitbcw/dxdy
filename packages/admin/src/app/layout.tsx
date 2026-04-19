@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DXDY 管理后台",
-  description: "DXDY 血液管理系统 - 后台管理",
+  description: "DXDY 宠物医疗供应链演示后台",
 };
 
 export default function RootLayout({

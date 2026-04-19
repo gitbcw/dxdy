@@ -3,9 +3,9 @@
 export const salesmanCustomers = [
   {
     id: 'cust_001',
-    nickname: '李女士',
-    type: 'personal',
-    phone: '13912345678',
+    nickname: '瑞派宠物医院',
+    type: 'institution',
+    phone: '020-81558888',
     orderCount: 3,
     totalAmount: 1280.00,
     exchangeCount: 0,
@@ -23,7 +23,7 @@ export const salesmanCustomers = [
   },
   {
     id: 'cust_003',
-    nickname: '张先生',
+    nickname: '何雨桐',
     type: 'personal',
     phone: '13612344321',
     orderCount: 5,
@@ -43,7 +43,7 @@ export const salesmanCustomers = [
   },
   {
     id: 'cust_005',
-    nickname: '陈女士',
+    nickname: '陈嘉宁',
     type: 'personal',
     phone: '13722221111',
     orderCount: 1,
@@ -53,7 +53,7 @@ export const salesmanCustomers = [
   },
   {
     id: 'cust_006',
-    nickname: '宠物之家',
+    nickname: '宠颐生动物医院',
     type: 'institution',
     phone: '0755-22222222',
     orderCount: 20,
@@ -63,7 +63,7 @@ export const salesmanCustomers = [
   },
   {
     id: 'cust_007',
-    nickname: '王先生',
+    nickname: '王星野',
     type: 'personal',
     phone: '13855557777',
     orderCount: 2,

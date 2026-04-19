@@ -6,7 +6,13 @@
     "pages/mine/mine",
     "pages/login/login",
     "pages/orders/order-detail/order-detail",
-    "pages/orders/create/create"
+    "pages/orders/create/create",
+    "pages/salesman/promote/promote",
+    "pages/salesman/commission/commission",
+    "pages/salesman/customers/customers",
+    "pages/clerk/pending/pending",
+    "pages/clerk/orders/orders",
+    "pages/clerk/order-detail/order-detail"
   ],
   "window": {
     "navigationBarTextStyle": "black",

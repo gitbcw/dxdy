@@ -1,85 +1,423 @@
 .page {
-  background: #f5f5f5;
   min-height: 100vh;
+  padding: 24rpx 24rpx 48rpx;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(12, 112, 124, 0.16), transparent 34%),
+    linear-gradient(180deg, #f3fbfa 0%, #f7f8f5 42%, #ffffff 100%);
+  box-sizing: border-box;
 }
 
-.search-bar {
-  padding: 16rpx 24rpx;
-  background: #fff;
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 36rpx;
+  border-radius: 40rpx;
+  color: #ffffff;
+  background: linear-gradient(135deg, #063e46 0%, #0a6e7c 58%, #1f9a8a 100%);
+  box-shadow: 0 24rpx 60rpx rgba(6, 62, 70, 0.22);
 }
 
-.search-input {
-  background: #f5f5f5;
-  border-radius: 32rpx;
-  padding: 16rpx 24rpx;
+.hero::after {
+  content: "";
+  position: absolute;
+  right: -80rpx;
+  bottom: -110rpx;
+  width: 260rpx;
+  height: 260rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.hero-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.title {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 42rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
+}
+
+.role-pill {
+  flex-shrink: 0;
+  padding: 12rpx 22rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #063e46;
+  background: #d8f5ed;
+}
+
+.subtitle {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 88%;
+  margin-top: 30rpx;
   font-size: 28rpx;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.86);
 }
 
-.categories {
-  white-space: nowrap;
-  background: #fff;
-  padding: 16rpx 24rpx;
-  border-bottom: 1rpx solid #eee;
+.hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 18rpx;
+  margin-top: 34rpx;
 }
 
-.category-item {
-  display: inline-block;
-  padding: 8rpx 24rpx;
-  margin-right: 16rpx;
+.primary-action,
+.ghost-action {
+  padding: 18rpx 26rpx;
+  border-radius: 999rpx;
   font-size: 26rpx;
-  color: #666;
-  border-radius: 24rpx;
+  font-weight: 700;
 }
 
-.category-item.active {
-  background: #333;
-  color: #fff;
+.primary-action {
+  color: #063e46;
+  background: #f1cf7a;
 }
 
-.product-list {
-  padding: 16rpx 24rpx;
+.ghost-action {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.identity-card,
+.flow-card,
+.scenario-section,
+.product-section,
+.role-panel {
+  margin-top: 22rpx;
+  padding: 28rpx;
+  border: 1rpx solid rgba(9, 92, 103, 0.09);
+  border-radius: 32rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18rpx 48rpx rgba(23, 61, 64, 0.08);
+}
+
+.identity-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.identity-main {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  min-width: 0;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 28rpx;
+  color: #ffffff;
+  font-size: 34rpx;
+  font-weight: 800;
+  background: linear-gradient(135deg, #0a6e7c, #083d45);
+}
+
+.identity-name {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #173236;
+}
+
+.identity-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  line-height: 1.45;
+  color: #6d7b7d;
+}
+
+.identity-status {
+  flex-shrink: 0;
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.identity-status.approved {
+  color: #0d5d4d;
+  background: #dff7ed;
+}
+
+.identity-status.pending {
+  color: #7b4f00;
+  background: #fff0c2;
+}
+
+.identity-status.demo {
+  color: #31505a;
+  background: #e8f0f2;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #173236;
+}
+
+.section-more {
+  font-size: 24rpx;
+  color: #0a6e7c;
+}
+
+.flow-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8rpx;
+}
+
+.flow-step {
+  flex: 1;
+  text-align: center;
+}
+
+.flow-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  margin: 0 auto 12rpx;
+  border-radius: 999rpx;
+  color: #95a3a4;
+  font-size: 22rpx;
+  font-weight: 800;
+  background: #edf2f1;
+}
+
+.flow-dot.active {
+  color: #ffffff;
+  background: #0a6e7c;
+}
+
+.flow-label {
+  font-size: 21rpx;
+  color: #476165;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.stat-card {
+  padding: 24rpx 18rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 12rpx 32rpx rgba(23, 61, 64, 0.07);
+}
+
+.stat-value {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 900;
+  color: #0a6e7c;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #173236;
+}
+
+.stat-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: #7b8a8c;
+}
+
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.scenario-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx;
+  border-radius: 28rpx;
+}
+
+.scenario-card.teal {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0a6e7c, #0d8f81);
+}
+
+.scenario-card.white {
+  background: #f6fbfa;
+}
+
+.scenario-card.amber {
+  background: #fff3d6;
+}
+
+.scenario-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 22rpx;
+  font-size: 34rpx;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.scenario-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.scenario-title {
+  display: block;
+  font-size: 29rpx;
+  font-weight: 800;
+}
+
+.scenario-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: #6d7b7d;
+}
+
+.scenario-card.teal .scenario-desc {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.scenario-cta {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.product-scroll {
+  white-space: nowrap;
 }
 
 .product-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  border-radius: 16rpx;
+  display: inline-flex;
+  flex-direction: column;
+  width: 284rpx;
+  min-height: 240rpx;
+  margin-right: 18rpx;
   padding: 24rpx;
-  margin-bottom: 16rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8f7 100%);
+  box-shadow: inset 0 0 0 1rpx rgba(10, 110, 124, 0.08);
+  vertical-align: top;
+  box-sizing: border-box;
 }
 
-.product-info {
-  flex: 1;
+.product-badge {
+  width: fit-content;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #0a6e7c;
+  font-size: 20rpx;
+  font-weight: 800;
+  background: #dff7ed;
 }
 
 .product-name {
   display: block;
-  font-size: 30rpx;
-  font-weight: 500;
-  color: #333;
+  margin-top: 20rpx;
+  color: #173236;
+  font-size: 28rpx;
+  font-weight: 800;
+  white-space: normal;
 }
 
 .product-spec {
   display: block;
-  font-size: 24rpx;
-  color: #999;
-  margin-top: 8rpx;
+  margin-top: 10rpx;
+  color: #7b8a8c;
+  font-size: 22rpx;
+}
+
+.product-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: auto;
 }
 
 .product-price {
-  margin-left: 20rpx;
-}
-
-.price {
+  color: #b87500;
   font-size: 32rpx;
-  font-weight: 600;
-  color: #e4393c;
+  font-weight: 900;
 }
 
-.empty {
-  text-align: center;
-  padding: 100rpx 0;
-  color: #999;
+.product-stock {
+  color: #8a999b;
+  font-size: 20rpx;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+}
+
+.role-card {
+  padding: 22rpx 18rpx;
+  border-radius: 24rpx;
+  background: #f5f8f8;
+}
+
+.role-title {
+  display: block;
+  color: #173236;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+
+.role-desc {
+  display: block;
+  margin-top: 10rpx;
+  color: #7b8a8c;
+  font-size: 20rpx;
+  line-height: 1.45;
 }

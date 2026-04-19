@@ -40,3 +40,5 @@ Page({
     wx.navigateTo({ url: `/pages/clerk/order-detail/order-detail?id=${id}` })
   },
 })
+
+export {}

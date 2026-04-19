@@ -59,3 +59,5 @@ Page({
     this.setData({ showExpressPanel: false, selectedCompany: '', expressNo: '' })
   },
 })
+
+export {}

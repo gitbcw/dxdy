@@ -3,11 +3,11 @@ import type { Product, ProductCategory } from '../types/product';
 // ========== 商品分类 ==========
 
 export const mockCategories: ProductCategory[] = [
-  { id: 'cat_kit', name: '试剂盒', icon: '🧪', sort: 1 },
-  { id: 'cat_consumable', name: '耗材', icon: '🧴', sort: 2 },
-  { id: 'cat_blood', name: '血制品', icon: '🩸', sort: 3 },
-  { id: 'cat_equipment', name: '设备', icon: '🔬', sort: 4 },
-  { id: 'cat_service', name: '服务', icon: '📋', sort: 5 },
+  { id: 'cat_kit', name: '宠物处方药', icon: '💊', sort: 1 },
+  { id: 'cat_consumable', name: '营养保健', icon: '🐾', sort: 2 },
+  { id: 'cat_blood', name: '宠物血液制品', icon: '🩸', sort: 3 },
+  { id: 'cat_equipment', name: '医疗设备', icon: '🩺', sort: 4 },
+  { id: 'cat_service', name: '服务支持', icon: '📋', sort: 5 },
 ];
 
 // ========== 商品 ==========
@@ -18,14 +18,14 @@ export const mockProducts: Product[] = [
   // prod_001: visibility=all, 支持退换, 库存充足
   {
     id: 'prod_001',
-    name: 'ABO 血型鉴定试剂盒',
-    description: '用于 ABO 血型正定型的快速检测，操作简便，结果准确。',
+    name: '犬猫贫血营养膏',
+    description: '用于犬猫贫血恢复期的营养支持，帮助提升食欲与体力。',
     images: [],
     category: 'cat_kit',
     specs: [
-      { name: '规格', value: '50人份/盒' },
-      { name: '有效期', value: '12个月' },
-      { name: '储存条件', value: '2-8°C' },
+      { name: '规格', value: '120g/支' },
+      { name: '适用对象', value: '犬猫通用' },
+      { name: '储存条件', value: '阴凉干燥处保存' },
     ],
     institutionPrice: 120,
     personalPrice: 180,
@@ -42,14 +42,14 @@ export const mockProducts: Product[] = [
   // prod_002: visibility=all, 支持退换, 库存充足
   {
     id: 'prod_002',
-    name: 'Rh(D) 血型鉴定试剂盒',
-    description: 'Rh(D) 血型定性检测，灵敏度高，适用于临床常规检测。',
+    name: '宠物术后凝血支持片',
+    description: '用于宠物术后恢复阶段的凝血营养支持，适合术后护理场景。',
     images: [],
     category: 'cat_kit',
     specs: [
-      { name: '规格', value: '100人份/盒' },
-      { name: '有效期', value: '18个月' },
-      { name: '储存条件', value: '2-8°C' },
+      { name: '规格', value: '60片/盒' },
+      { name: '适用对象', value: '犬用为主' },
+      { name: '储存条件', value: '阴凉避光保存' },
     ],
     institutionPrice: 180,
     personalPrice: 240,
@@ -66,14 +66,14 @@ export const mockProducts: Product[] = [
   // prod_003: visibility=all, 不支持退换, 库存低
   {
     id: 'prod_003',
-    name: '交叉配血试剂盒',
-    description: '用于患者与献血者之间的交叉配血试验，确保输血安全。',
+    name: '宠物免疫修复口服液',
+    description: '用于宠物免疫低下及康复期调理，适用于宠物医院处方推荐。',
     images: [],
     category: 'cat_kit',
     specs: [
-      { name: '规格', value: '20人份/盒' },
-      { name: '有效期', value: '12个月' },
-      { name: '储存条件', value: '2-8°C' },
+      { name: '规格', value: '30mL x 10瓶' },
+      { name: '适用对象', value: '犬猫通用' },
+      { name: '储存条件', value: '常温保存' },
     ],
     institutionPrice: 250,
     personalPrice: 320,
@@ -89,14 +89,14 @@ export const mockProducts: Product[] = [
   // prod_004: visibility=all, 支持退换, 库存充足
   {
     id: 'prod_004',
-    name: '不规则抗体筛查试剂盒',
-    description: '检测患者血清中不规则抗体，预防输血不良反应。',
+    name: '犬猫肠胃舒缓益生菌',
+    description: '用于犬猫肠胃敏感、腹泻恢复及换粮期的肠道护理。',
     images: [],
     category: 'cat_kit',
     specs: [
-      { name: '规格', value: '50人份/盒' },
-      { name: '有效期', value: '12个月' },
-      { name: '储存条件', value: '2-8°C' },
+      { name: '规格', value: '2g x 30袋' },
+      { name: '适用对象', value: '犬猫通用' },
+      { name: '储存条件', value: '常温避光保存' },
     ],
     institutionPrice: 320,
     personalPrice: 400,
@@ -115,14 +115,14 @@ export const mockProducts: Product[] = [
   // prod_005: visibility=all, 支持退换, 库存充足
   {
     id: 'prod_005',
-    name: '一次性真空采血管（EDTA）',
-    description: '适用于血液标本采集，EDTA 抗凝，紫色管帽标识。',
+    name: '宠物皮毛护理凝胶',
+    description: '用于犬猫皮肤屏障护理和局部修复，适合宠物医院护理套餐。',
     images: [],
     category: 'cat_consumable',
     specs: [
-      { name: '规格', value: '2mL/支' },
-      { name: '包装', value: '100支/盒' },
-      { name: '材质', value: 'PET' },
+      { name: '规格', value: '50mL/支' },
+      { name: '包装', value: '1支/盒' },
+      { name: '适用场景', value: '皮肤护理' },
     ],
     institutionPrice: 45,
     personalPrice: 60,
@@ -139,14 +139,14 @@ export const mockProducts: Product[] = [
   // prod_006: visibility=all, 不支持退换, 库存充足
   {
     id: 'prod_006',
-    name: '输血器（含滤网）',
-    description: '一次性使用输血器，内置 170μm 滤网，有效过滤血液中的微聚物。',
+    name: '犬猫关节舒缓喷剂',
+    description: '用于宠物运动后关节部位护理，辅助缓解关节不适。',
     images: [],
     category: 'cat_consumable',
     specs: [
-      { name: '规格', value: '标准型' },
-      { name: '包装', value: '50支/盒' },
-      { name: '滤网孔径', value: '170μm' },
+      { name: '规格', value: '80mL/瓶' },
+      { name: '包装', value: '1瓶/盒' },
+      { name: '适用场景', value: '关节日常护理' },
     ],
     institutionPrice: 35,
     personalPrice: 48,
@@ -162,14 +162,14 @@ export const mockProducts: Product[] = [
   // prod_007: visibility=all, 支持退换, 库存低
   {
     id: 'prod_007',
-    name: '血型鉴定卡',
-    description: '用于 ABO/Rh 血型鉴定的微柱凝胶卡，操作简便、结果清晰。',
+    name: '宠物肝脏保健片',
+    description: '用于犬猫肝脏保健与营养支持，适合长期保养客户。',
     images: [],
     category: 'cat_consumable',
     specs: [
-      { name: '规格', value: '12孔/卡' },
-      { name: '包装', value: '20卡/盒' },
-      { name: '检测项目', value: 'ABO + Rh(D)' },
+      { name: '规格', value: '90片/瓶' },
+      { name: '包装', value: '1瓶' },
+      { name: '适用场景', value: '肝脏调理' },
     ],
     institutionPrice: 80,
     personalPrice: 100,
@@ -186,14 +186,14 @@ export const mockProducts: Product[] = [
   // prod_008: visibility=all, 不支持退换, 库存充足
   {
     id: 'prod_008',
-    name: '一次性使用无菌注射器',
-    description: '用于药物注射及血液标本采集，带针头，无菌包装。',
+    name: '宠物眼部护理滴液',
+    description: '用于宠物眼部清洁与护理，适合术后和炎症护理场景。',
     images: [],
     category: 'cat_consumable',
     specs: [
-      { name: '规格', value: '5mL' },
-      { name: '包装', value: '100支/盒' },
-      { name: '针头规格', value: '21G' },
+      { name: '规格', value: '15mL/瓶' },
+      { name: '包装', value: '1瓶/盒' },
+      { name: '适用场景', value: '眼部清洁护理' },
     ],
     institutionPrice: 25,
     personalPrice: 35,
@@ -211,13 +211,13 @@ export const mockProducts: Product[] = [
   // prod_009: visibility=institution_only, 不支持退换, 库存充足, 血包
   {
     id: 'prod_009',
-    name: '悬浮红细胞（1U）',
-    description: '去白细胞悬浮红细胞，适用于贫血及手术患者输注。',
+    name: '犬用悬浮红细胞（DEA1.1）',
+    description: '适用于犬用贫血及急救输血场景，面向宠物医院按血型预约配送。',
     images: [],
     category: 'cat_blood',
     specs: [
-      { name: '规格', value: '1U/袋（约200mL）' },
-      { name: '血型', value: '需指定 ABO 及 Rh 血型' },
+      { name: '规格', value: '100mL/袋' },
+      { name: '血型', value: '需指定 DEA 血型' },
       { name: '储存条件', value: '2-6°C' },
     ],
     institutionPrice: 580,
@@ -234,13 +234,13 @@ export const mockProducts: Product[] = [
   // prod_010: visibility=institution_only, 不支持退换, 库存低, 血包
   {
     id: 'prod_010',
-    name: '新鲜冰冻血浆（200mL）',
-    description: '含有全部凝血因子，适用于凝血功能障碍患者。',
+    name: '犬用新鲜冰冻血浆',
+    description: '用于犬用凝血异常与术后支持，支持医院按时间段预约调配。',
     images: [],
     category: 'cat_blood',
     specs: [
-      { name: '规格', value: '200mL/袋' },
-      { name: '血型', value: '需指定 ABO 血型' },
+      { name: '规格', value: '100mL/袋' },
+      { name: '血型', value: '需指定 DEA 血型' },
       { name: '储存条件', value: '-30°C以下' },
     ],
     institutionPrice: 720,
@@ -257,14 +257,14 @@ export const mockProducts: Product[] = [
   // prod_011: visibility=institution_only, 不支持退换, 库存充足
   {
     id: 'prod_011',
-    name: '单采血小板（1治疗量）',
-    description: '采用单采技术采集的浓缩血小板，止血效果显著。',
+    name: '猫用浓缩红细胞（A型）',
+    description: '面向猫科输血场景的浓缩红细胞产品，适用于医院预约用血。',
     images: [],
     category: 'cat_blood',
     specs: [
-      { name: '规格', value: '1治疗量/袋（≥2.5×10^11个血小板）' },
-      { name: '储存条件', value: '20-24°C 振荡保存' },
-      { name: '有效期', value: '5天' },
+      { name: '规格', value: '60mL/袋' },
+      { name: '储存条件', value: '2-6°C' },
+      { name: '有效期', value: '21天' },
     ],
     institutionPrice: 1500,
     personalPrice: 0,
@@ -280,12 +280,12 @@ export const mockProducts: Product[] = [
   // prod_012: visibility=institution_only, 不支持退换, 库存低, 血包
   {
     id: 'prod_012',
-    name: '冷沉淀凝血因子（1U）',
-    description: '含丰富因子VIII、纤维蛋白原等，适用于甲型血友病及纤维蛋白原缺乏症。',
+    name: '猫用新鲜冰冻血浆（A型）',
+    description: '适用于猫用凝血支持和术后护理，支持冷链履约。',
     images: [],
     category: 'cat_blood',
     specs: [
-      { name: '规格', value: '1U/袋' },
+      { name: '规格', value: '50mL/袋' },
       { name: '储存条件', value: '-30°C以下' },
       { name: '有效期', value: '12个月' },
     ],
@@ -303,13 +303,13 @@ export const mockProducts: Product[] = [
   // prod_013: visibility=institution_only, 不支持退换, 库存充足
   {
     id: 'prod_013',
-    name: '全血（400mL）',
-    description: '采集自健康献血者的全血，含红细胞、白细胞、血小板和血浆全部成分。',
+    name: '犬用全血（450mL）',
+    description: '适用于宠物急救及大型手术用血场景，面向宠物医院提供预约采购。',
     images: [],
     category: 'cat_blood',
     specs: [
-      { name: '规格', value: '400mL/袋' },
-      { name: '血型', value: '需指定 ABO 及 Rh 血型' },
+      { name: '规格', value: '450mL/袋' },
+      { name: '血型', value: '需指定 DEA 血型' },
       { name: '储存条件', value: '2-6°C' },
     ],
     institutionPrice: 980,
@@ -328,13 +328,13 @@ export const mockProducts: Product[] = [
   // prod_014: visibility=all, 支持退换, 库存充足
   {
     id: 'prod_014',
-    name: '全自动血型分析仪',
-    description: '全自动 ABO/Rh 血型检测设备，高通量、高精度，支持批量检测。',
+    name: '动物血型分析仪',
+    description: '用于宠物医院进行犬猫血型检测与配血辅助分析，支持高频检测场景。',
     images: [],
     category: 'cat_equipment',
     specs: [
-      { name: '检测速度', value: '120样本/小时' },
-      { name: '检测方法', value: '微柱凝胶法' },
+      { name: '检测速度', value: '60样本/小时' },
+      { name: '检测方法', value: '动物血型检测模块' },
       { name: '尺寸', value: '600×500×450mm' },
     ],
     institutionPrice: 35000,
@@ -351,13 +351,13 @@ export const mockProducts: Product[] = [
   // prod_015: visibility=all, 支持退换, 库存低
   {
     id: 'prod_015',
-    name: '血浆速冻机',
-    description: '用于新鲜血浆的快速冷冻，制冷速度快，温度均匀。',
+    name: '动物血浆速冻柜',
+    description: '用于宠物血浆的快速低温保存，适合医院及血液中心冷链处理。',
     images: [],
     category: 'cat_equipment',
     specs: [
       { name: '制冷温度', value: '-40°C' },
-      { name: '容量', value: '50袋' },
+      { name: '容量', value: '40袋' },
       { name: '功率', value: '1500W' },
     ],
     institutionPrice: 18000,
@@ -376,14 +376,14 @@ export const mockProducts: Product[] = [
   // prod_016: visibility=personal_only, 支持退换, 库存充足
   {
     id: 'prod_016',
-    name: '血型检测服务',
-    description: '专业血型检测服务，提供 ABO 及 Rh 血型鉴定报告。',
+    name: '宠物基础血型检测服务',
+    description: '为宠物主人提供基础血型检测与报告解读服务，可线上预约到店。',
     images: [],
     category: 'cat_service',
     specs: [
-      { name: '服务类型', value: '到店检测' },
+      { name: '服务类型', value: '到院检测' },
       { name: '报告时间', value: '1个工作日' },
-      { name: '检测项目', value: 'ABO + Rh(D)' },
+      { name: '检测项目', value: '犬猫血型检测' },
     ],
     institutionPrice: 0,
     personalPrice: 200,
@@ -400,14 +400,14 @@ export const mockProducts: Product[] = [
   // prod_017: visibility=personal_only, 不支持退换, 库存充足
   {
     id: 'prod_017',
-    name: '献血后健康评估报告',
-    description: '基于献血检测数据生成个性化健康评估报告，提供专业解读。',
+    name: '宠物输血前交叉配血服务',
+    description: '为宠物输血前提供配血检测与专业说明，适合术前风险评估。',
     images: [],
     category: 'cat_service',
     specs: [
-      { name: '报告类型', value: '电子版 + 纸质版' },
+      { name: '报告类型', value: '检测报告 + 建议单' },
       { name: '出具时间', value: '3个工作日' },
-      { name: '包含项目', value: '血常规、肝功能、传染病筛查' },
+      { name: '包含项目', value: '主侧配血 + 风险提示' },
     ],
     institutionPrice: 0,
     personalPrice: 350,
@@ -424,14 +424,14 @@ export const mockProducts: Product[] = [
   // prod_018: visibility=personal_only, 支持退换, 库存低
   {
     id: 'prod_018',
-    name: '亲子鉴定咨询服务',
-    description: '专业亲子鉴定咨询服务，提供采样指导及结果解读。',
+    name: '宠物术前用血评估咨询',
+    description: '提供术前备血、血型匹配和用血风险咨询，适合宠物手术场景。',
     images: [],
     category: 'cat_service',
     specs: [
-      { name: '服务类型', value: '线上咨询 + 线下采样' },
+      { name: '服务类型', value: '线上咨询 + 到院评估' },
       { name: '咨询时长', value: '30分钟/次' },
-      { name: '出具时间', value: '5个工作日' },
+      { name: '出具时间', value: '当日出建议' },
     ],
     institutionPrice: 0,
     personalPrice: 800,
@@ -447,14 +447,14 @@ export const mockProducts: Product[] = [
   // prod_019: visibility=personal_only, 不支持退换, 库存充足
   {
     id: 'prod_019',
-    name: '献血预约提醒服务',
-    description: '智能献血周期管理，自动提醒下次献血时间，跟踪献血记录。',
+    name: '宠物用血预约提醒服务',
+    description: '围绕宠物医院备血计划提供预约提醒、排期通知和到货提醒。',
     images: [],
     category: 'cat_service',
     specs: [
       { name: '服务周期', value: '1年' },
-      { name: '提醒方式', value: '短信 + App推送' },
-      { name: '附加服务', value: '献血证电子化' },
+      { name: '提醒方式', value: '短信 + 小程序提醒' },
+      { name: '附加服务', value: '备血排期同步' },
     ],
     institutionPrice: 0,
     personalPrice: 120,
@@ -473,12 +473,12 @@ export const mockProducts: Product[] = [
   // prod_020: status=off_sale, 试剂盒
   {
     id: 'prod_020',
-    name: '抗体效价测定试剂盒（已停产）',
-    description: '用于 IgM 类抗体效价测定，该产品已停产，仅供历史订单参考。',
+    name: '犬猫微量元素营养膏（旧版）',
+    description: '旧版宠物营养膏产品，已停产，仅供历史订单参考。',
     images: [],
     category: 'cat_kit',
     specs: [
-      { name: '规格', value: '20人份/盒' },
+      { name: '规格', value: '100g/支' },
       { name: '状态', value: '已停产' },
     ],
     institutionPrice: 450,
@@ -495,13 +495,13 @@ export const mockProducts: Product[] = [
   // prod_021: status=off_sale, 设备
   {
     id: 'prod_021',
-    name: '半自动血型分析仪（升级换代）',
-    description: '该型号已升级换代，推荐选购新款全自动血型分析仪（prod_014）。',
+    name: '动物血型分析仪（上一代）',
+    description: '该型号已升级换代，推荐选购新款动物血型分析仪（prod_014）。',
     images: [],
     category: 'cat_equipment',
     specs: [
-      { name: '检测速度', value: '40样本/小时' },
-      { name: '检测方法', value: '玻片法/试管法' },
+      { name: '检测速度', value: '25样本/小时' },
+      { name: '检测方法', value: '基础检测模式' },
       { name: '状态', value: '已停产' },
     ],
     institutionPrice: 8000,
