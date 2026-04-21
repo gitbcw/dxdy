@@ -1,0 +1,56 @@
+<view class="page">
+  <view wx:if="{{status === 'pending'}}" class="status-card">
+    <view class="status-icon pending">审</view>
+    <text class="status-title">认证审核中</text>
+    <text class="status-desc">我们正在审核您的机构资质，通常 1-3 个工作日内完成</text>
+    <view class="status-info">
+      <text class="info-label">联系人</text>
+      <text class="info-value">{{info.contactName}}</text>
+    </view>
+    <view class="status-info">
+      <text class="info-label">联系电话</text>
+      <text class="info-value">{{info.contactPhone}}</text>
+    </view>
+    <view class="back-btn" bindtap="goBack">返回首页</view>
+  </view>
+
+  <view wx:elif="{{status === 'approved'}}" class="status-card">
+    <view class="status-icon approved">✓</view>
+    <text class="status-title">认证已通过</text>
+    <text class="status-desc">您的机构资质已通过审核，可享受机构专属价格</text>
+    <view class="back-btn" bindtap="goBack">返回首页</view>
+  </view>
+
+  <view wx:else class="form">
+    <text class="form-title">机构实名认证</text>
+    <text class="form-subtitle">{{isPersonalCustomer ? '提交机构资质后，将切换为机构客户并进入审核流程' : '提交营业执照信息，认证后解锁机构专属商品与价格'}}</text>
+
+    <view wx:if="{{status === 'rejected'}}" class="reject-notice">
+      <text class="reject-label">驳回原因</text>
+      <text class="reject-reason">{{info.rejectReason || '信息不完整或不符合要求'}}</text>
+    </view>
+
+    <view class="form-section">
+      <text class="form-label">营业执照</text>
+      <view class="upload-area" bindtap="chooseLicense">
+        <image wx:if="{{licenseUrl}}" src="{{licenseUrl}}" class="license-preview" mode="aspectFit" />
+        <view wx:else class="upload-placeholder">
+          <text class="upload-icon">+</text>
+          <text class="upload-text">上传营业执照</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <text class="form-label">联系人姓名</text>
+      <input class="form-input" placeholder="请输入联系人姓名" value="{{contactName}}" bindinput="onNameInput" />
+    </view>
+
+    <view class="form-section">
+      <text class="form-label">联系电话</text>
+      <input class="form-input" placeholder="请输入联系电话" type="number" maxlength="11" value="{{contactPhone}}" bindinput="onPhoneInput" />
+    </view>
+
+    <view class="submit-btn" bindtap="onSubmit">提交认证</view>
+  </view>
+</view>

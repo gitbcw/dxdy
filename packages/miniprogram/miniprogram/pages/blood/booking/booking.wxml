@@ -1,0 +1,59 @@
+<view class="page">
+  <view class="hero-card">
+    <text class="hero-tag">机构预约</text>
+    <text class="hero-title">预约用血</text>
+    <text class="hero-desc">选择可预约血制品后，填写预约日期、地点和联系人信息即可提交预约。</text>
+  </view>
+
+  <view wx:if="{{!isInstitution}}" class="empty-card">
+    <text class="empty-title">当前仅机构客户可预约用血</text>
+    <text class="empty-desc">请切换到机构客户身份后查看预约用血相关商品。</text>
+    <view class="ghost-btn" bindtap="onGoCatalog">查看商品分类</view>
+  </view>
+
+  <view wx:elif="{{!isVerified}}" class="empty-card">
+    <text class="empty-title">完成机构认证后可预约用血</text>
+    <text class="empty-desc">认证通过后会展示可预约血制品及机构价格。</text>
+    <view class="primary-btn" bindtap="onGoVerify">去认证</view>
+  </view>
+
+  <view wx:elif="{{isEmpty}}" class="empty-card">
+    <text class="empty-title">当前暂无可预约血制品</text>
+    <text class="empty-desc">可稍后再看，或前往分类页查看其他商品。</text>
+    <view class="ghost-btn" bindtap="onGoCatalog">查看商品分类</view>
+  </view>
+
+  <view wx:else class="content">
+    <view class="tips-card">
+      <view class="tip-item">
+        <text class="tip-label">1</text>
+        <text class="tip-text">选择血制品并提交预约</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-label">2</text>
+        <text class="tip-text">填写预约日期、地点和联系人</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-label">3</text>
+        <text class="tip-text">预约提交后等待客服确认</text>
+      </view>
+    </view>
+
+    <view class="list">
+      <view wx:for="{{products}}" wx:key="id" class="product-card">
+        <view class="product-head">
+          <view>
+            <text class="product-name">{{item.name}}</text>
+            <text class="product-spec">{{item.specText}}</text>
+          </view>
+          <text class="product-price">¥{{item.priceText}}</text>
+        </view>
+        <text class="product-desc">{{item.description}}</text>
+        <view class="product-foot">
+          <text class="product-stock">{{item.stockText}}</text>
+          <view class="primary-btn small" data-id="{{item.id}}" bindtap="onBookTap">立即预约</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

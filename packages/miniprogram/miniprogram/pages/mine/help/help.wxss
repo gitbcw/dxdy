@@ -1,0 +1,368 @@
+/* help.wxss — 大熊动医帮助中心 */
+
+.page {
+  min-height: 100vh;
+  background: #F4F8F9;
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ========================================
+   Section Label（通用）
+   ======================================== */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.label-bar {
+  width: 6rpx;
+  height: 28rpx;
+  border-radius: 3rpx;
+  background: linear-gradient(180deg, #0A6E7C, #14919B);
+}
+
+.label-bar.light-bar {
+  background: linear-gradient(180deg, #D4A853, #E8C478);
+}
+
+.label-text {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #1A2B3C;
+}
+
+.label-text.light-text {
+  color: #ffffff;
+}
+
+.label-count {
+  font-size: 22rpx;
+  color: #8A9BAC;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* ========================================
+   FAQ Section
+   ======================================== */
+.faq-section {
+  margin-bottom: 28rpx;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.faq-item {
+  display: flex;
+  background: #ffffff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(10, 110, 124, 0.05);
+}
+
+.faq-item.is-open {
+  box-shadow: 0 4rpx 24rpx rgba(10, 110, 124, 0.1);
+}
+
+/* 左侧：序号 + 强调条 */
+.faq-left {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  flex-shrink: 0;
+}
+
+.faq-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(180deg, #0A6E7C, #14919B);
+  border-radius: 0 4rpx 4rpx 0;
+  transition: width 0.25s ease;
+}
+
+.faq-item.is-open .faq-accent {
+  width: 6rpx;
+}
+
+.faq-num {
+  position: relative;
+  z-index: 1;
+  font-size: 26rpx;
+  font-weight: 800;
+  color: #B8CCD0;
+  font-variant-numeric: tabular-nums;
+}
+
+.faq-item.is-open .faq-num {
+  color: #0A6E7C;
+}
+
+/* 右侧内容 */
+.faq-body {
+  flex: 1;
+  padding: 24rpx 24rpx 24rpx 0;
+  min-width: 0;
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.faq-q {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1A2B3C;
+  line-height: 1.55;
+}
+
+/* +/- 切换图标 */
+.faq-toggle {
+  position: relative;
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+}
+
+.toggle-line {
+  position: absolute;
+  background: #B8CCD0;
+  border-radius: 2rpx;
+  transition: all 0.25s ease;
+}
+
+.toggle-h {
+  left: 8rpx;
+  right: 8rpx;
+  top: 50%;
+  height: 3rpx;
+  margin-top: -1.5rpx;
+}
+
+.toggle-v {
+  top: 8rpx;
+  bottom: 8rpx;
+  left: 50%;
+  width: 3rpx;
+  margin-left: -1.5rpx;
+}
+
+.faq-item.is-open .toggle-h {
+  background: #0A6E7C;
+}
+
+.faq-item.is-open .toggle-v {
+  opacity: 0;
+  transform: scaleY(0);
+}
+
+/* 答案区域 */
+.faq-answer-wrap {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  background: #F0F7F8;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #0A6E7C;
+}
+
+.faq-answer {
+  font-size: 26rpx;
+  color: #5A6B7C;
+  line-height: 1.75;
+}
+
+/* ========================================
+   Contact Section（深色卡片）
+   ======================================== */
+.contact-section {
+  padding: 28rpx;
+  background: linear-gradient(160deg, #1A3A4A 0%, #1E4555 50%, #224D5E 100%);
+  border-radius: 28rpx;
+  box-shadow: 0 8rpx 32rpx rgba(10, 110, 124, 0.18);
+}
+
+.contact-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.contact-card.is-interactive {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cc-icon-wrap {
+  width: 52rpx;
+  height: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14rpx;
+  background: rgba(212, 168, 83, 0.15);
+  flex-shrink: 0;
+}
+
+.cc-icon {
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #D4A853;
+}
+
+.cc-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.cc-type {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.cc-value {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 700;
+}
+
+.cc-arrow {
+  font-size: 32rpx;
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 300;
+}
+
+/* 操作按钮 */
+.contact-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.ca-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  padding: 22rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.ca-btn-icon {
+  width: 36rpx;
+  height: 36rpx;
+  position: relative;
+}
+
+.ca-primary {
+  background: linear-gradient(135deg, #D4A853, #E8C478);
+  color: #1A3A4A;
+}
+
+.ca-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1rpx solid rgba(255, 255, 255, 0.12);
+}
+
+/* 电话图标 */
+.phone-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16rpx;
+  height: 16rpx;
+  margin: -12rpx 0 0 -8rpx;
+  border-radius: 3rpx 3rpx 3rpx 10rpx;
+  border: 3rpx solid #1A3A4A;
+  transform: rotate(-45deg);
+}
+
+.phone-icon::before {
+  content: '';
+  position: absolute;
+  bottom: -8rpx;
+  left: 50%;
+  width: 6rpx;
+  height: 8rpx;
+  margin-left: -3rpx;
+  background: #1A3A4A;
+  border-radius: 0 0 3rpx 3rpx;
+}
+
+/* 对话图标 */
+.chat-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24rpx;
+  height: 18rpx;
+  margin: -12rpx 0 0 -12rpx;
+  border-radius: 6rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.85);
+}
+
+.chat-icon::before {
+  content: '';
+  position: absolute;
+  bottom: -6rpx;
+  left: 4rpx;
+  width: 0;
+  height: 0;
+  border-left: 5rpx solid transparent;
+  border-right: 5rpx solid transparent;
+  border-top: 6rpx solid rgba(255, 255, 255, 0.85);
+}
+
+/* 安全提示 */
+.safety-note {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 24rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.safety-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #34A853;
+  flex-shrink: 0;
+}
+
+.safety-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.5;
+}

@@ -1,0 +1,37 @@
+<view class="page">
+  <!-- 商品图片 -->
+  <view class="product-image">
+    <text class="image-placeholder">商品图片</text>
+  </view>
+
+  <!-- 价格 -->
+  <view class="price-bar">
+    <text class="price">¥{{price}}</text>
+    <text class="stock">库存 {{stock}}</text>
+  </view>
+
+  <!-- 商品名称和规格 -->
+  <text class="product-name">{{productName}}</text>
+  <text class="product-spec">规格：{{spec}}</text>
+
+  <!-- 商品详情（写死） -->
+  <view class="detail-section">
+    <text class="detail-title">商品详情</text>
+    <text class="detail-text">本品由大熊动医华南医学检验实验室提供，品质保障，专业服务。详细参数请咨询客服或查看商品标签。</text>
+  </view>
+
+  <!-- 退换货规则（写死） -->
+  <view class="detail-section">
+    <text class="detail-title">退换货规则</text>
+    <text class="detail-text">签收后 7 天内可申请退换货。特殊商品（血液制品等）不支持无理由退换，具体规则以商品标注为准。</text>
+  </view>
+
+  <!-- 底部留白 -->
+  <view class="bottom-spacer"></view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <view class="btn-cart" bindtap="onAddCart">加入购物车</view>
+    <view class="btn-buy" bindtap="onBuyNow">立即购买</view>
+  </view>
+</view>

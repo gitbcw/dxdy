@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/home/home",
+    "pages/blood/booking/booking",
     "pages/catalog/catalog",
     "pages/cart/cart",
     "pages/mine/mine",
@@ -12,7 +13,13 @@
     "pages/salesman/customers/customers",
     "pages/clerk/pending/pending",
     "pages/clerk/orders/orders",
-    "pages/clerk/order-detail/order-detail"
+    "pages/clerk/order-detail/order-detail",
+    "pages/verify/verify",
+    "pages/product-detail/product-detail",
+    "pages/mine/address/address",
+    "pages/mine/favorites/favorites",
+    "pages/mine/profile/profile",
+    "pages/mine/help/help"
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -20,6 +27,7 @@
     "navigationBarBackgroundColor": "#ffffff"
   },
   "tabBar": {
+    "custom": true,
     "color": "#999999",
     "selectedColor": "#333333",
     "backgroundColor": "#ffffff",

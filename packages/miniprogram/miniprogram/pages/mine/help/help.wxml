@@ -1,0 +1,91 @@
+<view class="page">
+
+  <!-- ===== FAQ ===== -->
+  <view class="faq-section">
+    <view class="section-label">
+      <view class="label-bar"></view>
+      <text class="label-text">{{roleTitle}}</text>
+      <text class="label-count">{{roleCountLabel}} · {{faqs.length}} 条</text>
+    </view>
+
+    <view class="faq-list">
+      <view
+        wx:for="{{faqs}}"
+        wx:key="id"
+        class="faq-item {{item.open ? 'is-open' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onToggleFaq"
+      >
+        <!-- 左侧序号 + 强调条 -->
+        <view class="faq-left">
+          <view class="faq-accent"></view>
+          <text class="faq-num">{{index + 1}}</text>
+        </view>
+        <!-- 右侧内容 -->
+        <view class="faq-body">
+          <view class="faq-question">
+            <text class="faq-q">{{item.question}}</text>
+            <view class="faq-toggle">
+              <view class="toggle-line toggle-h"></view>
+              <view class="toggle-line toggle-v {{item.open ? 'is-hidden' : ''}}"></view>
+            </view>
+          </view>
+          <view class="faq-answer-wrap" wx:if="{{item.open}}">
+            <text class="faq-answer">{{item.answer}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 联系客服 ===== -->
+  <view class="contact-section">
+    <view class="section-label light">
+      <view class="label-bar light-bar"></view>
+      <text class="label-text light-text">联系客服</text>
+    </view>
+
+    <view class="contact-cards">
+      <view
+        wx:for="{{contacts}}"
+        wx:key="type"
+        class="contact-card {{item.action ? 'is-interactive' : ''}}"
+        data-action="{{item.action}}"
+        bindtap="onContactAction"
+      >
+        <view class="cc-icon-wrap">
+          <text class="cc-icon">{{item.icon}}</text>
+        </view>
+        <view class="cc-info">
+          <text class="cc-type">{{item.type}}</text>
+          <text class="cc-value">{{item.value}}</text>
+        </view>
+        <text wx:if="{{item.action}}" class="cc-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="contact-actions">
+      <view class="ca-btn ca-primary" bindtap="onCallService">
+        <view class="ca-btn-icon">
+          <view class="phone-icon"></view>
+        </view>
+        <text>拨打客服热线</text>
+      </view>
+      <view class="ca-btn ca-secondary" bindtap="onOnlineService">
+        <view class="ca-btn-icon">
+          <view class="chat-icon"></view>
+        </view>
+        <text>在线咨询</text>
+      </view>
+    </view>
+
+    <!-- 底部安全提示 -->
+    <view class="safety-note">
+      <view class="safety-dot"></view>
+      <text class="safety-text">所有客服沟通均通过官方渠道，请勿向陌生人转账</text>
+    </view>
+  </view>
+
+  <!-- ===== 底部留白 ===== -->
+  <view class="footer-space"></view>
+</view>

@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="profile-header">
+    <view class="avatar-large">{{userInfo.nickname[0] || '用'}}</view>
+    <text class="profile-name">{{userInfo.nickname || '未设置'}}</text>
+  </view>
+
+  <view class="field-list">
+    <view
+      wx:for="{{fields}}"
+      wx:key="key"
+      class="field-item {{item.type === 'readonly' ? 'readonly' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onFieldTap"
+    >
+      <text class="field-label">{{item.label}}</text>
+      <view class="field-right">
+        <view wx:if="{{item.type === 'avatar'}}" class="avatar-small">
+          {{userInfo.nickname[0] || '用'}}
+        </view>
+        <text wx:else class="field-value">{{item.value}}</text>
+        <text wx:if="{{item.type !== 'readonly'}}" class="field-arrow">›</text>
+      </view>
+    </view>
+  </view>
+</view>

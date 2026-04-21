@@ -4,7 +4,8 @@ App<IAppOption>({
   globalData: {
     userInfo: null,
     token: '',
-    userRole: 'customer_institution',
+    userRole: 'customer_personal',
+    catalogSearchKeyword: '',
   },
   onLaunch() {
     // 从本地存储恢复登录状态
@@ -18,14 +19,14 @@ App<IAppOption>({
         this.globalData.userInfo = JSON.parse(userStr)
       } catch { /* ignore */ }
     } else {
-      this.switchDemoRole?.('customer_institution')
+      this.switchDemoRole?.('customer_personal')
     }
   },
 
   async switchDemoRole(role: string) {
     const phoneMap: Record<string, string> = {
       customer_institution: '13821003456',
-      customer_personal: '13877005678',
+      customer_personal: '13888002233',
       salesperson: '13811001234',
       clerk: '13833007890',
     }
