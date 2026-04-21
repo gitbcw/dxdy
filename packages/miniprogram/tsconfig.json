@@ -21,7 +21,7 @@
       "./typings"
     ],
     "paths": {
-      "@shared/*": ["./miniprogram/shared/lib/*"]
+      "@shared/*": ["./miniprogram/shared/src/*"]
     },
     "baseUrl": "."
   },

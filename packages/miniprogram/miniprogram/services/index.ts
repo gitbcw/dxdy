@@ -1,8 +1,8 @@
 /**
  * 小程序端服务桥接
- * 直接引用 shared/lib 的 mock 服务，用 wx.setStorageSync 做本地持久化
+ * 直接引用 shared/src 的 mock 服务，用 wx.setStorageSync 做本地持久化
  */
-const shared = require('../shared/lib/index')
+const shared = require('../shared/src/index')
 
 // 重新导出所有服务
 export const {
