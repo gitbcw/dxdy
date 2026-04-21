@@ -23,7 +23,13 @@ export default function LoginPage() {
     setLoading(false);
     if (result.success && result.user) {
       localStorage.setItem('admin_user', JSON.stringify(result.user));
-      router.push('/dashboard');
+      const landingPath =
+        result.user.role === 'system_admin'
+          ? '/dashboard'
+          : result.user.role === 'product_manager'
+            ? '/products'
+            : '/orders';
+      router.push(landingPath);
     } else {
       setError(result.error ?? '登录失败');
     }

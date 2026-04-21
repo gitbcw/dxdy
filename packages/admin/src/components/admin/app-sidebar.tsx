@@ -30,7 +30,7 @@ import {
 import type { AdminUser } from '@dxdy/shared';
 
 const navItems = [
-  { title: '仪表盘', href: '/dashboard', icon: LayoutDashboard, roles: ['service', 'product_manager', 'system_admin'] },
+  { title: '仪表盘', href: '/dashboard', icon: LayoutDashboard, roles: ['system_admin'] },
   { title: '商品管理', href: '/products', icon: Package, roles: ['product_manager', 'system_admin'] },
   { title: '订单管理', href: '/orders', icon: ShoppingCart, roles: ['service', 'system_admin'] },
   { title: '退换货', href: '/returns', icon: RotateCcw, roles: ['service', 'system_admin'] },

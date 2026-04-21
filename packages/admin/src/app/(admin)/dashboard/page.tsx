@@ -2,211 +2,375 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Activity,
-  AlertTriangle,
-  ArrowRight,
-  ClipboardCheck,
   CreditCard,
   Handshake,
   PackageCheck,
-  ShieldCheck,
+  ShoppingCart,
   Truck,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   getAllOrders,
   getAllProducts,
   getAllReturns,
   getCustomers,
-  getOperationLogs,
+  getSystemConfig,
   formatMoney,
 } from '@dxdy/shared';
-import type { OperationLog, Order, Product, ReturnRecord } from '@dxdy/shared';
+import type { AdminRole, AdminUser, Order, Product, ReturnRecord, SystemConfig } from '@dxdy/shared';
 
 type DashboardState = {
   orders: Order[];
   products: Product[];
   returns: ReturnRecord[];
-  logs: OperationLog[];
+  config: SystemConfig | null;
 };
 
-const flowSteps = [
-  { key: 'registered', label: '注册/认证', desc: '宠物医院身份与业务员绑定' },
-  { key: 'priced', label: '分层选品', desc: '机构价、个人价、血液制品可见性' },
-  { key: 'ordered', label: '下单/预约', desc: '普通药品采购与宠物用血预约' },
-  { key: 'handled', label: '客服处理', desc: '改价、审核、指派制单员' },
-  { key: 'fulfilled', label: '制单发货', desc: '录入快递与冷链物流同步' },
-  { key: 'settled', label: '售后/提成', desc: '退换货影响提成自动调整' },
-];
+type RolePanelItem = {
+  title: string;
+  badge: string;
+  href: string;
+};
+
+function parseDateValue(value: string): Date | null {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00`);
+  }
+  return new Date(value.replace(' ', 'T'));
+}
+
+function isSameDay(left: string, right: Date): boolean {
+  const date = parseDateValue(left);
+  if (!date) return false;
+  return (
+    date.getFullYear() === right.getFullYear() &&
+    date.getMonth() === right.getMonth() &&
+    date.getDate() === right.getDate()
+  );
+}
+
+function isSameMonth(left: string, right: Date): boolean {
+  const date = parseDateValue(left);
+  if (!date) return false;
+  return (
+    date.getFullYear() === right.getFullYear() &&
+    date.getMonth() === right.getMonth()
+  );
+}
+
+function diffHours(from: string, to: Date): number {
+  const date = parseDateValue(from);
+  if (!date) return 0;
+  return (to.getTime() - date.getTime()) / (1000 * 60 * 60);
+}
+
+function ratio(value: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((value / total) * 100);
+}
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [state, setState] = useState<DashboardState>({
     orders: [],
     products: [],
     returns: [],
-    logs: [],
+    config: null,
+  });
+  const [currentUser] = useState<AdminUser | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = window.localStorage.getItem('admin_user');
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as AdminUser;
+    } catch {
+      return null;
+    }
   });
 
+  const fallbackPath =
+    currentUser?.role === 'product_manager'
+      ? '/products'
+      : '/orders';
+
   useEffect(() => {
+    if (currentUser && currentUser.role !== 'system_admin') {
+      router.replace(fallbackPath);
+    }
+  }, [currentUser, fallbackPath, router]);
+
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'system_admin') return;
+
     async function load() {
-      const [orders, returns, products, logs] = await Promise.all([
+      const [orders, returns, products, config] = await Promise.all([
         getAllOrders(),
         getAllReturns(),
         getAllProducts(),
-        getOperationLogs({ limit: 6 }),
+        getSystemConfig(),
       ]);
-      setState({ orders, returns, products, logs });
+      setState({ orders, returns, products, config });
     }
-    load();
-  }, []);
 
+    load();
+  }, [currentUser]);
+
+  if (currentUser && currentUser.role !== 'system_admin') {
+    return null;
+  }
+
+  const now = new Date();
   const customers = getCustomers();
-  const institutionCount = customers.filter(c => c.customerType === 'institution').length;
-  const personalCount = customers.filter(c => c.customerType === 'personal').length;
-  const verifiedInstitutions = customers.filter(
-    c => c.customerType === 'institution' && c.verificationStatus === 'approved',
-  ).length;
-  const pendingVerification = customers.filter(c => c.verificationStatus === 'pending').length;
-  const pendingPayment = state.orders.filter(o => o.status === 'pending_payment').length;
-  const pendingShipment = state.orders.filter(o => o.status === 'pending_shipment').length;
-  const bookingTodo = state.orders.filter(o => o.type === 'booking' && o.status === 'pending_confirmation').length;
-  const returnTodo = state.returns.filter(r => r.status === 'pending_review').length;
-  const lowStock = state.products.filter(p => p.status === 'on_sale' && p.stock <= 10);
-  const bloodProducts = state.products.filter(p => p.visibility === 'institution_only' && p.status === 'on_sale');
-  const adjustedOrders = state.orders.filter(o => o.pricing.priceLog.length > 0);
-  const revenue = state.orders
-    .filter(o => o.status !== 'cancelled')
+  const customerMap = new Map(customers.map(customer => [customer.id, customer]));
+  const stockWarningThreshold = state.config?.stockWarningThreshold ?? 10;
+
+  const recognizedOrders = state.orders.filter(
+    order => order.status !== 'pending_payment' && order.status !== 'cancelled',
+  );
+  const pendingPaymentOrders = state.orders.filter(order => order.status === 'pending_payment');
+  const fulfillmentOrders = state.orders.filter(order =>
+    ['pending_shipment', 'pending_receipt', 'pending_confirmation', 'confirmed', 'in_service'].includes(order.status),
+  );
+  const pendingShipmentOrders = state.orders.filter(order => order.status === 'pending_shipment');
+  const pendingConfirmationOrders = state.orders.filter(
+    order => order.type === 'booking' && order.status === 'pending_confirmation',
+  );
+  const priceAdjustedOrders = state.orders.filter(order => order.pricing.priceLog.length > 0);
+
+  const institutionCustomers = customers.filter(customer => customer.customerType === 'institution');
+  const personalCustomers = customers.filter(customer => customer.customerType === 'personal');
+  const verifiedInstitutions = institutionCustomers.filter(
+    customer => customer.verificationStatus === 'approved',
+  );
+  const pendingVerification = institutionCustomers.filter(
+    customer => customer.verificationStatus === 'pending',
+  );
+  const rejectedVerification = institutionCustomers.filter(
+    customer => customer.verificationStatus === 'rejected',
+  );
+
+  const lowStockProducts = state.products.filter(
+    product => product.status === 'on_sale' && product.stock <= stockWarningThreshold,
+  );
+  const lowStockBloodProducts = lowStockProducts.filter(product => product.isBloodPack);
+  const institutionOnlyProducts = state.products.filter(
+    product => product.visibility === 'institution_only',
+  );
+
+  const openReturns = state.returns.filter(
+    record => !['return_completed', 'exchange_completed', 'rejected'].includes(record.status),
+  );
+  const pendingReviewReturns = state.returns.filter(record => record.status === 'pending_review');
+  const refundingAmount = openReturns.reduce((sum, record) => sum + (record.refundAmount ?? 0), 0);
+  const refundAmountThisMonth = state.returns
+    .filter(record => isSameMonth(record.updatedAt, now))
+    .reduce((sum, record) => sum + (record.refundAmount ?? 0), 0);
+
+  const todayRevenue = recognizedOrders
+    .filter(order => isSameDay(order.createdAt, now))
     .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
-  const commissionRisk = state.returns.reduce((sum, record) => sum + Math.abs(record.commissionAdjust.amount), 0);
+  const monthRevenue = recognizedOrders
+    .filter(order => isSameMonth(order.createdAt, now))
+    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
+  const pendingPaymentAmount = pendingPaymentOrders.reduce(
+    (sum, order) => sum + order.pricing.actualAmount,
+    0,
+  );
+  const pendingCommissionOrders = state.orders.filter(order =>
+    ['pending', 'locked'].includes(order.commission.status),
+  );
+  const pendingCommissionAmount = pendingCommissionOrders.reduce(
+    (sum, order) => sum + order.commission.amount,
+    0,
+  );
+  const overduePendingPaymentOrders = pendingPaymentOrders.filter(
+    order =>
+      diffHours(order.updatedAt || order.createdAt, now) >
+      (state.config?.paymentTimeoutMinutes ?? 30) / 60,
+  );
+  const overdueFulfillmentOrders = fulfillmentOrders.filter(
+    order => diffHours(order.updatedAt || order.createdAt, now) > 24,
+  );
+  const todayRecognizedOrders = recognizedOrders.filter(order => isSameDay(order.createdAt, now));
+
+  const institutionRevenue = recognizedOrders
+    .filter(order => customerMap.get(order.customerId)?.customerType === 'institution')
+    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
+  const personalRevenue = recognizedOrders
+    .filter(order => customerMap.get(order.customerId)?.customerType === 'personal')
+    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
+  const totalRevenue = institutionRevenue + personalRevenue;
+
+  const role: AdminRole | null = currentUser?.role ?? null;
+  const roleTitle =
+    role === 'service'
+      ? '客服重点'
+      : role === 'product_manager'
+        ? '商品重点'
+        : '今日重点';
+
+  const rolePanelItems: RolePanelItem[] =
+    role === 'service'
+      ? [
+          { title: '机构审核', badge: `${pendingVerification.length} 待审`, href: '/users' },
+          { title: '改价跟进', badge: `${priceAdjustedOrders.length} 单`, href: '/orders' },
+          { title: '售后处理', badge: `${pendingReviewReturns.length} 待审`, href: '/returns' },
+        ]
+      : role === 'product_manager'
+        ? [
+            { title: '库存预警', badge: `${lowStockProducts.length} 个`, href: '/products' },
+            { title: '机构商品', badge: `${institutionOnlyProducts.length} 个`, href: '/products' },
+            { title: '血液制品', badge: `${lowStockBloodProducts.length} 紧张`, href: '/products' },
+          ]
+        : [
+            { title: '订单回款', badge: `${overduePendingPaymentOrders.length} 超时`, href: '/orders' },
+            { title: '客户审核', badge: `${pendingVerification.length} 待审`, href: '/users' },
+            { title: '售后风险', badge: `${openReturns.length} 条`, href: '/returns' },
+          ];
 
   const kpis = [
     {
-      title: '业务闭环订单',
-      value: state.orders.length,
-      desc: `${pendingPayment} 待支付 / ${pendingShipment} 待发货 / ${bookingTodo} 预约待确认`,
-      icon: Activity,
-    },
-    {
-      title: '宠物医院客户',
-      value: institutionCount,
-      desc: `${verifiedInstitutions} 家已认证，${pendingVerification} 家待审核`,
-      icon: ShieldCheck,
-    },
-    {
-      title: '累计交易额',
-      value: `¥${formatMoney(revenue)}`,
-      desc: `含 ${personalCount} 位个人宠物客户和机构采购`,
+      title: '今日成交额',
+      value: `¥${formatMoney(todayRevenue)}`,
+      desc: `${todayRecognizedOrders.length} 单已进入成交或服务阶段`,
       icon: CreditCard,
     },
     {
-      title: '售后提成影响',
-      value: `¥${formatMoney(commissionRisk)}`,
-      desc: `${returnTodo} 条退换货待客服处理`,
+      title: '本月成交额',
+      value: `¥${formatMoney(monthRevenue)}`,
+      desc: `机构 ¥${formatMoney(institutionRevenue)} / 个人 ¥${formatMoney(personalRevenue)}`,
+      icon: Activity,
+    },
+    {
+      title: '待支付金额',
+      value: `¥${formatMoney(pendingPaymentAmount)}`,
+      desc: `${pendingPaymentOrders.length} 单待支付，${overduePendingPaymentOrders.length} 单超时`,
+      icon: ShoppingCart,
+    },
+    {
+      title: '待结算提成',
+      value: `¥${formatMoney(pendingCommissionAmount)}`,
+      desc: `${pendingCommissionOrders.length} 单待锁定或结算`,
       icon: Handshake,
     },
   ];
 
-  const operationalTasks = [
+  const topAttentionItems = [
     {
-      title: '待支付订单改价',
-      desc: adjustedOrders[0]
-        ? `${adjustedOrders[0].customerName} 已有改价记录，可继续跟进通知与日志`
-        : '客服可对待支付订单降价并重置支付倒计时',
+      title: '待支付回款',
+      value: `¥${formatMoney(pendingPaymentAmount)}`,
+      desc: `${pendingPaymentOrders.length} 单待支付，${overduePendingPaymentOrders.length} 单超支付时限`,
       href: '/orders',
-      badge: `${pendingPayment} 单`,
+      badge: '回款',
       icon: CreditCard,
     },
     {
-      title: '宠物血液预约确认',
-      desc: bloodProducts.length > 0
-        ? `${bloodProducts.length} 个机构专属血液制品，仅认证医院可见`
-        : '机构客户完成认证后解锁宠物血液制品',
-      href: '/products',
-      badge: '机构专属',
-      icon: ClipboardCheck,
-    },
-    {
-      title: '制单发货与冷链同步',
-      desc: `${pendingShipment} 笔待发货订单可指派制单员，录入快递后同步客户小程序`,
+      title: '履约积压',
+      value: `${fulfillmentOrders.length} 单`,
+      desc: `${pendingShipmentOrders.length} 单待发货，${pendingConfirmationOrders.length} 单预约待确认`,
       href: '/orders',
-      badge: `${pendingShipment} 单`,
+      badge: overdueFulfillmentOrders.length > 0 ? `${overdueFulfillmentOrders.length} 超时` : '履约',
       icon: Truck,
     },
     {
-      title: '退换货影响提成',
-      desc: `售后审核后自动调整业务员提成，当前待处理 ${returnTodo} 条`,
+      title: '售后退款',
+      value: `¥${formatMoney(refundingAmount)}`,
+      desc: `${openReturns.length} 条处理中，本月退款 ¥${formatMoney(refundAmountThisMonth)}`,
       href: '/returns',
-      badge: `¥${formatMoney(commissionRisk)}`,
+      badge: `${pendingReviewReturns.length} 待审`,
+      icon: Handshake,
+    },
+    {
+      title: '库存预警',
+      value: `${lowStockProducts.length} 个`,
+      desc: `${lowStockBloodProducts.length} 个血液制品预警，阈值 ${stockWarningThreshold}`,
+      href: '/products',
+      badge: '库存',
       icon: PackageCheck,
     },
   ];
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] space-y-6 bg-[radial-gradient(circle_at_top_left,rgba(7,95,103,0.12),transparent_34%),linear-gradient(180deg,#f7fbfa_0%,#ffffff_42%)]">
-      <section className="overflow-hidden rounded-[2rem] border border-teal-900/10 bg-slate-950 text-white shadow-2xl shadow-teal-950/20">
-        <div className="grid gap-8 p-8 lg:grid-cols-[1.4fr_0.8fr]">
-          <div className="space-y-6">
-            <Badge className="w-fit bg-teal-400/15 text-teal-100 ring-1 ring-teal-200/20">
-              大熊动医华南医学检验实验室运营总览
-            </Badge>
-            <div className="space-y-3">
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-tight">
-                围绕宠物医院采购、用血预约、发货与售后，统一管理核心业务流程。
-              </h1>
-              <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                后台聚焦客户认证、订单推进、血液制品预约管控，以及退换货对业务员提成的联动影响。
-              </p>
+    <div className="space-y-4 bg-[radial-gradient(circle_at_top_left,rgba(7,95,103,0.10),transparent_28%),linear-gradient(180deg,#f4faf9_0%,#ffffff_40%)]">
+      <Card className="border-teal-950/10 bg-white/92 shadow-sm">
+        <CardContent className="space-y-4 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-teal-700/10 text-teal-900">今日经营摘要</Badge>
+                <Badge variant="outline">{currentUser ? currentUser.realName : '未识别角色'}</Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+                <span>
+                  本月成交 <span className="font-semibold text-slate-950">¥{formatMoney(monthRevenue)}</span>
+                </span>
+                <span>
+                  机构占比 <span className="font-semibold text-slate-950">{ratio(institutionRevenue, totalRevenue)}%</span>
+                </span>
+                <span>
+                  履约中 <span className="font-semibold text-slate-950">{fulfillmentOrders.length}</span> 单
+                </span>
+                <span>
+                  售后中 <span className="font-semibold text-slate-950">{openReturns.length}</span> 条
+                </span>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button className="bg-teal-300 text-slate-950 hover:bg-teal-200" nativeButton={false} render={<Link href="/orders" />}>
-                查看订单进度 <ArrowRight />
-              </Button>
-              <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" nativeButton={false} render={<Link href="/products" />}>
-                查看商品分层
-              </Button>
-            </div>
-          </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/8 p-5 backdrop-blur">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-slate-300">今日重点任务</span>
-              <Badge className="bg-amber-300 text-slate-950">运营跟进</Badge>
-            </div>
-            <div className="space-y-3">
-              {operationalTasks.slice(0, 3).map(task => (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-500">{roleTitle}</span>
+              {rolePanelItems.map(item => (
                 <Link
-                  key={task.title}
-                  href={task.href}
-                  className="flex items-start gap-3 rounded-2xl bg-white/10 p-3 transition hover:bg-white/15"
+                  key={item.title}
+                  href={item.href}
+                  className="rounded-full border bg-slate-50 px-3 py-1.5 text-xs text-slate-700 transition hover:border-teal-700/30 hover:text-slate-950"
                 >
-                  <task.icon className="mt-1 size-4 text-teal-200" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{task.title}</p>
-                      <span className="text-xs text-amber-200">{task.badge}</span>
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-300">{task.desc}</p>
-                  </div>
+                  {item.title} · {item.badge}
                 </Link>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">客户结构</p>
+              <p className="mt-1.5 text-xl font-semibold">{customers.length}</p>
+              <p className="mt-1 text-xs text-slate-600">
+                机构 {institutionCustomers.length} 家 / 个人 {personalCustomers.length} 位
+              </p>
+            </div>
+            <div className="rounded-2xl border bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">机构审核</p>
+              <p className="mt-1.5 text-xl font-semibold">{verifiedInstitutions.length}</p>
+              <p className="mt-1 text-xs text-slate-600">
+                待审核 {pendingVerification.length} 家 / 驳回 {rejectedVerification.length} 家
+              </p>
+            </div>
+            <div className="rounded-2xl border bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">库存风险</p>
+              <p className="mt-1.5 text-xl font-semibold">{lowStockProducts.length}</p>
+              <p className="mt-1 text-xs text-slate-600">
+                血液制品 {lowStockBloodProducts.length} 个 / 预警阈值 {stockWarningThreshold}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {kpis.map(item => (
           <Card key={item.title} className="border-teal-950/10 bg-white/90 shadow-sm">
-            <CardContent className="flex items-start gap-4 p-5">
-              <div className="rounded-2xl bg-teal-700/10 p-3 text-teal-800">
-                <item.icon className="size-5" />
+            <CardContent className="flex items-start gap-3 p-4">
+              <div className="rounded-2xl bg-teal-700/10 p-2.5 text-teal-800">
+                <item.icon className="size-4" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{item.title}</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight">{item.value}</p>
+                <p className="mt-1 text-xl font-semibold tracking-tight">{item.value}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
               </div>
             </CardContent>
@@ -214,91 +378,28 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="border-teal-950/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="size-5 text-teal-700" />
-              端到端业务流程
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-              {flowSteps.map((step, index) => (
-                <div key={step.key} className="relative rounded-2xl border bg-gradient-to-b from-white to-teal-50/50 p-4">
-                  <div className="mb-3 flex size-8 items-center justify-center rounded-full bg-teal-800 text-sm font-semibold text-white">
-                    {index + 1}
+      <div className="grid gap-4 xl:grid-cols-4">
+        {topAttentionItems.map(item => (
+          <Card key={item.title} className="border-teal-950/10 bg-white/95 shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-xl bg-amber-100 p-2 text-amber-700">
+                    <item.icon className="size-4" />
                   </div>
-                  <p className="font-medium">{step.label}</p>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{step.desc}</p>
+                  <CardTitle className="text-base">{item.title}</CardTitle>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-teal-950/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="size-5 text-amber-600" />
-              当前待关注异常
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: '低库存商品', value: lowStock.length, desc: lowStock.slice(0, 2).map(p => p.name).join('、') || '暂无' },
-              { label: '待审核机构', value: pendingVerification, desc: '影响机构价和宠物血液制品可见性' },
-              { label: '待处理售后', value: returnTodo, desc: '处理结果会同步影响提成' },
-            ].map(item => (
-              <div key={item.label} className="rounded-2xl border bg-muted/30 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium">{item.label}</p>
-                  <Badge variant={item.value > 0 ? 'default' : 'secondary'}>{item.value}</Badge>
-                </div>
+                <Badge variant="outline">{item.badge}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Link href={item.href} className="block transition hover:text-teal-800">
+                <p className="text-xl font-semibold tracking-tight">{item.value}</p>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-teal-950/10">
-          <CardHeader>
-            <CardTitle>快捷工作入口</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            {operationalTasks.map(task => (
-              <Link key={task.title} href={task.href} className="rounded-2xl border bg-white p-4 transition hover:-translate-y-0.5 hover:border-teal-700/40 hover:shadow-md">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="rounded-xl bg-teal-700/10 p-2 text-teal-800">
-                    <task.icon className="size-4" />
-                  </div>
-                  <Badge variant="outline">{task.badge}</Badge>
-                </div>
-                <p className="font-medium">{task.title}</p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">{task.desc}</p>
               </Link>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="border-teal-950/10">
-          <CardHeader>
-            <CardTitle>最近关键日志</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {state.logs.map(log => (
-              <div key={log.id} className="rounded-2xl border bg-white p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium">{log.action}</p>
-                  <span className="text-xs text-muted-foreground">{log.createdAt}</span>
-                </div>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">{log.detail}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
