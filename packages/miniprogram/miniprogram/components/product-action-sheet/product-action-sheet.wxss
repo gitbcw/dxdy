@@ -1,0 +1,227 @@
+/* ── 遮罩层 ── */
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sheet-mask.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── 半屏弹框 ── */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 101;
+  background: #ffffff;
+  border-radius: 32rpx 32rpx 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.sheet.show {
+  transform: translateY(0);
+}
+
+/* ── 拖拽指示条 ── */
+.sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0 8rpx;
+}
+
+.handle-bar {
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #d8d8d8;
+}
+
+/* ── 商品信息头部 ── */
+.sheet-header {
+  display: flex;
+  padding: 8rpx 32rpx 28rpx;
+  gap: 24rpx;
+}
+
+.product-thumb {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 20rpx;
+  background: #f0f7f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.thumb-text {
+  color: #a0aaac;
+  font-size: 24rpx;
+}
+
+.header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.header-price {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: #ba7800;
+}
+
+.header-stock {
+  font-size: 22rpx;
+  color: #8b999b;
+}
+
+.header-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #173236;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.header-close {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.close-icon {
+  font-size: 40rpx;
+  color: #8b999b;
+  line-height: 1;
+}
+
+/* ── 通用区域 ── */
+.sheet-section {
+  padding: 24rpx 32rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.section-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #173236;
+  margin-bottom: 18rpx;
+}
+
+/* ── 规格标签 ── */
+.spec-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.spec-tag {
+  padding: 14rpx 28rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #5d7175;
+  background: #f0f7f6;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+
+.spec-tag.active {
+  color: #0a6e7c;
+  background: #e0f5f2;
+  border-color: #0a6e7c;
+  font-weight: 700;
+}
+
+/* ── 数量选择器 ── */
+.qty-row {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+}
+
+.qty-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f7f6;
+}
+
+.qty-btn.disabled {
+  opacity: 0.35;
+}
+
+.qty-text {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #173236;
+  line-height: 1;
+}
+
+.qty-value {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #173236;
+  min-width: 48rpx;
+  text-align: center;
+}
+
+/* ── 底部操作按钮 ── */
+.sheet-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx 32rpx 16rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.btn-cart {
+  color: #0a6e7c;
+  background: #e0f5f2;
+  border: 2rpx solid #0a6e7c;
+}
+
+.btn-buy {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0a6e7c, #159888);
+}
+
+/* ── 安全区 ── */
+.safe-bottom {
+  height: 34rpx;
+}

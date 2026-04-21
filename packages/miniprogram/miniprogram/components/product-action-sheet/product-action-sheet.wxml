@@ -1,0 +1,62 @@
+<view class="sheet-mask {{visible ? 'show' : ''}}" bindtap="onClose"></view>
+
+<view class="sheet {{visible ? 'show' : ''}}">
+  <!-- 顶部拖拽指示条 -->
+  <view class="sheet-handle">
+    <view class="handle-bar"></view>
+  </view>
+
+  <!-- 商品信息 -->
+  <view class="sheet-header">
+    <view class="product-thumb">
+      <text class="thumb-text">商品</text>
+    </view>
+    <view class="header-info">
+      <text class="header-price">{{displayPrice}}</text>
+      <text class="header-stock">库存 {{stock}}件</text>
+      <text class="header-name">{{productName}}</text>
+    </view>
+    <view class="header-close" bindtap="onClose">
+      <text class="close-icon">×</text>
+    </view>
+  </view>
+
+  <!-- 规格选择 -->
+  <view class="sheet-section" wx:if="{{specs.length > 0}}">
+    <text class="section-label">商品规格</text>
+    <view class="spec-tags">
+      <view
+        wx:for="{{specs}}"
+        wx:key="name"
+        class="spec-tag {{selectedSpecIdx === index ? 'active' : ''}}"
+        data-idx="{{index}}"
+        bindtap="onSpecTap"
+      >
+        {{item.value}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 数量选择 -->
+  <view class="sheet-section">
+    <text class="section-label">购买数量</text>
+    <view class="qty-row">
+      <view class="qty-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="onQtyMinus">
+        <text class="qty-text">−</text>
+      </view>
+      <text class="qty-value">{{quantity}}</text>
+      <view class="qty-btn {{quantity >= stock ? 'disabled' : ''}}" bindtap="onQtyPlus">
+        <text class="qty-text">+</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作按钮 -->
+  <view class="sheet-actions">
+    <view class="action-btn btn-cart" bindtap="onAddCart">加入购物车</view>
+    <view class="action-btn btn-buy" bindtap="onBuyNow">立即购买</view>
+  </view>
+
+  <!-- 底部安全区 -->
+  <view class="safe-bottom"></view>
+</view>
