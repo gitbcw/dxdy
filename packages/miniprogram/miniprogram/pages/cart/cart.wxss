@@ -185,6 +185,13 @@
   filter: brightness(10);
 }
 
+.qty-icon {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
 .qty-value {
   min-width: 48rpx;
   text-align: center;
@@ -212,6 +219,13 @@
 .item-remove:active {
   background: rgba(220, 53, 69, 0.1);
   color: var(--color-error);
+}
+
+.remove-icon {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  line-height: 1;
 }
 
 /* ============ 底部结算栏 ============ */

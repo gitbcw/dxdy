@@ -1,5 +1,5 @@
 const icons = require('../../../services/icons')
-const { getClerkOrders } = require('../../../services/index')
+const { getClerkOrders, getOrderStatusText } = require('../../../services/index')
 
 Page({
   data: {
@@ -19,6 +19,7 @@ Page({
     const orders = await getClerkOrders({ status: 'pending' })
     const mappedOrders = orders.map((order: any, index: number) => ({
       ...order,
+      statusText: getOrderStatusText(order.status),
       badgeText: order.type === 'exchange' ? '换货优先' : index === 0 ? '当前最急' : '待发货',
       helperText: order.type === 'exchange'
         ? '关联原订单，优先补发避免客户等待'

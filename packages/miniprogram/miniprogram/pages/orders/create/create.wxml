@@ -1,6 +1,7 @@
 <view class="page">
-  <view wx:if="{{product}}" class="content">
-    <view class="hero-card">
+  <view wx:if="{{product || isFromCart}}" class="content">
+    <!-- 单品展示 -->
+    <view wx:if="{{product}}" class="hero-card">
       <view class="hero-top">
         <view>
           <text class="eyebrow">{{customerTypeLabel}} · {{priceLabel}}</text>
@@ -15,14 +16,35 @@
       </view>
     </view>
 
-    <view class="type-switch">
+    <!-- 购物车多商品展示 -->
+    <view wx:if="{{isFromCart}}" class="hero-card cart-hero">
+      <view class="hero-top">
+        <view>
+          <text class="eyebrow">{{customerTypeLabel}} · {{priceLabel}}</text>
+          <text class="name">购物车结算 ({{cartItems.length}}件)</text>
+        </view>
+        <view class="product-tag">批量采购</view>
+      </view>
+      <view class="cart-item-list">
+        <view wx:for="{{cartItems}}" wx:key="id" class="cart-order-item">
+          <text class="cart-item-name">{{item.name}}</text>
+          <view class="cart-item-meta">
+            <text class="cart-item-spec">{{item.specs[0].value}}</text>
+            <text class="cart-item-qty">×{{item.quantity}}</text>
+            <text class="cart-item-price">¥{{item.lineTotal}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{product}}" class="type-switch">
       <view class="type-item active">
         <text class="type-title">{{orderType === 'booking' ? '预约采购' : '普通采购'}}</text>
         <text class="type-desc">{{orderType === 'booking' ? '宠物用血需提前预约排期' : '常规商品按下单后履约发货'}}</text>
       </view>
     </view>
 
-    <view class="card">
+    <view wx:if="{{product}}" class="card">
       <view class="row">
         <view>
           <text class="label">采购数量</text>
@@ -48,20 +70,15 @@
       <text class="card-title">预约信息</text>
       <view class="field">
         <text class="field-label">预约日期</text>
-        <input class="field-input" data-field="bookingDate" value="{{bookingDate}}" bindinput="onBookingInput" />
+        <picker mode="date" value="{{bookingDate}}" start="{{minBookingDate}}" bindchange="onBookingDateChange">
+          <view class="field-input picker-input">{{bookingDate}}</view>
+        </picker>
       </view>
       <view class="field">
         <text class="field-label">预约地点</text>
         <input class="field-input" data-field="bookingLocation" value="{{bookingLocation}}" bindinput="onBookingInput" />
       </view>
-      <view class="field">
-        <text class="field-label">联系人</text>
-        <input class="field-input" data-field="contactName" value="{{contactName}}" bindinput="onContactInput" />
-      </view>
-      <view class="field">
-        <text class="field-label">联系电话</text>
-        <input class="field-input" data-field="contactPhone" value="{{contactPhone}}" bindinput="onContactInput" />
-      </view>
+      <text class="field-note">联系人和联系电话默认取下方已选联系地址</text>
     </view>
 
     <view class="card">
@@ -102,7 +119,7 @@
     </view>
   </view>
 
-  <view class="footer" wx:if="{{product}}">
+  <view class="footer" wx:if="{{product || isFromCart}}">
     <view>
       <text class="footer-label">应付金额</text>
       <text class="total">¥{{total}}</text>

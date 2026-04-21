@@ -47,5 +47,10 @@ export const {
   formatMoney,
   formatDate,
   formatDateTime,
+  getOrderStatusText,
+  getOrderStatusDesc,
   maskPhone,
+  addToCart,
+  getCartItems,
+  clearCart,
 } = shared

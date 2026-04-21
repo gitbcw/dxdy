@@ -1,7 +1,7 @@
 <view class="page">
   <view class="form">
     <text class="title">{{isRegister ? '注册' : '登录'}} 大熊动医华南医学检验实验室</text>
-    <text class="subtitle">测试环境支持直接带入预置账号，无需真实短信验证码。</text>
+    <text class="subtitle">预置账号可直接登录</text>
     <input class="input" placeholder="手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
     <input wx:if="{{isRegister}}" class="input" placeholder="昵称" value="{{nickname}}" bindinput="onNicknameInput" />
     <view class="submit-btn" bindtap="onSubmit">{{isRegister ? '注册' : '登录'}}</view>

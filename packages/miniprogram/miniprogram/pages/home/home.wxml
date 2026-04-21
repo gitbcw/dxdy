@@ -1,42 +1,52 @@
 <view class="page">
-  <view class="hero">
-    <view class="hero-top">
-      <view class="hero-copy">
-        <text class="eyebrow">大熊动医华南医学检验实验室</text>
-        <text class="title">{{pageTitle}}</text>
-      </view>
-      <view class="role-pill">{{roleLabel}}</view>
+  <view wx:if="{{banner}}" class="cert-banner {{banner.status}}">
+    <view class="banner-main">
+      <text class="banner-text">{{banner.text}}</text>
+      <view wx:if="{{banner.actionText}}" class="banner-action" bindtap="onBannerAction">{{banner.actionText}}</view>
     </view>
-    <text class="subtitle">{{heroSubtitle}}</text>
-    <view class="hero-actions">
-      <view class="primary-action" bindtap="onPrimaryAction">{{primaryActionText}}</view>
-      <view class="ghost-action" bindtap="onSecondaryAction">{{secondaryActionText}}</view>
-    </view>
+    <text wx:if="{{banner.rejectReason}}" class="banner-reason">驳回原因：{{banner.rejectReason}}</text>
   </view>
 
-  <view class="identity-card">
-    <view class="identity-main">
-      <view class="avatar">{{avatarText}}</view>
-      <view class="identity-copy">
-        <text class="identity-name">{{displayName}}</text>
-        <text class="identity-desc">{{identityDesc}}</text>
-      </view>
-    </view>
-    <view class="identity-status {{verificationClass}}">{{verificationText}}</view>
+  <view class="home-header">
+    <text class="header-name">{{displayName}}</text>
+    <view class="identity-tag {{identityTagClass}}">{{identityTag}}</view>
   </view>
 
-  <view class="summary-grid">
-    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
-      <text class="summary-value">{{item.value}}</text>
-      <text class="summary-label">{{item.label}}</text>
-      <text class="summary-desc">{{item.desc}}</text>
-    </view>
+  <view class="search-bar">
+    <text class="search-icon">搜</text>
+    <input
+      class="search-input"
+      placeholder="{{searchPlaceholder}}"
+      value="{{searchKeyword}}"
+      confirm-type="search"
+      bindinput="onSearchInput"
+      bindconfirm="onSearchConfirm"
+    />
+    <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
+    <view class="search-submit" bindtap="onSearchTap">搜索</view>
   </view>
 
   <view class="panel">
     <view class="section-head">
-      <text class="section-title">现在先做什么</text>
-      <text class="section-note">把最该处理的动作放到首屏</text>
+      <text class="section-title">快捷入口</text>
+    </view>
+    <view class="quick-row">
+      <view
+        wx:for="{{quickActions}}"
+        wx:key="title"
+        class="quick-item"
+        data-action="{{item.action}}"
+        bindtap="onQuickActionTap"
+      >
+        <view class="quick-icon-sm">{{item.icon}}</view>
+        <text class="quick-title-sm">{{item.title}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{taskCards.length > 0}}" class="panel">
+    <view class="section-head">
+      <text class="section-title">待办事项</text>
     </view>
     <view class="task-list">
       <view
@@ -57,27 +67,7 @@
     </view>
   </view>
 
-  <view class="panel">
-    <view class="section-head">
-      <text class="section-title">快捷入口</text>
-      <text class="section-note">按角色直接去目标页</text>
-    </view>
-    <view class="quick-grid">
-      <view
-        wx:for="{{quickActions}}"
-        wx:key="title"
-        class="quick-card"
-        data-action="{{item.action}}"
-        bindtap="onQuickActionTap"
-      >
-        <view class="quick-icon">{{item.icon}}</view>
-        <text class="quick-title">{{item.title}}</text>
-        <text class="quick-desc">{{item.desc}}</text>
-      </view>
-    </view>
-  </view>
-
-  <view class="panel">
+  <view wx:if="{{boardItems.length > 0}}" class="panel">
     <view class="section-head">
       <text class="section-title">{{boardTitle}}</text>
       <text class="section-more" bindtap="onBoardMoreTap">{{boardMoreText}} ></text>
@@ -85,14 +75,17 @@
     <view class="board-list">
       <view
         wx:for="{{boardItems}}"
-        wx:key="title"
+        wx:key="id"
         class="board-card"
-        data-action="{{item.action}}"
+        data-idx="{{index}}"
         bindtap="onBoardItemTap"
       >
         <view class="board-row">
           <text class="board-badge">{{item.badge}}</text>
-          <text class="board-action">{{item.actionText}}</text>
+          <view wx:if="{{item.type === 'product'}}" class="board-cart" data-idx="{{index}}" catchtap="onBoardCartTap">
+            <text class="cart-plus">+</text>
+          </view>
+          <text wx:elif="{{item.actionText}}" class="board-action">{{item.actionText}}</text>
         </view>
         <text class="board-title">{{item.title}}</text>
         <text class="board-desc">{{item.desc}}</text>
@@ -100,4 +93,13 @@
       </view>
     </view>
   </view>
+
+  <product-action-sheet
+    visible="{{actionSheetVisible}}"
+    product="{{actionSheetProduct}}"
+    isInstitution="{{isInstitution}}"
+    bind:close="onActionSheetClose"
+    bind:addcart="onActionSheetAddCart"
+    bind:buynow="onActionSheetBuyNow"
+  />
 </view>

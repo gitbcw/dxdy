@@ -1,5 +1,5 @@
 const { formatMoney } = require('../../services/index')
-const icons = require('../../services/icons')
+const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 
 const CART_KEY = 'cart_items'
 
@@ -10,6 +10,7 @@ function saveCart(items: any[]) {
 function loadCart(): any[] {
   try {
     const stored = wx.getStorageSync(CART_KEY)
+    if (Array.isArray(stored)) return stored
     return stored ? JSON.parse(stored) : []
   } catch {
     return []
@@ -23,13 +24,33 @@ Page({
     items: [] as any[],
     total: '0.00',
     isEmpty: true,
-    iconDelete: icons.delete,
-    iconAdd: icons.add,
-    iconMinus: icons.minus,
+    iconDelete: '',
+    iconAdd: '',
+    iconMinus: '',
   },
 
   onShow() {
+    if (this.redirectStaffRole()) return
+    this.syncTabBar()
+
+    // 每次显示时从 localStorage 重新加载，确保与其他页面的加购操作同步
+    const fresh = loadCart()
+    cartStore.length = 0
+    fresh.forEach((item: any) => cartStore.push(item))
     this.refreshCart()
+  },
+
+  syncTabBar() {
+    const tabBar = (this as any).getTabBar?.()
+    tabBar?.updateForPage?.(normalizePath('/pages/cart/cart'))
+  },
+
+  redirectStaffRole() {
+    const role = getApp().globalData.userRole || 'customer_personal'
+    if (!isStaffRole(role)) return false
+
+    wx.switchTab({ url: '/pages/home/home' })
+    return true
   },
 
   refreshCart() {
@@ -101,22 +122,5 @@ Page({
   },
 })
 
-// 导出供其他页面添加商品
-export function addToCart(product: any, quantity = 1) {
-  const existing = cartStore.find((i: any) => i.id === product.id)
-  if (existing) {
-    existing.quantity += quantity
-  } else {
-    cartStore.push({ ...product, quantity })
-  }
-  saveCart(cartStore)
-}
+export {}
 
-export function getCartItems() {
-  return [...cartStore]
-}
-
-export function clearCart() {
-  cartStore.length = 0
-  saveCart(cartStore)
-}

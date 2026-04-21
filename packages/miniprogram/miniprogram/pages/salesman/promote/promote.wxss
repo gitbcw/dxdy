@@ -1,13 +1,11 @@
-/* promote.wxss - 大熊动医华南医学检验实验室 - 业务员推广工具页 */
-
 .page {
   min-height: 100vh;
   background: var(--bg-page);
   display: flex;
   flex-direction: column;
+  padding-bottom: 48rpx;
 }
 
-/* ============ 页面顶部导航 ============ */
 .page-header {
   background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
   padding: 32rpx;
@@ -24,19 +22,24 @@
   letter-spacing: 2rpx;
 }
 
-/* ============ 二维码区域 ============ */
 .qrcode-section {
   display: flex;
   justify-content: center;
-  padding: 60rpx 40rpx 40rpx;
+  padding: 40rpx 32rpx;
 }
 
 .qrcode-card {
+  width: 100%;
+  margin: 0 32rpx;
   background: var(--bg-card);
   border-radius: var(--radius-xl);
-  padding: 40rpx;
-  box-shadow: var(--shadow-md);
+  padding: 32rpx;
+  box-shadow: var(--shadow-sm);
   border: 1rpx solid var(--border-color);
+  box-sizing: border-box;
+}
+
+.qrcode-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -44,8 +47,8 @@
 }
 
 .qrcode-img {
-  width: 400rpx;
-  height: 400rpx;
+  width: 420rpx;
+  height: 420rpx;
   background: #FFFFFF;
   border-radius: var(--radius-lg);
 }
@@ -56,98 +59,26 @@
   font-weight: 500;
 }
 
-/* ============ 按钮区 ============ */
-.btn-row {
-  display: flex;
-  gap: 24rpx;
-  padding: 0 40rpx;
-  margin-top: 20rpx;
-}
-
 .btn {
-  flex: 1;
+  width: 100%;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  height: 88rpx;
   border-radius: var(--radius-lg);
   font-size: 30rpx;
   font-weight: 600;
   background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
   color: #FFFFFF;
   border: none;
-  box-shadow: var(--shadow-sm);
 }
 
 .btn::after {
   border: none;
 }
 
-.btn:active {
-  transform: scale(0.98);
-  box-shadow: var(--shadow-md);
-}
-
 .btn-icon {
   width: 40rpx;
   height: 40rpx;
-}
-
-/* ============ 推广链接区 ============ */
-.link-section {
-  margin: 40rpx;
-  margin-top: 60rpx;
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
-  padding: 24rpx;
-  box-shadow: var(--shadow-sm);
-  border: 1rpx solid var(--border-color);
-}
-
-.link-label {
-  font-size: 26rpx;
-  color: var(--text-tertiary);
-  margin-bottom: 16rpx;
-  font-weight: 500;
-}
-
-.link-row {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.link-text {
-  flex: 1;
-  background: var(--bg-section);
-  border-radius: var(--radius-md);
-  padding: 20rpx 24rpx;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.link-text text {
-  font-size: 26rpx;
-  color: var(--text-primary);
-  font-family: monospace;
-}
-
-.btn-copy {
-  width: 140rpx;
-  height: 72rpx;
-  background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
-  color: #FFFFFF;
-  border-radius: var(--radius-md);
-  font-size: 26rpx;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  flex-shrink: 0;
-}
-
-.btn-copy::after {
-  border: none;
 }

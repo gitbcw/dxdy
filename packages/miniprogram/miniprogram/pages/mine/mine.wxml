@@ -2,37 +2,60 @@
   <view wx:if="{{!userInfo}}" class="login-prompt">
     <view class="avatar-empty">DX</view>
     <text class="login-title">登录工作账号</text>
-    <text class="login-desc">进入采购、订单、业务员和制单员对应工作台。</text>
+    <text class="login-desc">登录后可查看订单和采购</text>
     <view class="login-btn" bindtap="onLoginTap">立即登录</view>
   </view>
 
   <view wx:else>
-    <view class="profile-card">
+    <view class="profile-card {{compactProfile ? 'compact' : ''}}">
       <view class="profile-top">
         <view class="avatar">{{avatarText}}</view>
         <view class="info">
           <text class="name">{{userInfo.nickname}}</text>
           <text class="type">{{userRoleLabel}}</text>
         </view>
-        <view class="switch-pill" bindtap="onSwitchRole">工作身份</view>
       </view>
-      <text class="role-desc">{{roleDesc}}</text>
-      <text class="headline">{{pageHeadline}}</text>
-      <text class="subhead">{{pageSubhead}}</text>
+      <view class="profile-stats" wx:if="{{stats.length > 0}}">
+        <view wx:for="{{stats}}" wx:key="label" class="profile-stat">
+          <text class="profile-stat-label">{{item.label}}</text>
+          <text class="profile-stat-value">{{item.value}}</text>
+        </view>
+      </view>
+      <text wx:if="{{statNote}}" class="profile-note">{{statNote}}</text>
     </view>
 
-    <view class="stats">
-      <view wx:for="{{stats}}" wx:key="label" class="stat">
-        <text class="stat-value">{{item.value}}</text>
-        <text class="stat-label">{{item.label}}</text>
-        <text class="stat-desc">{{item.desc}}</text>
+    <view class="order-bar" wx:if="{{showOrderBar}}">
+      <view class="order-bar-item" bindtap="onOrdersTap">
+        <view class="order-icon-wrap">
+          <view class="order-icon">全</view>
+        </view>
+        <text class="order-label">全部</text>
+      </view>
+      <view class="order-bar-item" bindtap="onPendingPaymentTap">
+        <view class="order-icon-wrap">
+          <view class="order-icon">付</view>
+          <view class="order-badge" wx:if="{{orderCounts.pendingPayment > 0}}">{{orderCounts.pendingPayment}}</view>
+        </view>
+        <text class="order-label">待付款</text>
+      </view>
+      <view class="order-bar-item" bindtap="onPendingReceiptTap">
+        <view class="order-icon-wrap">
+          <view class="order-icon">收</view>
+          <view class="order-badge" wx:if="{{orderCounts.pendingReceipt > 0}}">{{orderCounts.pendingReceipt}}</view>
+        </view>
+        <text class="order-label">待收货</text>
+      </view>
+      <view class="order-bar-item" bindtap="onCompletedTap">
+        <view class="order-icon-wrap">
+          <view class="order-icon">完</view>
+        </view>
+        <text class="order-label">已完结</text>
       </view>
     </view>
 
-    <view class="section">
+    <view class="section" wx:if="{{focusItems.length > 0}}">
       <view class="section-head">
         <text class="section-title">{{focusTitle}}</text>
-        <text class="section-more" bindtap="onSwitchRole">切换身份 ></text>
       </view>
       <view class="focus-list">
         <view
@@ -53,11 +76,7 @@
       </view>
     </view>
 
-    <view class="section">
-      <view class="section-head">
-        <text class="section-title">常用入口</text>
-        <text class="section-more" bindtap="onSwitchRole">换个视角 ></text>
-      </view>
+    <view class="section" wx:if="{{menuItems.length > 0}}">
       <view class="menu">
         <view
           wx:for="{{menuItems}}"
@@ -68,13 +87,16 @@
         >
           <view>
             <text class="menu-title">{{item.title}}</text>
-            <text class="menu-desc">{{item.desc}}</text>
+            <text class="menu-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
           </view>
           <text class="arrow">›</text>
         </view>
       </view>
     </view>
 
-    <view class="logout" bindtap="onLogout">退出当前账号</view>
+    <view class="bottom-actions">
+      <view class="action-btn switch-role" bindtap="onSwitchRole">切换身份</view>
+      <view class="action-btn logout" bindtap="onLogout">退出当前账号</view>
+    </view>
   </view>
 </view>

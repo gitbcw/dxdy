@@ -6,6 +6,8 @@ Page({
     isRegister: false,
     nickname: '',
     demoAccounts: [
+      { label: '普通客户', phone: '13888002233' },
+      { label: '未认证机构', phone: '13822003456' },
       { label: '宠物医院', phone: '13821003456' },
       { label: '个人客户', phone: '13877005678' },
       { label: '业务员', phone: '13811001234' },

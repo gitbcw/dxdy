@@ -6,29 +6,9 @@ const {
   getReturns,
   formatMoney,
   formatDateTime,
+  getOrderStatusText,
+  getOrderStatusDesc,
 } = require('../../../services/index')
-
-const statusLabel: Record<string, string> = {
-  pending_payment: '待支付',
-  pending_shipment: '待发货',
-  pending_receipt: '待收货',
-  completed: '已完成',
-  cancelled: '已取消',
-  pending_confirmation: '预约待确认',
-  confirmed: '预约已确认',
-  in_service: '服务中',
-}
-
-const statusDesc: Record<string, string> = {
-  pending_payment: '等待客户确认支付，后台可在此阶段按权限降价。',
-  pending_shipment: '客服已接单，等待指派制单员处理发货。',
-  pending_receipt: '制单员已录入物流，客户可查看配送轨迹。',
-  completed: '客户确认收货，进入提成锁定等待期。',
-  cancelled: '订单已取消，不再进入履约流程。',
-  pending_confirmation: '预约订单等待客服确认时间和宠物用血库存。',
-  confirmed: '预约已确认，等待按约定时间履约。',
-  in_service: '服务履约中，进度会同步给客户。',
-}
 
 Page({
   data: {
@@ -107,8 +87,8 @@ Page({
     const priceChanged = order.pricing.priceLog?.length > 0
     return {
       ...order,
-      statusText: statusLabel[order.status] || order.status,
-      statusDesc: statusDesc[order.status] || '订单状态已更新。',
+      statusText: getOrderStatusText(order.status),
+      statusDesc: getOrderStatusDesc(order.status),
       totalText: formatMoney(order.pricing.actualAmount),
       originalText: formatMoney(order.pricing.originalAmount),
       savedText: formatMoney(Math.max(0, order.pricing.originalAmount - order.pricing.actualAmount)),
@@ -129,16 +109,10 @@ Page({
                 ? '预约待确认'
                 : '订单跟进',
       priorityNote: priceChanged
-        ? `已优惠 ¥${formatMoney(Math.max(0, order.pricing.originalAmount - order.pricing.actualAmount))}，建议尽快确认支付`
+        ? `已优惠 ¥${formatMoney(Math.max(0, order.pricing.originalAmount - order.pricing.actualAmount))}`
         : returnRecord
-          ? `售后状态：${this.getReturnStatusText(returnRecord.status)}`
-          : order.status === 'pending_payment'
-            ? '完成支付后才会进入后续履约'
-            : order.status === 'pending_receipt'
-              ? '物流状态和签收进度会持续更新'
-              : order.type === 'booking' && order.status === 'pending_confirmation'
-                ? '等待客服确认预约时间和库存'
-                : '可继续查看订单详情',
+          ? `售后：${this.getReturnStatusText(returnRecord.status)}`
+          : '',
       returnRecord,
       returnStatusText: returnRecord ? this.getReturnStatusText(returnRecord.status) : '',
       commissionText: this.getCommissionText(order, returnRecord),
@@ -150,9 +124,9 @@ Page({
 
   getSummaryCards(orders: any[]) {
     return [
-      { value: String(orders.length), label: '全部订单', desc: '统一查看支付与售后' },
-      { value: String(orders.filter((item: any) => item.status === 'pending_payment').length), label: '待支付', desc: '优先处理改价单' },
-      { value: String(orders.filter((item: any) => item.returnRecord).length), label: '售后中', desc: '退款与换货进度' },
+      { value: String(orders.length), label: '全部订单', desc: '' },
+      { value: String(orders.filter((item: any) => item.status === 'pending_payment').length), label: '待支付', desc: '' },
+      { value: String(orders.filter((item: any) => item.returnRecord).length), label: '售后中', desc: '' },
     ]
   },
 

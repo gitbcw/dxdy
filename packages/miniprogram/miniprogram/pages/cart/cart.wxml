@@ -42,17 +42,17 @@
           </view>
           <view class="quantity-control">
             <view class="qty-btn" data-index="{{index}}" data-delta="{{-1}}" bindtap="onQuantityChange">
-              <image src="{{iconMinus}}" mode="aspectFit" style="width:24rpx;height:24rpx;" />
+              <text class="qty-icon">−</text>
             </view>
             <text class="qty-value">{{item.quantity}}</text>
             <view class="qty-btn" data-index="{{index}}" data-delta="{{1}}" bindtap="onQuantityChange">
-              <image src="{{iconAdd}}" mode="aspectFit" style="width:24rpx;height:24rpx;" />
+              <text class="qty-icon">+</text>
             </view>
           </view>
         </view>
       </view>
       <view class="item-remove" data-index="{{index}}" bindtap="onRemove">
-        <image src="{{iconDelete}}" mode="aspectFit" style="width:24rpx;height:24rpx;" />
+        <text class="remove-icon">×</text>
       </view>
     </view>
   </view>

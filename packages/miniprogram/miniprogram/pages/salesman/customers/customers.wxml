@@ -1,8 +1,8 @@
 <view class="page">
   <view class="hero">
     <text class="hero-eyebrow">业务员客户工作台</text>
-    <text class="hero-title">先跟进最值得成交的客户</text>
-    <text class="hero-subtitle">把高活跃客户、机构客户和售后关注客户分开看，比单纯列清单更适合真实跟进。</text>
+    <text class="hero-title">客户管理</text>
+    <text class="hero-subtitle"></text>
   </view>
 
   <view class="summary-grid">
@@ -15,8 +15,8 @@
 
   <view class="section">
     <view class="section-head">
-      <text class="section-title">今天优先关注</text>
-      <text class="section-more">按成交潜力排序</text>
+      <text class="section-title">重点关注</text>
+      <text class="section-more"></text>
     </view>
     <view class="focus-list">
       <view wx:for="{{focusCustomers}}" wx:key="id" class="focus-card">

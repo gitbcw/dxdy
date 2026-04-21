@@ -1,8 +1,8 @@
 <view class="page">
   <block wx:if="{{!isDetailMode}}">
     <view class="page-hero">
-      <text class="hero-title">先看最需要处理的订单</text>
-      <text class="hero-subtitle">支付、改价、物流和售后都在这里，但首屏先帮你分清哪些单最该先看。</text>
+      <text class="hero-title">我的订单</text>
+      <text class="hero-subtitle"></text>
     </view>
 
     <view class="summary-grid">

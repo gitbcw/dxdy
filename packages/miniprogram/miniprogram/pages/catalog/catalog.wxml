@@ -1,20 +1,14 @@
 <view class="page">
-  <view class="catalog-hero">
-    <view class="hero-top">
-      <view>
-        <text class="hero-eyebrow">{{roleLabel}}</text>
-        <text class="hero-title">{{pageTitle}}</text>
-      </view>
-    </view>
-    <text class="hero-subtitle">{{pageSubtitle}}</text>
-  </view>
-
-  <view class="summary-grid">
-    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
-      <text class="summary-value">{{item.value}}</text>
-      <text class="summary-label">{{item.label}}</text>
-      <text class="summary-desc">{{item.desc}}</text>
-    </view>
+  <view class="search-bar">
+    <input
+      class="search-input"
+      placeholder="搜索商品名称..."
+      value="{{searchKeyword}}"
+      bindinput="onSearchInput"
+      confirm-type="search"
+      bindconfirm="onSearchConfirm"
+    />
+    <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
   </view>
 
   <scroll-view scroll-x class="quick-filters">
@@ -59,10 +53,22 @@
         <text class="lead">{{item.leadText}}</text>
         <view class="product-bottom">
           <text class="price">¥{{item.priceText}}</text>
-          <text class="cta">{{item.isBloodPack ? '立即预约' : '立即下单'}}</text>
+          <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
+            <text class="cart-plus-icon">+</text>
+          </view>
         </view>
       </view>
       <view wx:if="{{products.length === 0}}" class="empty">{{emptyText}}</view>
     </scroll-view>
   </view>
+
+  <!-- 商品规格选择弹框 -->
+  <product-action-sheet
+    visible="{{actionSheetVisible}}"
+    product="{{actionSheetProduct}}"
+    isInstitution="{{isInstitution}}"
+    bind:close="onActionSheetClose"
+    bind:addcart="onActionSheetAddCart"
+    bind:buynow="onActionSheetBuyNow"
+  />
 </view>

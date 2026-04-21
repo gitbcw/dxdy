@@ -25,10 +25,10 @@ Page({
         amountText: formatMoney(customer.totalAmount),
         priorityTag: customer.type === 'institution' ? '机构客户' : '个人客户',
         priorityText: customer.orderCount >= 3
-          ? '适合推动复购'
+          ? '高活跃'
           : customer.type === 'institution'
-            ? '适合继续经营'
-            : '适合补充服务说明',
+            ? '机构客户'
+            : '新客户',
       }))
       .sort((a: any, b: any) => b.totalAmount - a.totalAmount)
 
@@ -45,9 +45,9 @@ Page({
       totalAmount: formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0)),
       totalCount: sortedCustomers.length,
       summaryCards: [
-        { value: String(sortedCustomers.length), label: '绑定客户', desc: '优先经营机构客户' },
-        { value: `¥${formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0))}`, label: '累计采购', desc: '可作为跟进强度参考' },
-        { value: String(sortedCustomers.filter((item: any) => item.exchangeCount > 0).length), label: '售后关注', desc: '先看会影响满意度的客户' },
+        { value: String(sortedCustomers.length), label: '绑定客户', desc: '' },
+        { value: `¥${formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0))}`, label: '累计采购', desc: '' },
+        { value: String(sortedCustomers.filter((item: any) => item.exchangeCount > 0).length), label: '售后关注', desc: '' },
       ],
       focusCustomers: sortedCustomers.slice(0, 3),
       filters,
@@ -69,3 +69,5 @@ Page({
     })
   },
 })
+
+export {}
