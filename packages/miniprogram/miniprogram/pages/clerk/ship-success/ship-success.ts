@@ -1,3 +1,5 @@
+const icons = require('../../../services/icons')
+
 Page({
   data: {
     orderId: '',
@@ -7,6 +9,11 @@ Page({
     address: '',
     expressCompany: '',
     expressNo: '',
+    packageType: '',
+    coldChainMethod: '',
+    packageWeight: '',
+    boxTemperature: '',
+    successIcon: icons.checkSuccess,
   },
 
   onLoad(options: any) {
@@ -19,6 +26,10 @@ Page({
       address: params.address || '',
       expressCompany: params.expressCompany || '',
       expressNo: params.expressNo || '',
+      packageType: params.packageType || '',
+      coldChainMethod: params.coldChainMethod || '',
+      packageWeight: params.packageWeight || '',
+      boxTemperature: params.boxTemperature || '',
     })
   },
 

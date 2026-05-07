@@ -1,9 +1,10 @@
 const { getVisibleTabList, normalizePath } = require('../utils/tab-bar')
+const icons = require('../services/icons')
 
 Component({
   data: {
     selectedPath: '/pages/home/home',
-    tabs: [] as Array<{ pagePath: string, text: string }>,
+    tabs: [] as Array<{ pagePath: string, text: string, icon?: string, activeIcon?: string }>,
   },
 
   methods: {
@@ -11,7 +12,10 @@ Component({
       const app = getApp<IAppOption>()
       const currentRole = role || app.globalData.userRole || 'customer_personal'
       this.setData({
-        tabs: getVisibleTabList(currentRole),
+        tabs: getVisibleTabList(currentRole).map((item: any) => ({
+          ...item,
+          iconSrc: icons.iconByKey[item.icon] || icons.home,
+        })),
       })
     },
 

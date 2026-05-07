@@ -1,4 +1,4 @@
-const { getClerkOrderById, clerkShipOrder } = require('../../../services/index')
+const { GENERATED_ASSETS, getClerkOrderById, clerkShipOrder } = require('../../../services/index')
 
 Page({
   data: {
@@ -11,11 +11,19 @@ Page({
     recipient: '',
     phone: '',
     address: '',
+    packageType: '',
+    coldChainMethod: '',
+    packageWeight: '',
+    boxTemperature: '',
+    modifyReason: '',
     tracks: [] as any[],
     showEditPanel: false,
     selectedCompany: '',
     expressNo: '',
     expressCompanies: ['顺丰速运', '中通快递', '圆通速运', '韵达快递', '申通快递', '中国邮政'],
+    packageTypes: ['冷藏箱', '保温箱', '普通箱'],
+    coldChainMethods: ['冰袋（2-6°C）', '干冰', '常温'],
+    coldChainImage: GENERATED_ASSETS.coldChain,
   },
 
   onLoad(options: any) {
@@ -32,6 +40,7 @@ Page({
       return
     }
     const shipping = order.shipping || {}
+    const coldChain = shipping.coldChain || {}
     const addr = shipping.address || order.shippingAddress || {}
 
     const tracks = this.buildTracks(order, shipping)
@@ -44,6 +53,11 @@ Page({
       recipient: addr.recipient || order.customerName || '',
       phone: addr.phone || order.customerPhone || '',
       address: [addr.province, addr.city, addr.district, addr.detail].filter(Boolean).join('') || order.address || '',
+      packageType: coldChain.packageType || order.packageType || '',
+      coldChainMethod: coldChain.method || order.coldChainMethod || '',
+      packageWeight: coldChain.weight || order.packageWeight || '',
+      boxTemperature: coldChain.boxTemperature || order.boxTemperature || '',
+      modifyReason: '',
       tracks,
     })
   },
@@ -79,6 +93,11 @@ Page({
       showEditPanel: true,
       selectedCompany: this.data.company,
       expressNo: this.data.trackingNo,
+      packageType: this.data.packageType || '冷藏箱',
+      coldChainMethod: this.data.coldChainMethod || '冰袋（2-6°C）',
+      packageWeight: this.data.packageWeight,
+      boxTemperature: this.data.boxTemperature,
+      modifyReason: '',
     })
   },
 
@@ -90,6 +109,19 @@ Page({
     this.setData({ expressNo: e.detail.value })
   },
 
+  onPackageTypeTap(e: any) {
+    this.setData({ packageType: e.currentTarget.dataset.value })
+  },
+
+  onColdChainTap(e: any) {
+    this.setData({ coldChainMethod: e.currentTarget.dataset.value })
+  },
+
+  onColdFieldInput(e: any) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ [field]: e.detail.value })
+  },
+
   onClosePanel() {
     this.setData({ showEditPanel: false })
   },
@@ -99,12 +131,25 @@ Page({
       wx.showToast({ title: '请填写完整物流信息', icon: 'none' })
       return
     }
+    if (!this.data.modifyReason.trim()) {
+      wx.showToast({ title: '请填写修改原因', icon: 'none' })
+      return
+    }
+    if (!this.data.packageType || !this.data.coldChainMethod || !this.data.boxTemperature) {
+      wx.showToast({ title: '请补全冷链信息', icon: 'none' })
+      return
+    }
     wx.showLoading({ title: '提交中...' })
     try {
       await clerkShipOrder({
         orderId: this.data.orderId,
         expressCompany: this.data.selectedCompany,
         expressNo: this.data.expressNo,
+        packageType: this.data.packageType,
+        coldChainMethod: this.data.coldChainMethod,
+        packageWeight: this.data.packageWeight,
+        boxTemperature: this.data.boxTemperature,
+        modifyReason: this.data.modifyReason.trim(),
       })
       wx.hideLoading()
       wx.showToast({ title: '修改成功' })

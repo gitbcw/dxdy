@@ -168,13 +168,8 @@
 .order-icon {
   width: 58rpx;
   height: 58rpx;
-  line-height: 58rpx;
   border-radius: 50%;
-  color: #18a44a;
   background: #eaf8ee;
-  font-size: 24rpx;
-  font-weight: 900;
-  text-align: center;
 }
 
 .order-badge {
@@ -206,17 +201,11 @@
 
 .cert-icon,
 .menu-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
   width: 54rpx;
   height: 54rpx;
   border-radius: 14rpx;
-  color: #17a64b;
   background: #eaf8ee;
-  font-size: 23rpx;
-  font-weight: 900;
 }
 
 .cert-copy {

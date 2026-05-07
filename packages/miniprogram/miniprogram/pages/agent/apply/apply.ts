@@ -1,8 +1,11 @@
 const { submitAgentApplication } = require('../../../services/index')
+const icons = require('../../../services/icons')
 
 Page({
   data: {
     companyName: '',
+    realName: '',
+    idNumber: '',
     contactName: '',
     contactPhone: '',
     region: '',
@@ -12,6 +15,8 @@ Page({
     channelType: 'clinic',
     expectedMonthlySales: '',
     remark: '',
+    agreementAccepted: false,
+    agreementIcon: icons.shield,
     channelOptions: [
       { key: 'clinic', label: '医院/诊所资源' },
       { key: 'distributor', label: '区域经销' },
@@ -29,6 +34,8 @@ Page({
     const appInfo = user.agentApplication || {}
     this.setData({
       companyName: appInfo.companyName || '',
+      realName: appInfo.realName || appInfo.contactName || user.nickname || '',
+      idNumber: appInfo.idNumber || '',
       contactName: appInfo.contactName || user.nickname || '',
       contactPhone: appInfo.contactPhone || user.phone || '',
       region: appInfo.region || '',
@@ -50,9 +57,15 @@ Page({
     this.setData({ channelType: e.currentTarget.dataset.key })
   },
 
+  onAgreementTap() {
+    this.setData({ agreementAccepted: !this.data.agreementAccepted })
+  },
+
   async onSubmit() {
     const {
       companyName,
+      realName,
+      idNumber,
       contactName,
       contactPhone,
       region,
@@ -62,8 +75,17 @@ Page({
       channelType,
       expectedMonthlySales,
       remark,
+      agreementAccepted,
     } = this.data
 
+    if (!realName.trim()) {
+      wx.showToast({ title: '请输入姓名', icon: 'none' })
+      return
+    }
+    if (!idNumber.trim()) {
+      wx.showToast({ title: '请输入身份证号', icon: 'none' })
+      return
+    }
     if (!companyName.trim()) {
       wx.showToast({ title: '请输入公司或机构名称', icon: 'none' })
       return
@@ -80,12 +102,18 @@ Page({
       wx.showToast({ title: '请填写代理区域和业务覆盖', icon: 'none' })
       return
     }
+    if (!agreementAccepted) {
+      wx.showToast({ title: '请先阅读并同意合作协议', icon: 'none' })
+      return
+    }
 
     wx.showLoading({ title: '提交中...' })
     const app = getApp()
     const user = app.globalData.userInfo
     const result = await submitAgentApplication(user.id, {
       companyName: companyName.trim(),
+      realName: realName.trim(),
+      idNumber: idNumber.trim(),
       contactName: contactName.trim(),
       contactPhone,
       region: region.trim(),

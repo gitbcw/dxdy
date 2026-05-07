@@ -1,10 +1,16 @@
-const { loginByPhone, registerCustomer } = require('../../services/index')
+const { loginByPhone, registerCustomer, GENERATED_ASSETS } = require('../../services/index')
+const icons = require('../../services/icons')
 
 Page({
   data: {
     phone: '',
     isRegister: false,
     nickname: '',
+    loginHeroImage: GENERATED_ASSETS.loginHero,
+    phoneIcon: icons.phone,
+    userIcon: icons.user,
+    shieldIcon: icons.shield,
+    wechatIcon: icons.service,
     demoAccounts: [
       { label: '普通客户', phone: '13888002233' },
       { label: '未认证机构', phone: '13822003456' },

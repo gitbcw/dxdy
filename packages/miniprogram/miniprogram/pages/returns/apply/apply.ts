@@ -1,4 +1,4 @@
-const { getOrderById, createReturn, formatMoney } = require('../../../services/index')
+const { getOrderById, createReturn, formatMoney, getProductVisualImage } = require('../../../services/index')
 
 Page({
   data: {
@@ -9,6 +9,7 @@ Page({
     reason: '产品破损/泄漏',
     description: '',
     refundAmount: '0.00',
+    productImageUrl: '',
     vouchers: [] as string[],
   },
 
@@ -30,6 +31,7 @@ Page({
       order,
       firstItem,
       refundAmount: formatMoney(order.pricing?.actualAmount || firstItem.totalPrice || 0),
+      productImageUrl: firstItem.productImage || getProductVisualImage(firstItem.productName),
     })
   },
 

@@ -49,7 +49,10 @@
       <text wx:if="{{item.bookingTime}}" class="booking-time">预约时间　{{item.bookingTime}}</text>
 
       <view wx:for="{{item.items}}" wx:for-item="prod" wx:key="name" class="product-row">
-        <view class="product-img">{{item.type === 'exchange' ? '换' : '血'}}</view>
+        <view class="product-img">
+          <image wx:if="{{prod.imageUrl}}" src="{{prod.imageUrl}}" mode="aspectFit" />
+          <text wx:else>{{item.type === 'exchange' ? '换' : '血'}}</text>
+        </view>
         <view class="product-main">
           <text class="product-name">{{prod.name}}</text>
           <text class="product-spec">{{prod.specs}}　数量：{{prod.quantity}}</text>

@@ -1,4 +1,5 @@
-const { getAgentOrders, formatMoney, getOrderStatusText } = require('../../../services/index')
+const { getAgentOrders, formatMoney, getOrderStatusText, getProductVisualImage } = require('../../../services/index')
+const icons = require('../../../services/icons')
 
 Page({
   data: {
@@ -15,6 +16,7 @@ Page({
     summaryCards: [] as any[],
     customerId: '',
     isEmpty: false,
+    orderIcon: icons.order,
   },
 
   onLoad(e: any) {
@@ -46,6 +48,7 @@ Page({
       amountText: formatMoney(amount),
       commissionText: `${this.getCommissionStatusText(commission.status)} ¥${formatMoney(commission.amount || 0)}`,
       itemText: `${firstItem.productName || '订单商品'} · ${firstItem.spec || ''}`,
+      productImage: firstItem.productImage || getProductVisualImage(firstItem.productName),
       itemCount: (order.items || []).reduce((sum: number, item: any) => sum + (item.quantity || 0), 0),
       customerTypeText: order.customerType === 'institution' ? '医院' : '个人',
       returnText: order.returnRecord ? '售后中' : '',

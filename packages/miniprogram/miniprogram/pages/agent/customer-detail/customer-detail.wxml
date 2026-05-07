@@ -47,6 +47,22 @@
       </view>
     </view>
 
+    <view class="section" wx:if="{{trendBars.length > 0}}">
+      <view class="section-head">
+        <text class="section-title">成交趋势</text>
+        <text class="section-more">近 {{trendBars.length}} 单</text>
+      </view>
+      <view class="trend-chart">
+        <view wx:for="{{trendBars}}" wx:key="id" class="trend-item">
+          <view class="bar-wrap">
+            <view class="bar" style="height: {{item.height}}rpx;"></view>
+          </view>
+          <text class="bar-amount">¥{{item.amountText}}</text>
+          <text class="bar-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
     <view class="section">
       <view class="section-head">
         <text class="section-title">最近订单</text>

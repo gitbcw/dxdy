@@ -2,7 +2,7 @@
   <view class="page-title">商品分类</view>
 
   <view class="search-bar">
-    <text class="search-icon">⌕</text>
+    <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
     <input
       class="search-input"
       placeholder="搜索商品、品牌、关键词"
@@ -34,7 +34,7 @@
     <text class="sort-item active">综合⌄</text>
     <text class="sort-item">销量</text>
     <text class="sort-item">价格</text>
-    <text class="sort-item">筛选⌕</text>
+    <view class="sort-item filter-sort"><text>筛选</text><image src="{{filterIcon}}" mode="aspectFit" /></view>
   </view>
 
   <scroll-view scroll-x class="quick-filters">
@@ -58,12 +58,13 @@
       bindtap="onProductTap"
     >
       <view class="product-img">
-        <text>{{item.isBloodPack ? '血包' : '商品'}}</text>
+        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFit" />
+        <text wx:else>{{item.isBloodPack ? '血包' : '商品'}}</text>
       </view>
       <view class="product-info">
         <view class="product-title-row">
           <text class="product-name">{{item.name}}</text>
-          <text class="lock" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}">锁</text>
+          <image class="lock" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}" src="{{lockIcon}}" mode="aspectFit" />
         </view>
         <text class="product-spec">{{item.specText}}</text>
         <view class="tag-row">
@@ -75,7 +76,7 @@
           <text class="price">¥{{item.priceText}}</text>
           <text class="stock {{item.lowStock ? 'warn' : ''}}">{{item.stock <= 5 ? '库存紧张' : '可采购'}}</text>
           <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
-            <text class="cart-plus-icon">购</text>
+            <image class="cart-plus-icon" src="{{cartIcon}}" mode="aspectFit" />
           </view>
         </view>
       </view>

@@ -1,5 +1,5 @@
 const icons = require('../../../services/icons')
-const { getClerkOrderById, clerkShipOrder, markOrderPreparing } = require('../../../services/index')
+const { getClerkOrderById, clerkShipOrder, markOrderPreparing, getProductVisualImage } = require('../../../services/index')
 
 Page({
   data: {
@@ -7,7 +7,13 @@ Page({
     showExpressPanel: false,
     selectedCompany: '',
     expressNo: '',
+    packageType: '冷藏箱',
+    coldChainMethod: '冰袋（2-6°C）',
+    packageWeight: '',
+    boxTemperature: '',
     expressCompanies: ['顺丰速运', '中通快递', '圆通速递', '韵达快递', '申通快递', '中国邮政'],
+    packageTypes: ['冷藏箱', '保温箱', '普通箱'],
+    coldChainMethods: ['冰袋（2-6°C）', '干冰', '常温'],
     iconClock: icons.clock,
     iconRefresh: icons.refresh,
   },
@@ -18,7 +24,15 @@ Page({
 
   async loadOrder(id: string) {
     const order = await getClerkOrderById(id)
-    this.setData({ order })
+    this.setData({
+      order: order ? {
+        ...order,
+        items: (order.items || []).map((item: any) => ({
+          ...item,
+          imageUrl: item.productImage || getProductVisualImage(item.name || item.productName),
+        })),
+      } : order,
+    })
   },
 
   async onStartPreparing() {
@@ -46,9 +60,26 @@ Page({
     this.setData({ expressNo: e.detail.value })
   },
 
+  onPackageTypeTap(e: any) {
+    this.setData({ packageType: e.currentTarget.dataset.value })
+  },
+
+  onColdChainTap(e: any) {
+    this.setData({ coldChainMethod: e.currentTarget.dataset.value })
+  },
+
+  onColdFieldInput(e: any) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ [field]: e.detail.value })
+  },
+
   async onSubmitExpress() {
     if (!this.data.selectedCompany || !this.data.expressNo) {
       wx.showToast({ title: '请选择快递公司并填写单号', icon: 'none' })
+      return
+    }
+    if (!this.data.packageType || !this.data.coldChainMethod || !this.data.boxTemperature) {
+      wx.showToast({ title: '请补全冷链发货信息', icon: 'none' })
       return
     }
     wx.showLoading({ title: '提交中...' })
@@ -57,6 +88,10 @@ Page({
         orderId: this.data.order.id,
         expressCompany: this.data.selectedCompany,
         expressNo: this.data.expressNo,
+        packageType: this.data.packageType,
+        coldChainMethod: this.data.coldChainMethod,
+        packageWeight: this.data.packageWeight,
+        boxTemperature: this.data.boxTemperature,
       })
       wx.hideLoading()
       const order = this.data.order
@@ -70,6 +105,10 @@ Page({
         address: [address.province, address.city, address.district, address.detail].filter(Boolean).join('') || order.address || '',
         expressCompany: this.data.selectedCompany,
         expressNo: this.data.expressNo,
+        packageType: this.data.packageType,
+        coldChainMethod: this.data.coldChainMethod,
+        packageWeight: this.data.packageWeight,
+        boxTemperature: this.data.boxTemperature,
       }))
       wx.redirectTo({ url: `/pages/clerk/ship-success/ship-success?shipInfo=${shipInfo}` })
     } catch (e: any) {
@@ -91,7 +130,15 @@ Page({
   },
 
   onClosePanel() {
-    this.setData({ showExpressPanel: false, selectedCompany: '', expressNo: '' })
+    this.setData({
+      showExpressPanel: false,
+      selectedCompany: '',
+      expressNo: '',
+      packageType: '冷藏箱',
+      coldChainMethod: '冰袋（2-6°C）',
+      packageWeight: '',
+      boxTemperature: '',
+    })
   },
 })
 

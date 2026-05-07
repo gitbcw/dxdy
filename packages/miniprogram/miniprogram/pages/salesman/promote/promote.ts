@@ -36,6 +36,7 @@ Page({
   data: {
     icons,
     qrcodeUrl: '',
+    avatarIcon: icons.agent,
     userId: '',
     agentName: '张三',
     promoCode: 'DXY123456',

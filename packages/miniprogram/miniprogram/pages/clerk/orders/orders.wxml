@@ -41,7 +41,7 @@
         <view class="order-body">
           <view wx:for="{{item.items}}" wx:for-item="prod" wx:key="index" class="order-item">
             <view class="item-icon">
-              <image src="{{iconClock}}" mode="aspectFit" style="width:28rpx;height:28rpx;" />
+              <image src="{{prod.imageUrl || iconClock}}" mode="aspectFit" />
             </view>
             <view class="item-details">
               <text class="item-name">{{prod.name}}</text>

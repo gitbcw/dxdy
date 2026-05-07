@@ -36,6 +36,11 @@
   background: linear-gradient(180deg, #fff 0%, #fff5f3 100%);
 }
 
+.product-main-image {
+  width: 78%;
+  height: 78%;
+}
+
 .image-count {
   position: absolute;
   right: 22rpx;

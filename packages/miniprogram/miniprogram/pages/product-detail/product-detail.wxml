@@ -1,6 +1,7 @@
 <view class="page">
   <view class="product-image">
-    <view class="blood-pack {{isBloodProduct ? 'blood' : ''}}">{{isBloodProduct ? '血包' : '商品'}}</view>
+    <image wx:if="{{productImageUrl}}" class="product-main-image" src="{{productImageUrl}}" mode="aspectFit" />
+    <view wx:else class="blood-pack {{isBloodProduct ? 'blood' : ''}}">{{isBloodProduct ? '血包' : '商品'}}</view>
     <view class="image-count">1/4</view>
   </view>
 

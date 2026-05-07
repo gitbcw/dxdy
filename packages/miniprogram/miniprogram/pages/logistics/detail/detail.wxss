@@ -28,13 +28,10 @@
 .truck {
   width: 74rpx;
   height: 74rpx;
-  line-height: 74rpx;
   border-radius: 18rpx;
-  color: #ffffff;
-  background: #18a44a;
-  text-align: center;
-  font-size: 28rpx;
-  font-weight: 900;
+  background: #ffffff;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .status {

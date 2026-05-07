@@ -8,7 +8,7 @@
   </view>
 
   <view class="search-bar">
-    <text class="search-icon">⌕</text>
+    <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
     <input
       class="search-input"
       placeholder="{{searchPlaceholder}}、品牌、关键词"
@@ -21,18 +21,16 @@
   </view>
 
   <view class="hero-card">
+    <image class="hero-bg-image" src="{{homeBannerImage}}" mode="aspectFill" />
     <view class="hero-copy">
-      <text class="hero-title">专业动医产品\n守护动物健康</text>
+      <text class="hero-title">专业动医产品</text>
+      <text class="hero-title">守护动物健康</text>
       <text class="hero-pill">品质 · 专业 · 安心</text>
-    </view>
-    <view class="hero-pets">
-      <view class="pet-circle dog"></view>
-      <view class="pet-circle cat"></view>
     </view>
   </view>
 
   <view wx:if="{{banner}}" class="cert-banner {{banner.status}}" bindtap="onBannerAction">
-    <view class="cert-icon">!</view>
+    <image class="cert-icon" src="{{certIcon}}" mode="aspectFit" />
     <view class="cert-copy">
       <text class="cert-title">{{banner.text}}</text>
       <text wx:if="{{banner.rejectReason}}" class="cert-reason">驳回原因：{{banner.rejectReason}}</text>
@@ -48,7 +46,7 @@
       data-action="{{item.action}}"
       bindtap="onQuickActionTap"
     >
-      <view class="quick-icon">{{item.icon}}</view>
+      <image class="quick-icon" src="{{item.iconSrc}}" mode="aspectFit" />
       <text class="quick-title">{{item.title}}</text>
     </view>
   </view>
@@ -87,7 +85,10 @@
         data-idx="{{index}}"
         bindtap="onBoardItemTap"
       >
-        <view class="product-img">{{item.badge}}</view>
+        <view class="product-img">
+          <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFit" />
+          <text wx:else>{{item.badge}}</text>
+        </view>
         <text class="product-name">{{item.title}}</text>
         <text class="product-spec">{{item.desc}}</text>
         <view class="product-bottom">

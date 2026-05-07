@@ -8,6 +8,7 @@ const {
   formatDateTime,
   getOrderStatusText,
   getOrderStatusDesc,
+  getProductVisualImage,
 } = require('../../../services/index')
 
 Page({
@@ -99,6 +100,11 @@ Page({
       dateText: formatDateTime(order.createdAt),
       firstProductName: firstItem.productName,
       firstProductSpec: firstItem.spec,
+      firstProductImage: firstItem.productImage || getProductVisualImage(firstItem.productName),
+      items: (order.items || []).map((item: any) => ({
+        ...item,
+        productImage: item.productImage || getProductVisualImage(item.productName),
+      })),
       itemCount: order.items.reduce((sum: number, item: any) => sum + item.quantity, 0),
       priceChanged,
       priorityLabel: priceChanged
@@ -256,6 +262,16 @@ Page({
 
   onTestReportTap() {
     wx.navigateTo({ url: '/pages/tests/query/query' })
+  },
+
+  onReturnEntryTap() {
+    const order = this.data.selectedOrder
+    if (!order) return
+    if (order.returnRecord) {
+      wx.navigateTo({ url: `/pages/returns/detail/detail?orderId=${order.id}` })
+      return
+    }
+    wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${order.id}` })
   },
 
   async onActionTap(e: any) {

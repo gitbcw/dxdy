@@ -7,6 +7,14 @@
 
   <view class="form-card">
     <view class="field-row">
+      <text class="field-label">姓名 *</text>
+      <input class="field-input" placeholder="请输入您的姓名" value="{{realName}}" data-field="realName" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
+      <text class="field-label">身份证号 *</text>
+      <input class="field-input" placeholder="请输入身份证号" value="{{idNumber}}" data-field="idNumber" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
       <text class="field-label">公司/机构名称 *</text>
       <input class="field-input" placeholder="请输入公司或机构名称" value="{{companyName}}" data-field="companyName" bindinput="onFieldInput" />
     </view>
@@ -56,6 +64,21 @@
     <view class="field-row textarea-row">
       <text class="field-label">补充说明</text>
       <textarea class="field-textarea" placeholder="其他希望平台了解的信息" value="{{remark}}" data-field="remark" bindinput="onFieldInput" />
+    </view>
+  </view>
+
+  <view class="agreement-card" bindtap="onAgreementTap">
+    <view class="agreement-head">
+      <image class="agreement-icon" src="{{agreementIcon}}" mode="aspectFit" />
+      <view>
+        <text class="agreement-title">代理商合作协议</text>
+        <text class="agreement-desc">请确认已了解双方权利义务、推广规范、结算与售后扣减规则。</text>
+      </view>
+      <text class="agreement-arrow">›</text>
+    </view>
+    <view class="agreement-check">
+      <view class="check-dot {{agreementAccepted ? 'active' : ''}}"></view>
+      <text>我已阅读并同意《代理商合作协议》</text>
     </view>
   </view>
 

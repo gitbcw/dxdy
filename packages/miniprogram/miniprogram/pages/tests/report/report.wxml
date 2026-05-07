@@ -2,7 +2,7 @@
   <view wx:if="{{isEmpty}}" class="empty">未找到检测报告</view>
   <block wx:else>
     <view class="hero-card">
-      <view class="bag">✓</view>
+      <image class="bag" src="{{testIcon}}" mode="aspectFit" />
       <view class="meta">
         <view class="row"><text>血包编号</text><text>{{code}}</text></view>
         <view class="row"><text>商品名称</text><text>{{product}}</text></view>

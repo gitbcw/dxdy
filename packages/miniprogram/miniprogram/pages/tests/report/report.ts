@@ -1,4 +1,5 @@
 const { getTestReportByCode } = require('../../../services/index')
+const icons = require('../../../services/icons')
 
 function mapItems(items: any[]) {
   return (items || []).map((item: any) => {
@@ -25,6 +26,7 @@ Page({
     conclusion: '',
     reportFileID: '',
     isEmpty: false,
+    testIcon: icons.test,
   },
 
   onLoad(options: any) {

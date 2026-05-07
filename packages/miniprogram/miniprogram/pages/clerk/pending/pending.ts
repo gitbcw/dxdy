@@ -1,5 +1,5 @@
 const icons = require('../../../services/icons')
-const { getClerkOrders, getOrderStatusText } = require('../../../services/index')
+const { getClerkOrders, getOrderStatusText, getProductVisualImage } = require('../../../services/index')
 
 Page({
   data: {
@@ -21,6 +21,10 @@ Page({
     const orders = await getClerkOrders({ status: 'pending' })
     const mappedOrders = orders.map((order: any, index: number) => ({
       ...order,
+      items: (order.items || []).map((item: any) => ({
+        ...item,
+        imageUrl: item.productImage || getProductVisualImage(item.name || item.productName),
+      })),
       statusText: getOrderStatusText(order.rawStatus),
       badgeText: order.type === 'exchange' ? '换货优先' : order.status === 'preparing' ? '备货中' : index === 0 ? '当前最急' : '待发货',
       helperText: order.type === 'exchange'

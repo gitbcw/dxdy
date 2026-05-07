@@ -21,18 +21,7 @@
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  background: var(--color-success);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   box-shadow: 0 16rpx 40rpx rgba(22, 163, 74, 0.25);
-}
-
-.check-mark {
-  font-size: 72rpx;
-  color: #ffffff;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .success-title {

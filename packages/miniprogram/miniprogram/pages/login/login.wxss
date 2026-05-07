@@ -44,61 +44,14 @@
   font-weight: 700;
 }
 
-.hero-art {
+.hero-image {
   position: absolute;
   right: 14rpx;
   bottom: 12rpx;
-  width: 280rpx;
-  height: 210rpx;
-}
-
-.hero-art::before {
-  content: '';
-  position: absolute;
-  right: 34rpx;
-  bottom: 0;
-  width: 200rpx;
-  height: 150rpx;
-  border-radius: 44rpx 44rpx 28rpx 28rpx;
-  background: linear-gradient(135deg, rgba(22, 163, 74, 0.12), rgba(22, 163, 74, 0.02));
-}
-
-.doctor {
-  position: absolute;
-  right: 86rpx;
-  bottom: 34rpx;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 92rpx;
-  height: 128rpx;
-  border-radius: 46rpx 46rpx 28rpx 28rpx;
-  color: #18a34a;
-  font-size: 34rpx;
-  font-weight: 900;
-  background: #ffffff;
+  width: 300rpx;
+  height: 220rpx;
+  border-radius: 34rpx;
   box-shadow: 0 14rpx 34rpx rgba(23, 48, 32, 0.10);
-}
-
-.pet {
-  position: absolute;
-  bottom: 28rpx;
-  border-radius: 50%;
-  background: #f0b15d;
-}
-
-.pet.dog {
-  left: 34rpx;
-  width: 74rpx;
-  height: 74rpx;
-}
-
-.pet.cat {
-  right: 22rpx;
-  width: 58rpx;
-  height: 58rpx;
-  background: #b7c1ba;
 }
 
 .form {
@@ -155,9 +108,8 @@
 }
 
 .field-icon {
-  width: 38rpx;
-  color: #7d8983;
-  font-size: 26rpx;
+  width: 42rpx;
+  height: 42rpx;
 }
 
 .field-input {
@@ -244,16 +196,10 @@
 }
 
 .wechat-login {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 72rpx;
   height: 72rpx;
   margin: 0 auto;
   border-radius: 50%;
-  color: #ffffff;
-  font-size: 28rpx;
-  font-weight: 900;
   background: #18a34a;
 }
 

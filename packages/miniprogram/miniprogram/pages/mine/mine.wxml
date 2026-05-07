@@ -28,34 +28,34 @@
     <view class="order-bar" wx:if="{{showOrderBar}}">
       <view class="order-bar-item" bindtap="onOrdersTap">
         <view class="order-icon-wrap">
-          <view class="order-icon">全</view>
+          <image class="order-icon" src="{{orderIconAll}}" mode="aspectFit" />
         </view>
         <text class="order-label">全部</text>
       </view>
       <view class="order-bar-item" bindtap="onPendingPaymentTap">
         <view class="order-icon-wrap">
-          <view class="order-icon">付</view>
+          <image class="order-icon" src="{{orderIconPayment}}" mode="aspectFit" />
           <view class="order-badge" wx:if="{{orderCounts.pendingPayment > 0}}">{{orderCounts.pendingPayment}}</view>
         </view>
         <text class="order-label">待付款</text>
       </view>
       <view class="order-bar-item" bindtap="onPendingReceiptTap">
         <view class="order-icon-wrap">
-          <view class="order-icon">收</view>
+          <image class="order-icon" src="{{orderIconReceipt}}" mode="aspectFit" />
           <view class="order-badge" wx:if="{{orderCounts.pendingReceipt > 0}}">{{orderCounts.pendingReceipt}}</view>
         </view>
         <text class="order-label">待收货</text>
       </view>
       <view class="order-bar-item" bindtap="onCompletedTap">
         <view class="order-icon-wrap">
-          <view class="order-icon">完</view>
+          <image class="order-icon" src="{{orderIconCompleted}}" mode="aspectFit" />
         </view>
         <text class="order-label">已完结</text>
       </view>
     </view>
 
     <view class="cert-row" wx:if="{{showOrderBar}}" bindtap="onVerifyTap">
-      <view class="cert-icon">医</view>
+      <image class="cert-icon" src="{{certIcon}}" mode="aspectFit" />
       <view class="cert-copy">
         <text class="cert-title">医院认证</text>
         <text class="cert-desc">认证通过后可购买血包并享受医院价</text>
@@ -95,7 +95,7 @@
           data-id="{{item.id}}"
           bindtap="onMenuItemTap"
         >
-          <view class="menu-icon">{{item.icon || '•'}}</view>
+          <image class="menu-icon" src="{{item.iconSrc}}" mode="aspectFit" />
           <view>
             <text class="menu-title">{{item.title}}</text>
             <text class="menu-desc" wx:if="{{item.desc}}">{{item.desc}}</text>

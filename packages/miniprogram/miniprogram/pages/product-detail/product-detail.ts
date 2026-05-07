@@ -1,4 +1,4 @@
-const { getProductById, formatMoney, addToCart } = require('../../services/index')
+const { getProductById, formatMoney, addToCart, getProductVisualImage } = require('../../services/index')
 
 Page({
   _product: null as any,
@@ -10,6 +10,7 @@ Page({
     stock: 0,
     isBloodProduct: false,
     bloodType: '按商品标注',
+    productImageUrl: '',
   },
 
   async onLoad(options: any) {
@@ -31,6 +32,7 @@ Page({
       stock: product.stock,
       isBloodProduct: !!product.isBloodPack,
       bloodType: product.specs?.find((item: any) => item.name === '血型')?.value || (product.isBloodPack ? '需指定' : '不适用'),
+      productImageUrl: getProductVisualImage(product),
     })
   },
 

@@ -7,6 +7,7 @@
       data-path="{{item.pagePath}}"
       bindtap="onTabTap"
     >
+      <image class="tab-icon" src="{{item.iconSrc}}" mode="aspectFit" />
       <text class="tab-label">{{item.text}}</text>
     </view>
   </view>

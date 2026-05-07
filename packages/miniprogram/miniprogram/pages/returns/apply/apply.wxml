@@ -1,6 +1,9 @@
 <view class="page">
   <view class="goods-card">
-    <view class="goods-img">{{firstItem.productName ? '商品' : '售后'}}</view>
+    <view class="goods-img">
+      <image wx:if="{{productImageUrl}}" src="{{productImageUrl}}" mode="aspectFit" />
+      <text wx:else>{{firstItem.productName ? '商品' : '售后'}}</text>
+    </view>
     <view class="goods-info">
       <text class="name">{{firstItem.productName || '请选择订单后申请售后'}}</text>
       <text class="meta">{{firstItem.spec || '规格信息'}} ×{{firstItem.quantity || 1}}</text>

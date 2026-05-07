@@ -1,4 +1,4 @@
-const { getProductById, createOrder, getCartItems, clearCart, formatMoney } = require('../../../services/index')
+const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage } = require('../../../services/index')
 
 const CART_KEY = 'cart_items'
 
@@ -53,6 +53,7 @@ Page({
     policyText: '',
     primaryButtonText: '提交订单',
     specText: '标准规格',
+    productImageUrl: '',
   },
 
   _cartRaw: [] as any[],
@@ -97,6 +98,7 @@ Page({
           unitPrice: price,
           lineTotal: formatMoney(price * item.quantity),
           specText: item.specs?.[0]?.value || '标准规格',
+          imageUrl: getProductVisualImage(item),
         }
       })
       const total = items.reduce((s: number, item: any) => {
@@ -133,6 +135,7 @@ Page({
         orderTypeLabel: orderType === 'booking' ? '预约采购' : '普通采购',
         canBooking,
         isBloodProduct: !!product.isBloodPack,
+        productImageUrl: getProductVisualImage(product),
         policyText: product.returnPolicy?.note || '以商品详情页说明为准',
         primaryButtonText: orderType === 'booking' ? '提交预约' : '提交订单',
       })
@@ -206,7 +209,7 @@ Page({
         return {
           productId: item.id,
           productName: item.name,
-          productImage: '',
+          productImage: getProductVisualImage(item),
           spec: item.specs?.[0]?.value ?? '',
           quantity: item.quantity,
           unitPrice: price,
@@ -226,7 +229,7 @@ Page({
       orderItems = [{
         productId: product.id,
         productName: product.name,
-        productImage: '',
+        productImage: getProductVisualImage(product),
         spec: product.specs?.[0]?.value ?? '',
         quantity,
         unitPrice: this.data.unitPrice,

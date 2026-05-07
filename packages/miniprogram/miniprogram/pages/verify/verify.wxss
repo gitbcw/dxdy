@@ -145,23 +145,17 @@
 }
 
 .status-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 78rpx;
   height: 78rpx;
   border-radius: 18rpx;
-  color: #ffffff;
-  font-size: 30rpx;
-  font-weight: 900;
 }
 
 .pending {
-  background: #ff9f1a;
+  background: #fff4e8;
 }
 
 .approved {
-  background: #18a44a;
+  background: #eaf8ee;
 }
 
 .status-title {

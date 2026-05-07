@@ -1,5 +1,6 @@
-const { getCategories, getProducts, formatMoney, addToCart } = require('../../services/index')
+const { getCategories, getProducts, formatMoney, addToCart, getProductVisualImage } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
+const icons = require('../../services/icons')
 
 Page({
   data: {
@@ -15,6 +16,10 @@ Page({
     actionSheetVisible: false,
     actionSheetProduct: {} as any,
     keywordMode: false,
+    searchIcon: icons.search,
+    filterIcon: icons.filter,
+    cartIcon: icons.cart,
+    lockIcon: icons.lock,
   },
 
   onLoad() {
@@ -79,6 +84,7 @@ Page({
       tagText: product.visibility === 'institution_only' ? '机构专属' : product.isBloodPack ? '预约服务' : '可采购',
       lowStock: product.stock <= 5,
       leadText: product.isBloodPack ? '可预约' : product.stock <= 5 ? '库存紧张' : '可采购',
+      imageUrl: getProductVisualImage(product),
     }))
 
     const quickFilters = this.getQuickFilters(mappedProducts, isInstitution)

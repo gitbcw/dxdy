@@ -13,13 +13,8 @@
 .check {
   width: 132rpx;
   height: 132rpx;
-  line-height: 132rpx;
   margin: 0 auto;
   border-radius: 50%;
-  color: #ffffff;
-  background: #18a44a;
-  font-size: 72rpx;
-  font-weight: 900;
 }
 
 .title {

@@ -1,4 +1,5 @@
 const { getOrderById, formatMoney, formatDateTime } = require('../../../services/index')
+const icons = require('../../../services/icons')
 
 Page({
   data: {
@@ -9,6 +10,7 @@ Page({
     bookingTime: '--',
     payTime: '2024-05-30 10:32:22',
     payMethod: '微信支付',
+    successIcon: icons.checkSuccess,
   },
 
   onLoad(options: any) {

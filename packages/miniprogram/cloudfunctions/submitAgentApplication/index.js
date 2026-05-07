@@ -53,6 +53,8 @@ async function getCurrentUser(openid, userId) {
 function cleanInfo(info) {
   return {
     companyName: String(info.companyName || '').trim(),
+    realName: String(info.realName || '').trim(),
+    idNumber: String(info.idNumber || '').trim(),
     contactName: String(info.contactName || '').trim(),
     contactPhone: String(info.contactPhone || '').trim(),
     region: String(info.region || '').trim(),
@@ -77,6 +79,8 @@ exports.main = async (event) => {
 
   const info = cleanInfo(event.info || {})
   if (!info.companyName) return error('请输入公司或机构名称')
+  if (!info.realName) return error('请输入姓名')
+  if (!info.idNumber) return error('请输入身份证号')
   if (!info.contactName) return error('请输入联系人姓名')
   if (!/^1\d{10}$/.test(info.contactPhone)) return error('请输入正确联系电话')
   if (!info.region || !info.businessArea) return error('请填写代理区域和业务覆盖')

@@ -1,7 +1,10 @@
 <view class="page">
   <view wx:if="{{product || isFromCart}}" class="content">
     <view wx:if="{{product}}" class="goods-card">
-      <view class="goods-img">{{isBloodProduct ? '血包' : '商品'}}</view>
+      <view class="goods-img">
+        <image wx:if="{{productImageUrl}}" src="{{productImageUrl}}" mode="aspectFit" />
+        <text wx:else>{{isBloodProduct ? '血包' : '商品'}}</text>
+      </view>
       <view class="goods-main">
         <text class="goods-name">{{product.name}}</text>
         <text class="goods-meta">{{specText}}</text>
@@ -12,6 +15,7 @@
     <view wx:if="{{isFromCart}}" class="card">
       <view class="section-title">购物车结算</view>
       <view wx:for="{{cartItems}}" wx:key="id" class="cart-item">
+        <image wx:if="{{item.imageUrl}}" class="cart-thumb" src="{{item.imageUrl}}" mode="aspectFit" />
         <text class="cart-name">{{item.name}}</text>
         <text class="cart-meta">{{item.specText}} ×{{item.quantity}}</text>
         <text class="cart-price">¥{{item.lineTotal}}</text>

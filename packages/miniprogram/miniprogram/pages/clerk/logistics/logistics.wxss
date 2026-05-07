@@ -58,14 +58,10 @@
 .truck-icon {
   width: 74rpx;
   height: 74rpx;
-  line-height: 74rpx;
   border-radius: var(--radius-lg);
-  background: var(--color-primary);
-  color: #ffffff;
-  text-align: center;
-  font-size: 28rpx;
-  font-weight: 900;
+  background: #ffffff;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .status-main {
@@ -274,6 +270,8 @@
   border-radius: 32rpx 32rpx 0 0;
   padding: 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  max-height: 86vh;
+  overflow-y: auto;
   animation: slideUp 0.3s ease;
 }
 
@@ -312,6 +310,10 @@
   flex-wrap: wrap;
   gap: 16rpx;
   margin-bottom: 32rpx;
+}
+
+.company-grid.compact {
+  margin-bottom: 18rpx;
 }
 
 .company-item {
@@ -357,6 +359,56 @@
 
 .express-input::placeholder {
   color: var(--text-tertiary);
+}
+
+.panel-section-title {
+  margin: 22rpx 0 14rpx;
+  color: var(--text-primary);
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.cold-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-bottom: 18rpx;
+}
+
+.cold-input-wrap,
+.reason-wrap {
+  padding: 18rpx;
+  border-radius: var(--radius-md);
+  background: var(--bg-section);
+  border: 1rpx solid var(--border-color);
+}
+
+.cold-input-wrap text,
+.reason-wrap text {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.cold-input-wrap input {
+  margin-top: 8rpx;
+  color: var(--text-primary);
+  font-size: 26rpx;
+}
+
+.reason-wrap {
+  margin-bottom: 24rpx;
+}
+
+.reason-wrap textarea {
+  width: 100%;
+  min-height: 120rpx;
+  margin-top: 10rpx;
+  color: var(--text-primary);
+  font-size: 26rpx;
+  line-height: 1.45;
+  box-sizing: border-box;
 }
 
 .btn-submit-panel {

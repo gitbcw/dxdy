@@ -5,6 +5,14 @@ const {
   getCommissionSummary,
 } = require('../../services/index')
 const { normalizePath } = require('../../utils/tab-bar')
+const icons = require('../../services/icons')
+
+function withMenuIcons(items: any[]) {
+  return items.map((item) => ({
+    ...item,
+    iconSrc: icons.iconByKey[item.iconKey || item.id] || icons.order,
+  }))
+}
 
 Page({
   data: {
@@ -20,6 +28,11 @@ Page({
     focusTitle: '',
     focusItems: [] as any[],
     menuItems: [] as any[],
+    orderIconAll: icons.allOrders,
+    orderIconPayment: icons.payment,
+    orderIconReceipt: icons.receipt,
+    orderIconCompleted: icons.completed,
+    certIcon: icons.hospital,
   },
 
   onShow() {
@@ -47,6 +60,7 @@ Page({
       userInfo: user,
       currentRole: userRole,
       ...roleData,
+      menuItems: withMenuIcons(roleData.menuItems || []),
     })
   },
 

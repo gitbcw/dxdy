@@ -44,7 +44,7 @@
       </view>
 
       <view class="goods-row">
-        <view class="goods-icon">单</view>
+        <image class="goods-icon" src="{{item.productImage || orderIcon}}" mode="aspectFit" />
         <view class="goods-main">
           <text class="goods-name">{{item.itemText}}</text>
           <text class="goods-meta">共 {{item.itemCount}} 件 · {{item.commissionText}}</text>

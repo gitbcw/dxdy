@@ -7,6 +7,17 @@
 const db = wx.cloud.database()
 const _ = db.command
 
+const CLOUD_STORAGE_PREFIX = 'cloud://cloudbase-d4gwpsm7gcc59b6fc.636c-cloudbase-d4gwpsm7gcc59b6fc-1428922768/dxdy/generated-ui'
+
+export const GENERATED_ASSETS = {
+  loginHero: `${CLOUD_STORAGE_PREFIX}/login-vet-hero.webp`,
+  homeBanner: `${CLOUD_STORAGE_PREFIX}/home-vet-banner.webp`,
+  bloodBag: `${CLOUD_STORAGE_PREFIX}/product-blood-bag.webp`,
+  vaccineKit: `${CLOUD_STORAGE_PREFIX}/product-vaccine-kit.webp`,
+  testCard: `${CLOUD_STORAGE_PREFIX}/product-test-card.webp`,
+  coldChain: `${CLOUD_STORAGE_PREFIX}/cold-chain-logistics.webp`,
+}
+
 // ===== Helpers =====
 
 function generateId(prefix: string): string {
@@ -29,11 +40,16 @@ function mapClerkOrder(order: any) {
   const shipping = order.shipping || {}
   const address = shipping.address || order.shippingAddress || {}
   const pricing = order.pricing || {}
+  const coldChain = shipping.coldChain || {}
   const items = (order.items || []).map((item: any) => ({
     ...item,
     name: item.name || item.productName || '',
     specs: item.specs || item.spec || '',
     price: item.price ?? item.unitPrice ?? item.totalPrice ?? 0,
+    imageUrl: item.imageUrl || item.productImage || getProductVisualImage(item),
+    batchNo: item.batchNo || item.batch || item.productionBatch || '',
+    validUntil: item.validUntil || item.expiryDate || item.expireAt || '',
+    storageTemperature: item.storageTemperature || item.temperature || shipping.temperature || '',
   }))
   return {
     ...order,
@@ -43,6 +59,13 @@ function mapClerkOrder(order: any) {
     expressCompany: shipping.company || '',
     expressNo: shipping.trackingNo || '',
     shippedAt: shipping.shippedAt || '',
+    packageType: coldChain.packageType || shipping.packageType || '',
+    coldChainMethod: coldChain.method || shipping.coldChainMethod || '',
+    packageWeight: coldChain.weight || shipping.packageWeight || '',
+    boxTemperature: coldChain.boxTemperature || shipping.boxTemperature || '',
+    temperature: shipping.temperature || coldChain.temperature || '',
+    eta: shipping.eta || '',
+    lastModifyReason: shipping.lastModifyReason || '',
     assignedAt: order.assignedAt || order.createdAt || '',
     address: address.full || address.detail || order.address || '',
     customerPhone: address.phone || order.customerPhone || '',
@@ -110,6 +133,15 @@ export function getOrderStatusDesc(status: string): string {
     confirmed: '预约已确认，等待服务', in_service: '服务进行中',
   }
   return map[status] || ''
+}
+
+export function getProductVisualImage(productOrName: any): string {
+  const name = typeof productOrName === 'string'
+    ? productOrName
+    : String(productOrName?.name || productOrName?.productName || '')
+  if (productOrName?.isBloodPack || /血|红细胞|血包/.test(name)) return GENERATED_ASSETS.bloodBag
+  if (/检测|试纸|检验|报告/.test(name)) return GENERATED_ASSETS.testCard
+  return GENERATED_ASSETS.vaccineKit
 }
 
 // ===== 认证服务 =====
@@ -353,7 +385,16 @@ export async function getClerkOrderById(id: string) {
   return mapClerkOrder(order)
 }
 
-export async function clerkShipOrder(params: { orderId: string; expressCompany: string; expressNo: string }) {
+export async function clerkShipOrder(params: {
+  orderId: string
+  expressCompany: string
+  expressNo: string
+  packageType?: string
+  coldChainMethod?: string
+  packageWeight?: string
+  boxTemperature?: string
+  modifyReason?: string
+}) {
   const user = getCurrentUser()
   const { result } = await wx.cloud.callFunction({
     name: 'clerkShipOrder',

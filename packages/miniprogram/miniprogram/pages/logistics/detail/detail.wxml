@@ -2,7 +2,7 @@
   <view wx:if="{{isEmpty}}" class="empty">暂无物流信息</view>
   <block wx:else>
     <view class="status-card">
-      <view class="truck">运</view>
+      <image class="truck" src="{{coldChainImage}}" mode="aspectFill" />
       <view class="status-main">
         <text class="status">{{status}}</text>
         <text class="desc">{{desc}}</text>

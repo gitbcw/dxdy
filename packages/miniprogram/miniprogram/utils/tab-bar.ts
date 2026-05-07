@@ -1,8 +1,8 @@
 const FULL_TAB_LIST = [
-  { pagePath: '/pages/home/home', text: '首页' },
-  { pagePath: '/pages/catalog/catalog', text: '分类' },
-  { pagePath: '/pages/cart/cart', text: '购物车' },
-  { pagePath: '/pages/mine/mine', text: '我的' },
+  { pagePath: '/pages/home/home', text: '首页', icon: 'home' },
+  { pagePath: '/pages/catalog/catalog', text: '分类', icon: 'catalog' },
+  { pagePath: '/pages/cart/cart', text: '购物车', icon: 'cart' },
+  { pagePath: '/pages/mine/mine', text: '我的', icon: 'mine' },
 ]
 
 const STAFF_ROLE_SET = new Set(['salesperson', 'clerk'])

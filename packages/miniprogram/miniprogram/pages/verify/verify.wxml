@@ -1,7 +1,7 @@
 <view class="page">
   <view wx:if="{{status === 'pending'}}" class="status-card">
     <view class="status-head">
-      <view class="status-icon pending">医</view>
+      <image class="status-icon pending" src="{{pendingIcon}}" mode="aspectFit" />
       <view>
         <text class="status-title">认证审核中</text>
         <text class="status-desc">资质已提交，预计 1-3 个工作日完成审核</text>
@@ -29,7 +29,7 @@
 
   <view wx:elif="{{status === 'approved'}}" class="status-card">
     <view class="status-head">
-      <view class="status-icon approved">✓</view>
+      <image class="status-icon approved" src="{{approvedIcon}}" mode="aspectFit" />
       <view>
         <text class="status-title">认证已通过</text>
         <text class="status-desc">可购买血包并享受医院专属价格</text>

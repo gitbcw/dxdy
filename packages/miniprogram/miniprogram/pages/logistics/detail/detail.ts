@@ -1,4 +1,4 @@
-const { getOrderById } = require('../../../services/index')
+const { GENERATED_ASSETS, getOrderById } = require('../../../services/index')
 
 function getLatestTrack(tracks: any[]) {
   return tracks.find((track: any) => track.active) || tracks[0] || null
@@ -17,6 +17,7 @@ Page({
     temperature: '常温配送',
     tracks: [] as any[],
     isEmpty: false,
+    coldChainImage: GENERATED_ASSETS.coldChain,
   },
 
   onLoad(options: any) {

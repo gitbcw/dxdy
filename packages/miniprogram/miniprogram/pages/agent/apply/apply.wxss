@@ -121,3 +121,73 @@
 .submit-btn {
   margin-top: 28rpx;
 }
+
+.agreement-card {
+  margin-top: 20rpx;
+  padding: 22rpx 24rpx;
+  border: 1rpx solid #bfe9cb;
+  border-radius: 16rpx;
+  background: #f0fbf3;
+  box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.04);
+}
+
+.agreement-head {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.agreement-icon {
+  flex-shrink: 0;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+}
+
+.agreement-title,
+.agreement-desc {
+  display: block;
+}
+
+.agreement-title {
+  color: #17231f;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.agreement-desc {
+  margin-top: 6rpx;
+  color: #5f6d66;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.agreement-arrow {
+  margin-left: auto;
+  color: #18a34a;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.agreement-check {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 18rpx;
+  color: #4b5650;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.check-dot {
+  width: 28rpx;
+  height: 28rpx;
+  border: 2rpx solid #9bddb0;
+  border-radius: 50%;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.check-dot.active {
+  border: 8rpx solid #18a34a;
+}

@@ -5,10 +5,13 @@ const {
   getClerkOrders,
   getCommissionSummary,
   formatMoney,
+  GENERATED_ASSETS,
+  getProductVisualImage,
   addToCart,
   getOrderStatusText,
 } = require('../../services/index')
 const { normalizePath } = require('../../utils/tab-bar')
+const icons = require('../../services/icons')
 
 type DemoRole = 'customer_personal' | 'customer_institution' | 'salesperson' | 'clerk'
 
@@ -27,6 +30,13 @@ type HomeAction =
   | 'clerkOrders'
   | 'verify'
 
+function withIcon(items: any[]) {
+  return items.map((item) => ({
+    ...item,
+    iconSrc: icons.iconByKey[item.iconKey || item.action] || icons.order,
+  }))
+}
+
 function toProductBoardItem(product: any) {
   return {
     id: product.id,
@@ -35,6 +45,7 @@ function toProductBoardItem(product: any) {
     title: product.name,
     desc: product.specs?.[0]?.value || '标准规格',
     meta: `¥${formatMoney(product.personalPrice || product.institutionPrice || 0)} · 库存 ${product.stock}`,
+    imageUrl: getProductVisualImage(product),
     institutionPrice: product.institutionPrice,
     personalPrice: product.personalPrice,
   }
@@ -57,6 +68,7 @@ Page({
     isInstitution: false,
     actionSheetVisible: false,
     actionSheetProduct: {} as any,
+    homeBannerImage: GENERATED_ASSETS.homeBanner,
   },
 
   _rawProducts: [] as any[],
@@ -100,7 +112,15 @@ Page({
       commission,
     })
 
-    this.setData({ currentRole, isInstitution, banner: null, ...dashboard })
+    this.setData({
+      currentRole,
+      isInstitution,
+      banner: null,
+      ...dashboard,
+      quickActions: withIcon(dashboard.quickActions || []),
+      searchIcon: icons.search,
+      certIcon: icons.hospital,
+    })
   },
 
   inferRole(user: any): DemoRole {

@@ -32,7 +32,10 @@
           <text class="order-status">{{item.statusText}}</text>
         </view>
         <view class="goods-row">
-          <view class="goods-img">{{item.firstProductName ? '商品' : '订单'}}</view>
+        <view class="goods-img">
+          <image wx:if="{{item.firstProductImage}}" src="{{item.firstProductImage}}" mode="aspectFit" />
+          <text wx:else>{{item.firstProductName ? '商品' : '订单'}}</text>
+        </view>
           <view class="goods-main">
             <text class="goods-name">{{item.firstProductName}}</text>
             <text class="goods-spec">{{item.firstProductSpec}} · 共 {{item.itemCount}} 件</text>
@@ -87,7 +90,10 @@
 
     <view class="card">
       <view wx:for="{{selectedOrder.items}}" wx:key="productId" class="detail-goods">
-        <view class="goods-img small">商品</view>
+        <view class="goods-img small">
+          <image wx:if="{{item.productImage}}" src="{{item.productImage}}" mode="aspectFit" />
+          <text wx:else>商品</text>
+        </view>
         <view class="goods-main">
           <text class="goods-name">{{item.productName}}</text>
           <text class="goods-spec">{{item.spec}} ×{{item.quantity}}</text>
@@ -137,7 +143,7 @@
         <text>发票信息</text>
         <text>申请开票 ></text>
       </view>
-      <view class="link-row">
+      <view class="link-row" bindtap="onReturnEntryTap">
         <text>申请售后</text>
         <text>{{selectedOrder.returnRecord ? selectedOrder.returnStatusText : '可申请' }} ></text>
       </view>

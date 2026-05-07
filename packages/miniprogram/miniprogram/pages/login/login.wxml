@@ -7,16 +7,12 @@
         <text class="brand-sub">DaXiong Vet</text>
       </view>
     </view>
-    <view class="hero-art">
-      <view class="doctor">医</view>
-      <view class="pet dog"></view>
-      <view class="pet cat"></view>
-    </view>
+    <image class="hero-image" src="{{loginHeroImage}}" mode="aspectFill" />
   </view>
 
   <view class="form dx-card">
-    <text class="title">欢迎来到大熊动医代理商平台</text>
-    <text class="subtitle">连接专业 · 服务动物健康</text>
+    <text class="title">欢迎来到大熊动医</text>
+    <text class="subtitle">客户采购、代理推广与制单履约统一入口</text>
 
     <view class="segmented">
       <view class="segment {{!isRegister ? 'active' : ''}}" bindtap="showLogin">登录</view>
@@ -24,15 +20,15 @@
     </view>
 
     <view class="field-row">
-      <text class="field-icon">📱</text>
+      <image class="field-icon" src="{{phoneIcon}}" mode="aspectFit" />
       <input class="field-input" placeholder="请输入手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
     </view>
     <view wx:if="{{isRegister}}" class="field-row">
-      <text class="field-icon">👤</text>
+      <image class="field-icon" src="{{userIcon}}" mode="aspectFit" />
       <input class="field-input" placeholder="请输入昵称" value="{{nickname}}" bindinput="onNicknameInput" />
     </view>
     <view wx:if="{{!isRegister}}" class="field-row">
-      <text class="field-icon">🛡</text>
+      <image class="field-icon" src="{{shieldIcon}}" mode="aspectFit" />
       <input class="field-input" placeholder="请输入验证码" maxlength="6" />
       <view class="code-btn">获取验证码</view>
     </view>
@@ -52,7 +48,7 @@
     </view>
 
     <view class="divider"><text>其他登录方式</text></view>
-    <view class="wechat-login">微</view>
+    <image class="wechat-login" src="{{wechatIcon}}" mode="aspectFit" />
 
     <view class="demo-box">
       <text class="demo-title">预置账号</text>

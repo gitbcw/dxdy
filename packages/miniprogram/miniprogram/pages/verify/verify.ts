@@ -1,4 +1,5 @@
 const { submitVerification } = require('../../services/index')
+const icons = require('../../services/icons')
 
 Page({
   data: {
@@ -13,6 +14,8 @@ Page({
     legalPerson: '',
     sitePhotoUrl: '',
     isPersonalCustomer: false,
+    pendingIcon: icons.hospital,
+    approvedIcon: icons.checkSuccess,
   },
 
   onLoad() {
