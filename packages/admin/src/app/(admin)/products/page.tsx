@@ -15,9 +15,9 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { getAllProducts, updateProduct, createProduct, getCategories } from '@dxdy/shared';
-import { formatMoney } from '@dxdy/shared';
-import type { Product, ProductCategory, ProductVisibility } from '@dxdy/shared';
+import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { formatMoney } from '@/lib/format';
+import type { AdminUser, Product, ProductCategory, ProductVisibility } from '@/lib/types';
 
 type ProductFormState = {
   name: string;
@@ -151,13 +151,57 @@ export default function ProductsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ProductFormState>(emptyProductForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    Promise.all([getAllProducts(), getCategories()]).then(([allProducts, allCategories]) => {
-      setProducts(allProducts);
-      setCategories(allCategories);
-    });
+    loadProducts();
   }, []);
+
+  function getOperator() {
+    if (typeof window === 'undefined') return { operatorId: 'admin_001', operatorName: '后台管理员', operatorRole: 'admin' };
+    try {
+      const stored = window.localStorage.getItem('admin_user');
+      const user = stored ? JSON.parse(stored) as AdminUser : null;
+      return {
+        operatorId: user?.id || 'admin_001',
+        operatorName: user?.realName || user?.username || '后台管理员',
+        operatorRole: user?.role || 'admin',
+      };
+    } catch {
+      return { operatorId: 'admin_001', operatorName: '后台管理员', operatorRole: 'admin' };
+    }
+  }
+
+  async function loadProducts() {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const response = await cloudbaseFetch('/api/cloudbase/products', { cache: 'no-store' });
+      const data = await response.json() as { products?: Product[]; categories?: ProductCategory[]; error?: string };
+      if (!response.ok) throw new Error(data.error || '读取商品数据失败');
+      setProducts(data.products || []);
+      setCategories(data.categories || []);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '读取商品数据失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateProductRemote(id: string, updates: Partial<Product>) {
+    const response = await cloudbaseJsonFetch('/api/cloudbase/products', { id, updates, ...getOperator() }, { method: 'PATCH' });
+    const data = await response.json() as { product?: Product; error?: string };
+    if (!response.ok) throw new Error(data.error || '更新商品失败');
+    return data.product || null;
+  }
+
+  async function createProductRemote(product: Product) {
+    const response = await cloudbaseJsonFetch('/api/cloudbase/products', { product, ...getOperator() });
+    const data = await response.json() as { product?: Product; error?: string };
+    if (!response.ok) throw new Error(data.error || '创建商品失败');
+    return data.product;
+  }
 
   const catMap = Object.fromEntries(categories.map(category => [category.id, category.name]));
   const categoryFilterItems = { all: '全部分类', ...catMap };
@@ -213,28 +257,36 @@ export default function ProductsPage() {
       ? editForm.specs.split(',').map(value => ({ name: '规格', value: value.trim() })).filter(spec => spec.value)
       : [{ name: '默认', value: '默认' }];
 
-    const updated = await updateProduct(editProduct.id, {
-      name: editForm.name,
-      description: editForm.description,
-      category: editForm.category,
-      institutionPrice: parseFloat(editForm.institutionPrice) || 0,
-      personalPrice: parseFloat(editForm.personalPrice) || 0,
-      visibility: editForm.visibility,
-      stock: parseInt(editForm.stock, 10) || 0,
-      specs,
-      images: editForm.images,
-    });
-    if (updated) {
-      setProducts(prev => prev.map(product => (product.id === updated.id ? updated : product)));
+    try {
+      const updated = await updateProductRemote(editProduct.id, {
+        name: editForm.name,
+        description: editForm.description,
+        category: editForm.category,
+        institutionPrice: parseFloat(editForm.institutionPrice) || 0,
+        personalPrice: parseFloat(editForm.personalPrice) || 0,
+        visibility: editForm.visibility,
+        stock: parseInt(editForm.stock, 10) || 0,
+        specs,
+        images: editForm.images,
+      });
+      if (updated) {
+        setProducts(prev => prev.map(product => (product.id === updated.id ? updated : product)));
+      }
+      setEditProduct(null);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '保存商品失败');
     }
-    setEditProduct(null);
   }
 
   async function toggleStatus(product: Product) {
     const newStatus = product.status === 'on_sale' ? 'off_sale' : 'on_sale';
-    const updated = await updateProduct(product.id, { status: newStatus });
-    if (updated) {
-      setProducts(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+    try {
+      const updated = await updateProductRemote(product.id, { status: newStatus });
+      if (updated) {
+        setProducts(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+      }
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '更新商品状态失败');
     }
   }
 
@@ -268,7 +320,7 @@ export default function ProductsPage() {
       ? createForm.specs.split(',').map(value => ({ name: '规格', value: value.trim() })).filter(spec => spec.value)
       : [{ name: '默认', value: '默认' }];
 
-    const newProd = await createProduct({
+    const newProd = await createProductRemote({
       id: `prod_${Date.now().toString(36)}`,
       name: createForm.name,
       description: createForm.description,
@@ -286,10 +338,12 @@ export default function ProductsPage() {
       updatedAt: new Date().toISOString(),
     });
 
-    setProducts(prev => [newProd, ...prev]);
-    setCreateOpen(false);
-    setCreateForm(emptyProductForm());
-    resetToFirstPage();
+    if (newProd) {
+      setProducts(prev => [newProd, ...prev]);
+      setCreateOpen(false);
+      setCreateForm(emptyProductForm());
+      resetToFirstPage();
+    }
   }
 
   async function handleCreateImageUpload(files: FileList | null) {
@@ -314,13 +368,17 @@ export default function ProductsPage() {
 
   async function handleBatchOffSale() {
     if (selectedIds.size === 0) return;
-    for (const id of selectedIds) {
-      await updateProduct(id, { status: 'off_sale' });
+    try {
+      for (const id of selectedIds) {
+        await updateProductRemote(id, { status: 'off_sale' });
+      }
+      setProducts(prev =>
+        prev.map(product => (selectedIds.has(product.id) ? { ...product, status: 'off_sale', updatedAt: new Date().toISOString() } : product)),
+      );
+      setSelectedIds(new Set());
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '批量下架失败');
     }
-    setProducts(prev =>
-      prev.map(product => (selectedIds.has(product.id) ? { ...product, status: 'off_sale' } : product)),
-    );
-    setSelectedIds(new Set());
   }
 
   return (
@@ -347,6 +405,11 @@ export default function ProductsPage() {
           </Button>
         </div>
       </div>
+      {errorMsg && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {errorMsg}
+        </div>
+      )}
 
       <Card>
         <CardContent className="p-4">
@@ -363,7 +426,7 @@ export default function ProductsPage() {
               items={categoryFilterItems}
               value={categoryFilter}
               onValueChange={value => {
-                setCategoryFilter(value);
+                setCategoryFilter(value ?? 'all');
                 resetToFirstPage();
               }}
             >
@@ -460,7 +523,14 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pagedProducts.map(product => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                    加载商品数据中...
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && pagedProducts.map(product => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <input
@@ -521,7 +591,7 @@ export default function ProductsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {pagedProducts.length === 0 && (
+              {!loading && pagedProducts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                     没有符合当前筛选条件的商品
@@ -551,7 +621,7 @@ export default function ProductsPage() {
               <Select
                 value={String(pageSize)}
                 onValueChange={value => {
-                  setPageSize(parseInt(value, 10));
+                  setPageSize(parseInt(value ?? '10', 10));
                   resetToFirstPage();
                 }}
               >
@@ -602,7 +672,7 @@ export default function ProductsPage() {
                 <Label htmlFor="editCat">分类</Label>
                 <Select
                   value={editForm.category}
-                  onValueChange={value => setEditForm(form => ({ ...form, category: value }))}
+                  onValueChange={value => setEditForm(form => ({ ...form, category: value ?? '' }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择分类" />
@@ -733,7 +803,7 @@ export default function ProductsPage() {
                 <Label htmlFor="prodCat">分类</Label>
                 <Select
                   value={createForm.category}
-                  onValueChange={value => setCreateForm(form => ({ ...form, category: value }))}
+                  onValueChange={value => setCreateForm(form => ({ ...form, category: value ?? '' }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择分类" />

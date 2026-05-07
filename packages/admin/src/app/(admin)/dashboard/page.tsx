@@ -13,20 +13,15 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  getAllOrders,
-  getAllProducts,
-  getAllReturns,
-  getCustomers,
-  getSystemConfig,
-  formatMoney,
-} from '@dxdy/shared';
-import type { AdminRole, AdminUser, Order, Product, ReturnRecord, SystemConfig } from '@dxdy/shared';
+import { cloudbaseFetch } from '@/lib/admin-api-client';
+import { formatMoney } from '@/lib/format';
+import type { AdminRole, AdminUser, Customer, Order, Product, ReturnRecord, SystemConfig } from '@/lib/types';
 
 type DashboardState = {
   orders: Order[];
   products: Product[];
   returns: ReturnRecord[];
+  customers: Customer[];
   config: SystemConfig | null;
 };
 
@@ -80,8 +75,10 @@ export default function DashboardPage() {
     orders: [],
     products: [],
     returns: [],
+    customers: [],
     config: null,
   });
+  const [error, setError] = useState('');
   const [currentUser] = useState<AdminUser | null>(() => {
     if (typeof window === 'undefined') return null;
     const stored = window.localStorage.getItem('admin_user');
@@ -108,13 +105,21 @@ export default function DashboardPage() {
     if (currentUser && currentUser.role !== 'system_admin') return;
 
     async function load() {
-      const [orders, returns, products, config] = await Promise.all([
-        getAllOrders(),
-        getAllReturns(),
-        getAllProducts(),
-        getSystemConfig(),
-      ]);
-      setState({ orders, returns, products, config });
+      setError('');
+      try {
+        const response = await cloudbaseFetch('/api/cloudbase/dashboard', { cache: 'no-store' });
+        const data = await response.json() as DashboardState & { error?: string };
+        if (!response.ok) throw new Error(data.error || '读取仪表盘数据失败');
+        setState({
+          orders: data.orders || [],
+          returns: data.returns || [],
+          products: data.products || [],
+          customers: data.customers || [],
+          config: data.config || null,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '读取仪表盘数据失败');
+      }
     }
 
     load();
@@ -125,7 +130,7 @@ export default function DashboardPage() {
   }
 
   const now = new Date();
-  const customers = getCustomers();
+  const customers = state.customers;
   const customerMap = new Map(customers.map(customer => [customer.id, customer]));
   const stockWarningThreshold = state.config?.stockWarningThreshold ?? 10;
 
@@ -297,6 +302,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 bg-[radial-gradient(circle_at_top_left,rgba(7,95,103,0.10),transparent_28%),linear-gradient(180deg,#f4faf9_0%,#ffffff_40%)]">
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
       <Card className="border-teal-950/10 bg-white/92 shadow-sm">
         <CardContent className="space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">

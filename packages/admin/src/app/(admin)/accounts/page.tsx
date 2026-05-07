@@ -15,10 +15,8 @@ import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  getAdminUsers, createAdminUser, updateAdminUser, deleteAdminUser,
-} from '@dxdy/shared';
-import type { AdminUser, AdminRole } from '@dxdy/shared';
+import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import type { AdminUser, AdminRole } from '@/lib/types';
 
 const roleLabel: Record<AdminRole, string> = {
   service: '客服',
@@ -33,6 +31,8 @@ const statusLabel: Record<string, string> = {
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
   const [form, setForm] = useState({
@@ -44,8 +44,19 @@ export default function AccountsPage() {
     status: 'active' as 'active' | 'disabled',
   });
 
-  function loadAccounts() {
-    setAccounts(getAdminUsers());
+  async function loadAccounts() {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await cloudbaseFetch('/api/cloudbase/accounts', { cache: 'no-store' });
+      const data = await response.json() as { accounts?: AdminUser[]; error?: string };
+      if (!response.ok) throw new Error(data.error || '读取账号失败');
+      setAccounts(data.accounts || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '读取账号失败');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { loadAccounts(); }, []);
@@ -70,38 +81,57 @@ export default function AccountsPage() {
   }
 
   async function handleSubmit() {
-    if (editTarget) {
-      const data: Partial<{ realName: string; phone: string; role: AdminRole; status: 'active' | 'disabled'; password: string }> = {
-        realName: form.realName,
-        phone: form.phone,
-        role: form.role,
-        status: form.status,
-      };
-      if (form.password) data.password = form.password;
-      await updateAdminUser(editTarget.id, data);
-    } else {
-      await createAdminUser({
-        username: form.username,
-        password: form.password,
-        realName: form.realName,
-        phone: form.phone,
-        role: form.role,
-      });
+    setError('');
+    try {
+      if (editTarget) {
+        const data: Partial<{ realName: string; phone: string; role: AdminRole; status: 'active' | 'disabled'; password: string }> = {
+          realName: form.realName,
+          phone: form.phone,
+          role: form.role,
+          status: form.status,
+        };
+        if (form.password) data.password = form.password;
+        const response = await cloudbaseJsonFetch('/api/cloudbase/accounts', { id: editTarget.id, updates: data }, { method: 'PATCH' });
+        const result = await response.json() as { error?: string };
+        if (!response.ok) throw new Error(result.error || '更新账号失败');
+      } else {
+        const response = await cloudbaseJsonFetch('/api/cloudbase/accounts', {
+          username: form.username,
+          password: form.password,
+          realName: form.realName,
+          phone: form.phone,
+          role: form.role,
+        });
+        const result = await response.json() as { error?: string };
+        if (!response.ok) throw new Error(result.error || '创建账号失败');
+      }
+      setDialogOpen(false);
+      await loadAccounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存账号失败');
     }
-    setDialogOpen(false);
-    loadAccounts();
   }
 
   async function handleDelete(id: string) {
     if (!confirm('确认删除该账号？')) return;
-    await deleteAdminUser(id);
-    loadAccounts();
+    const response = await cloudbaseFetch(`/api/cloudbase/accounts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const result = await response.json() as { error?: string };
+    if (!response.ok) {
+      setError(result.error || '删除账号失败');
+      return;
+    }
+    await loadAccounts();
   }
 
   async function handleToggleStatus(user: AdminUser) {
     const next = user.status === 'active' ? 'disabled' : 'active';
-    await updateAdminUser(user.id, { status: next });
-    loadAccounts();
+    const response = await cloudbaseJsonFetch('/api/cloudbase/accounts', { id: user.id, updates: { status: next } }, { method: 'PATCH' });
+    const result = await response.json() as { error?: string };
+    if (!response.ok) {
+      setError(result.error || '更新账号状态失败');
+      return;
+    }
+    await loadAccounts();
   }
 
   return (
@@ -110,6 +140,7 @@ export default function AccountsPage() {
         <h1 className="text-2xl font-bold">账号管理</h1>
         <Button onClick={openCreate}>新增账号</Button>
       </div>
+      {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
 
       <Card>
         <CardContent className="p-0">
@@ -125,7 +156,12 @@ export default function AccountsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {accounts.map(a => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">加载账号中...</TableCell>
+                </TableRow>
+              )}
+              {!loading && accounts.map(a => (
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-sm">{a.username}</TableCell>
                   <TableCell>{a.realName}</TableCell>
@@ -145,7 +181,7 @@ export default function AccountsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {accounts.length === 0 && (
+              {!loading && accounts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">暂无账号</TableCell>
                 </TableRow>
@@ -181,7 +217,7 @@ export default function AccountsPage() {
             </div>
             <div className="space-y-2">
               <Label>角色</Label>
-              <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as AdminRole })}>
+              <Select value={form.role} onValueChange={v => setForm({ ...form, role: (v ?? 'service') as AdminRole })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="service">客服</SelectItem>
@@ -193,7 +229,7 @@ export default function AccountsPage() {
             {editTarget && (
               <div className="space-y-2">
                 <Label>状态</Label>
-                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as 'active' | 'disabled' })}>
+                <Select value={form.status} onValueChange={v => setForm({ ...form, status: (v ?? 'active') as 'active' | 'disabled' })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">正常</SelectItem>

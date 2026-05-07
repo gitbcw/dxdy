@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { adminLogin } from '@dxdy/shared';
+import type { AdminUser } from '@/lib/types';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,9 +19,15 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = await adminLogin(username, password);
-    setLoading(false);
-    if (result.success && result.user) {
+    try {
+      const response = await fetch('/api/cloudbase/accounts/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const result = await response.json() as { success?: boolean; user?: AdminUser; error?: string };
+      if (!response.ok || !result.success || !result.user) throw new Error(result.error || '登录失败');
       localStorage.setItem('admin_user', JSON.stringify(result.user));
       const landingPath =
         result.user.role === 'system_admin'
@@ -30,8 +36,10 @@ export default function LoginPage() {
             ? '/products'
             : '/orders';
       router.push(landingPath);
-    } else {
-      setError(result.error ?? '登录失败');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败');
+    } finally {
+      setLoading(false);
     }
   }
 

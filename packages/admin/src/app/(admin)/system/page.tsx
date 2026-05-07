@@ -5,20 +5,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { getSystemConfig, updateSystemConfig } from '@dxdy/shared';
-import type { SystemConfig } from '@dxdy/shared';
+import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import type { SystemConfig } from '@/lib/types';
 
 export default function SystemPage() {
   const [config, setConfig] = useState<SystemConfig | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    getSystemConfig().then(setConfig);
+    async function loadConfig() {
+      setError('');
+      try {
+        const response = await cloudbaseFetch('/api/cloudbase/system', { cache: 'no-store' });
+        const data = await response.json() as { config?: SystemConfig; error?: string };
+        if (!response.ok) throw new Error(data.error || '读取系统配置失败');
+        setConfig(data.config || null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '读取系统配置失败');
+      }
+    }
+
+    loadConfig();
   }, []);
 
   async function handleSave() {
     if (!config) return;
-    await updateSystemConfig(config);
-    alert('配置已保存');
+    setSaving(true);
+    setMessage('');
+    setError('');
+    try {
+      const response = await cloudbaseJsonFetch('/api/cloudbase/system', config);
+      const data = await response.json() as { config?: SystemConfig; error?: string };
+      if (!response.ok) throw new Error(data.error || '保存系统配置失败');
+      if (data.config) setConfig(data.config);
+      setMessage('配置已保存');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存系统配置失败');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!config) return <div>加载中...</div>;
@@ -27,8 +54,18 @@ export default function SystemPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">系统配置</h1>
-        <Button onClick={handleSave}>保存配置</Button>
+        <Button onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '保存配置'}</Button>
       </div>
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+      {message && (
+        <div className="rounded-md border border-emerald-700/20 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {message}
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

@@ -17,16 +17,9 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  getAllOrders,
-  adjustOrderPrice,
-  updateOrderStatusWithLog,
-  assignOrderToClerkWithLog,
-  getClerks,
-  clerkPendingOrders,
-} from '@dxdy/shared';
-import { formatMoney, formatDateTime } from '@dxdy/shared';
-import type { AdminUser, Clerk, Order, OrderStatus } from '@dxdy/shared';
+import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { formatMoney, formatDateTime } from '@/lib/format';
+import type { AdminUser, Clerk, Order, OrderStatus } from '@/lib/types';
 
 const statusLabel: Record<string, string> = {
   pending_payment: '待付款',
@@ -92,8 +85,13 @@ export default function OrdersPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'booking'>('all');
   const [adjustOrder, setAdjustOrder] = useState<Order | null>(null);
   const [newPrice, setNewPrice] = useState('');
+  const [shipOrder, setShipOrder] = useState<Order | null>(null);
+  const [shipCompany, setShipCompany] = useState('');
+  const [shipTrackingNo, setShipTrackingNo] = useState('');
   const [assignOrder, setAssignOrder] = useState<Order | null>(null);
-  const [clerks] = useState<Clerk[]>(() => getClerks());
+  const [clerks, setClerks] = useState<Clerk[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState('');
   const [adminUser] = useState<AdminUser | null>(() => {
     if (typeof window === 'undefined') return null;
     const stored = window.localStorage.getItem('admin_user');
@@ -107,8 +105,61 @@ export default function OrdersPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    getAllOrders().then(setOrders);
+    loadOrders();
   }, []);
+
+  async function loadOrders() {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const response = await cloudbaseFetch('/api/cloudbase/orders', { cache: 'no-store' });
+      const data = await response.json() as { orders?: Order[]; clerks?: Clerk[]; error?: string };
+      if (!response.ok) throw new Error(data.error || '读取订单数据失败');
+      setOrders(data.orders || []);
+      setClerks(data.clerks || []);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '读取订单数据失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getOperator() {
+    return {
+      operatorId: adminUser?.id || 'admin_001',
+      operatorName: adminUser?.realName || adminUser?.username || '后台管理员',
+    };
+  }
+
+  function updateRecord(updated?: Order) {
+    if (!updated) return;
+    setOrders(prev => prev.map(order => (order.id === updated.id ? updated : order)));
+  }
+
+  async function submitOrderAction(params: {
+    orderId: string;
+    action: 'adjust_price' | 'status' | 'assign' | 'ship';
+    status?: OrderStatus;
+    newPrice?: number;
+    clerkId?: string;
+    company?: string;
+    trackingNo?: string;
+  }) {
+    setSubmittingId(params.orderId);
+    setErrorMsg('');
+    try {
+      const response = await cloudbaseJsonFetch('/api/cloudbase/orders', { ...params, ...getOperator() });
+      const data = await response.json() as { order?: Order; error?: string };
+      if (!response.ok) throw new Error(data.error || '订单处理失败');
+      updateRecord(data.order);
+      return true;
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '订单处理失败');
+      return false;
+    } finally {
+      setSubmittingId('');
+    }
+  }
 
   const tabFilteredOrders = orders.filter(order => {
     if (activeTab === 'todo') return pendingStatuses.includes(order.status);
@@ -137,57 +188,56 @@ export default function OrdersPage() {
       setErrorMsg('改价只能低于原价');
       return;
     }
-    const result = await adjustOrderPrice(
-      adjustOrder.id,
-      price,
-      adminUser.id,
-      adminUser.realName,
-      adminUser.permissions,
-    );
-    if (result.success && result.order) {
-      setOrders(prev => prev.map(order => (order.id === result.order!.id ? result.order! : order)));
-      setErrorMsg('');
-    } else {
-      setErrorMsg(result.error || '改价失败');
+    const ok = await submitOrderAction({
+      orderId: adjustOrder.id,
+      action: 'adjust_price',
+      newPrice: price,
+    });
+    if (ok) {
+      setAdjustOrder(null);
+      setNewPrice('');
     }
-    setAdjustOrder(null);
-    setNewPrice('');
   }
 
   async function handleCancel(orderId: string) {
-    if (!adminUser) return;
-    const updated = await updateOrderStatusWithLog(orderId, 'cancelled', {
-      id: adminUser.id,
-      name: adminUser.realName,
-      role: adminUser.role,
-    });
-    if (updated) {
-      setOrders(prev => prev.map(order => (order.id === updated.id ? updated : order)));
-    }
+    await submitOrderAction({ orderId, action: 'status', status: 'cancelled' });
   }
 
   async function handleConfirmBooking(orderId: string) {
-    if (!adminUser) return;
-    const updated = await updateOrderStatusWithLog(orderId, 'confirmed', {
-      id: adminUser.id,
-      name: adminUser.realName,
-      role: adminUser.role,
-    });
-    if (updated) {
-      setOrders(prev => prev.map(order => (order.id === updated.id ? updated : order)));
-    }
+    await submitOrderAction({ orderId, action: 'status', status: 'confirmed' });
   }
 
   async function handleAdvanceStatus(orderId: string, nextStatus: OrderStatus) {
-    if (!adminUser) return;
-    const updated = await updateOrderStatusWithLog(orderId, nextStatus, {
-      id: adminUser.id,
-      name: adminUser.realName,
-      role: adminUser.role,
-    });
-    if (updated) {
-      setOrders(prev => prev.map(order => (order.id === updated.id ? updated : order)));
+    await submitOrderAction({ orderId, action: 'status', status: nextStatus });
+  }
+
+  async function handleShipOrder() {
+    if (!shipOrder) return;
+    if (!shipCompany.trim() || !shipTrackingNo.trim()) {
+      setErrorMsg('请填写物流公司和物流单号');
+      return;
     }
+    const ok = await submitOrderAction({
+      orderId: shipOrder.id,
+      action: 'ship',
+      company: shipCompany,
+      trackingNo: shipTrackingNo,
+    });
+    if (ok) {
+      setShipOrder(null);
+      setShipCompany('');
+      setShipTrackingNo('');
+    }
+  }
+
+  async function handleAssignOrder(clerkId: string) {
+    if (!assignOrder) return;
+    const ok = await submitOrderAction({
+      orderId: assignOrder.id,
+      action: 'assign',
+      clerkId,
+    });
+    if (ok) setAssignOrder(null);
   }
 
   return (
@@ -217,7 +267,7 @@ export default function OrdersPage() {
           <Select
             items={typeLabel}
             value={typeFilter}
-            onValueChange={value => setTypeFilter(value as 'all' | 'normal' | 'booking')}
+            onValueChange={value => setTypeFilter((value ?? 'all') as 'all' | 'normal' | 'booking')}
           >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="订单类型" />
@@ -231,7 +281,7 @@ export default function OrdersPage() {
           <Select
             items={statusFilterLabel}
             value={statusFilter}
-            onValueChange={value => setStatusFilter(value as 'all' | OrderStatus)}
+            onValueChange={value => setStatusFilter((value ?? 'all') as 'all' | OrderStatus)}
           >
             <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="订单状态" />
@@ -258,6 +308,7 @@ export default function OrdersPage() {
 
       <Card>
         <CardContent className="p-0">
+          {errorMsg && <div className="border-b px-4 py-3 text-sm text-destructive">{errorMsg}</div>}
           <Table>
             <TableHeader>
               <TableRow>
@@ -271,7 +322,14 @@ export default function OrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map(order => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    加载订单数据中...
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && filteredOrders.map(order => (
                 <TableRow key={order.id}>
                   <TableCell className="font-mono text-sm">{order.id}</TableCell>
                   <TableCell>{order.customerName}</TableCell>
@@ -295,6 +353,7 @@ export default function OrdersPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={submittingId === order.id}
                             onClick={() => {
                               setAdjustOrder(order);
                               setNewPrice(String(order.pricing.actualAmount));
@@ -303,23 +362,46 @@ export default function OrdersPage() {
                           >
                             改价
                           </Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)}>
+                          <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)} disabled={submittingId === order.id}>
                             取消
                           </Button>
                         </>
                       )}
                       {order.status === 'pending_payment' && !adminUser?.permissions?.order_price_adjust && (
-                        <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)} disabled={submittingId === order.id}>
                           取消
                         </Button>
                       )}
                       {(order.status === 'pending_shipment' || order.status === 'confirmed') && !order.clerkId && (
-                        <Button variant="default" size="sm" onClick={() => setAssignOrder(order)}>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          disabled={submittingId === order.id}
+                          onClick={() => {
+                            setAssignOrder(order);
+                            setErrorMsg('');
+                          }}
+                        >
                           指派
                         </Button>
                       )}
+                      {(order.status === 'pending_shipment' || order.status === 'confirmed') && order.clerkId && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          disabled={submittingId === order.id}
+                          onClick={() => {
+                            setShipOrder(order);
+                            setShipCompany(order.shipping.company || '');
+                            setShipTrackingNo(order.shipping.trackingNo || '');
+                            setErrorMsg('');
+                          }}
+                        >
+                          发货
+                        </Button>
+                      )}
                       {order.type === 'booking' && order.status === 'pending_confirmation' && (
-                        <Button variant="default" size="sm" onClick={() => handleConfirmBooking(order.id)}>
+                        <Button variant="default" size="sm" onClick={() => handleConfirmBooking(order.id)} disabled={submittingId === order.id}>
                           确认预约
                         </Button>
                       )}
@@ -327,6 +409,7 @@ export default function OrdersPage() {
                         <Button
                           variant="default"
                           size="sm"
+                          disabled={submittingId === order.id}
                           onClick={() => handleAdvanceStatus(order.id, 'in_service')}
                         >
                           开始服务
@@ -336,6 +419,7 @@ export default function OrdersPage() {
                         <Button
                           variant="default"
                           size="sm"
+                          disabled={submittingId === order.id}
                           onClick={() => handleAdvanceStatus(order.id, 'completed')}
                         >
                           完成服务
@@ -345,7 +429,7 @@ export default function OrdersPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredOrders.length === 0 && (
+              {!loading && filteredOrders.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     没有符合当前筛选条件的订单
@@ -384,7 +468,7 @@ export default function OrdersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustOrder(null)}>取消</Button>
-            <Button onClick={handleAdjustPrice}>确认改价</Button>
+            <Button onClick={handleAdjustPrice} disabled={!!adjustOrder && submittingId === adjustOrder.id}>确认改价</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -402,31 +486,25 @@ export default function OrdersPage() {
             <div className="space-y-2">
               <Label>选择制单员</Label>
               <div className="space-y-2">
+                {clerks.length === 0 && (
+                  <p className="rounded-lg border p-3 text-sm text-muted-foreground">暂无可用制单员</p>
+                )}
                 {clerks.map(clerk => {
-                  const pendingCount = clerkPendingOrders.filter(order => order.assignedAt).length;
+                  const pendingCount = orders.filter(order => order.clerkId === clerk.id && ['pending_shipment', 'confirmed'].includes(order.status)).length;
                   return (
-                    <div
+                    <button
                       key={clerk.id}
-                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent"
-                      onClick={async () => {
-                        if (!assignOrder || !adminUser) return;
-                        const updated = await assignOrderToClerkWithLog(assignOrder.id, clerk.id, {
-                          id: adminUser.id,
-                          name: adminUser.realName,
-                          role: adminUser.role,
-                        });
-                        if (updated) {
-                          setOrders(prev => prev.map(order => (order.id === updated.id ? updated : order)));
-                        }
-                        setAssignOrder(null);
-                      }}
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-accent disabled:opacity-60"
+                      disabled={!!assignOrder && submittingId === assignOrder.id}
+                      onClick={() => handleAssignOrder(clerk.id)}
                     >
                       <div>
                         <p className="font-medium">{clerk.realName || clerk.nickname}</p>
                         <p className="text-sm text-muted-foreground">{clerk.phone}</p>
                       </div>
                       <Badge variant="secondary">{pendingCount} 待处理</Badge>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -434,6 +512,32 @@ export default function OrdersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignOrder(null)}>取消</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!shipOrder} onOpenChange={() => setShipOrder(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>录入物流发货</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>订单号</Label>
+              <p className="text-sm font-mono">{shipOrder?.id}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipCompany">物流公司</Label>
+              <Input id="shipCompany" value={shipCompany} onChange={event => setShipCompany(event.target.value)} placeholder="如 顺丰速运" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shipTrackingNo">物流单号</Label>
+              <Input id="shipTrackingNo" value={shipTrackingNo} onChange={event => setShipTrackingNo(event.target.value)} placeholder="请输入物流单号" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShipOrder(null)}>取消</Button>
+            <Button onClick={handleShipOrder} disabled={!!shipOrder && submittingId === shipOrder.id}>确认发货</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

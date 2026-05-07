@@ -1,27 +1,61 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/admin/app-sidebar';
 import { Separator } from '@/components/ui/separator';
-import type { AdminUser } from '@dxdy/shared';
+import type { AdminUser } from '@/lib/types';
+
+const routeAccess: Record<string, AdminUser['role'][]> = {
+  dashboard: ['system_admin'],
+  products: ['product_manager', 'system_admin'],
+  orders: ['service', 'system_admin'],
+  returns: ['service', 'system_admin'],
+  finance: ['service', 'system_admin'],
+  users: ['system_admin'],
+  accounts: ['system_admin'],
+  roles: ['system_admin'],
+  system: ['system_admin'],
+  logs: ['system_admin'],
+};
+
+function getLandingPath(role: AdminUser['role']) {
+  if (role === 'system_admin') return '/dashboard';
+  if (role === 'product_manager') return '/products';
+  return '/orders';
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem('admin_user');
-    if (stored) {
+    let canceled = false;
+    async function loadSession() {
       try {
-        setUser(JSON.parse(stored));
+        const response = await fetch('/api/cloudbase/accounts/session', {
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        if (!response.ok) throw new Error('session invalid');
+        const data = await response.json() as { user?: AdminUser };
+        if (!canceled && data.user) {
+          setUser(data.user);
+          window.localStorage.setItem('admin_user', JSON.stringify(data.user));
+        }
       } catch {
-        // ignore
+        window.localStorage.removeItem('admin_user');
+      } finally {
+        if (!canceled) setMounted(true);
       }
     }
-    setMounted(true);
+    void loadSession();
+    return () => {
+      canceled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -29,6 +63,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace('/login');
     }
   }, [router, user, mounted]);
+
+  useEffect(() => {
+    if (!mounted || !user) return;
+    const section = pathname.split('/').filter(Boolean)[0];
+    const allowedRoles = section ? routeAccess[section] : null;
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      router.replace(getLandingPath(user.role));
+    }
+  }, [mounted, pathname, router, user]);
 
   if (!mounted || !user) return null;
 

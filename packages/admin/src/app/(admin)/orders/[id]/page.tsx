@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getOrderById, adjustOrderPrice, updateOrderStatusWithLog } from '@dxdy/shared';
-import { formatDateTime, formatMoney } from '@dxdy/shared';
-import type { AdminUser, Order, OrderStatus } from '@dxdy/shared';
+import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { formatDateTime, formatMoney } from '@/lib/format';
+import type { AdminUser, Order, OrderStatus } from '@/lib/types';
 
 const statusLabel: Record<string, string> = {
   pending_payment: '待付款',
@@ -46,10 +46,28 @@ export default function OrderDetailPage() {
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [newPrice, setNewPrice] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!params?.id) return;
-    getOrderById(params.id).then(setOrder);
+    async function loadOrder(id: string) {
+      setLoading(true);
+      setErrorMsg('');
+      try {
+        const response = await cloudbaseFetch(`/api/cloudbase/orders?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+        const data = await response.json() as { order?: Order; error?: string };
+        if (!response.ok) throw new Error(data.error || '读取订单详情失败');
+        setOrder(data.order || null);
+      } catch (error) {
+        setErrorMsg(error instanceof Error ? error.message : '读取订单详情失败');
+        setOrder(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOrder(params.id);
     const stored = localStorage.getItem('admin_user');
     if (stored) {
       try {
@@ -60,10 +78,33 @@ export default function OrderDetailPage() {
     }
   }, [params?.id]);
 
-  async function refreshOrder() {
-    if (!params?.id) return;
-    const latest = await getOrderById(params.id);
-    setOrder(latest);
+  function getOperator() {
+    return {
+      operatorId: adminUser?.id || 'admin_001',
+      operatorName: adminUser?.realName || adminUser?.username || '后台管理员',
+    };
+  }
+
+  async function submitOrderAction(params: {
+    action: 'adjust_price' | 'status';
+    status?: OrderStatus;
+    newPrice?: number;
+  }) {
+    if (!order) return false;
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      const response = await cloudbaseJsonFetch('/api/cloudbase/orders', { orderId: order.id, ...params, ...getOperator() });
+      const data = await response.json() as { order?: Order; error?: string };
+      if (!response.ok) throw new Error(data.error || '订单处理失败');
+      if (data.order) setOrder(data.order);
+      return true;
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '订单处理失败');
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleAdjustPrice() {
@@ -75,35 +116,22 @@ export default function OrderDetailPage() {
       return;
     }
 
-    const result = await adjustOrderPrice(
-      order.id,
-      price,
-      adminUser.id,
-      adminUser.realName,
-      adminUser.permissions,
-    );
-
-    if (result.success && result.order) {
-      setOrder(result.order);
+    const ok = await submitOrderAction({ action: 'adjust_price', newPrice: price });
+    if (ok) {
       setAdjustOpen(false);
       setNewPrice('');
       setErrorMsg('');
       return;
     }
-
-    setErrorMsg(result.error || '改价失败');
   }
 
   async function handleStatusChange(nextStatus: OrderStatus) {
     if (!order || !adminUser) return;
-    const updated = await updateOrderStatusWithLog(order.id, nextStatus, {
-      id: adminUser.id,
-      name: adminUser.realName,
-      role: adminUser.role,
-    });
-    if (updated) {
-      setOrder(updated);
-    }
+    await submitOrderAction({ action: 'status', status: nextStatus });
+  }
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground">加载订单详情中...</div>;
   }
 
   if (!order) {
@@ -130,6 +158,7 @@ export default function OrderDetailPage() {
             {order.id} · {order.customerName} · {order.type === 'booking' ? '预约订单' : '普通订单'}
           </p>
         </div>
+        {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
         <div className="flex flex-wrap justify-end gap-2">
           <Link href="/orders">
             <Button variant="outline">返回列表</Button>
@@ -147,16 +176,16 @@ export default function OrderDetailPage() {
             </Button>
           )}
           {order.type === 'booking' && order.status === 'pending_confirmation' && (
-            <Button onClick={() => handleStatusChange('confirmed')}>确认预约</Button>
+            <Button onClick={() => handleStatusChange('confirmed')} disabled={submitting}>确认预约</Button>
           )}
           {order.type === 'booking' && order.status === 'confirmed' && (
-            <Button onClick={() => handleStatusChange('in_service')}>开始服务</Button>
+            <Button onClick={() => handleStatusChange('in_service')} disabled={submitting}>开始服务</Button>
           )}
           {order.type === 'booking' && order.status === 'in_service' && (
-            <Button onClick={() => handleStatusChange('completed')}>完成服务</Button>
+            <Button onClick={() => handleStatusChange('completed')} disabled={submitting}>完成服务</Button>
           )}
           {order.status === 'pending_payment' && (
-            <Button variant="destructive" onClick={() => handleStatusChange('cancelled')}>
+            <Button variant="destructive" onClick={() => handleStatusChange('cancelled')} disabled={submitting}>
               取消订单
             </Button>
           )}
@@ -321,7 +350,7 @@ export default function OrderDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustOpen(false)}>取消</Button>
-            <Button onClick={handleAdjustPrice}>确认改价</Button>
+            <Button onClick={handleAdjustPrice} disabled={submitting}>确认改价</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

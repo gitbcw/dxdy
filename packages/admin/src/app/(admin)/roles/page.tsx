@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getAdminUsers, updateRolePermissions } from '@dxdy/shared';
-import type { AdminRole } from '@dxdy/shared';
+import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import type { AdminRole } from '@/lib/types';
 
 const roleLabel: Record<AdminRole, string> = {
   service: '客服',
@@ -57,24 +57,45 @@ export default function RolesPage() {
     return result;
   });
   const [saving, setSaving] = useState<AdminRole | null>(null);
+  const [counts, setCounts] = useState<Record<AdminRole, number>>({ service: 0, product_manager: 0, system_admin: 0 });
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const admins = getAdminUsers();
-    const merged = { ...defaultPermissions } as Record<AdminRole, Record<string, boolean>>;
-    for (const role of Object.keys(merged) as AdminRole[]) {
-      const user = admins.find(a => a.role === role);
-      if (user && Object.keys(user.permissions).length > 0) {
-        merged[role] = { ...user.permissions };
+    async function loadRoles() {
+      setError('');
+      try {
+        const response = await cloudbaseFetch('/api/cloudbase/roles', { cache: 'no-store' });
+        const data = await response.json() as {
+          permissions?: Record<AdminRole, Record<string, boolean>>;
+          counts?: Record<AdminRole, number>;
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error || '读取角色权限失败');
+        if (data.permissions) setPermissions(data.permissions);
+        if (data.counts) setCounts(data.counts);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '读取角色权限失败');
       }
     }
-    setPermissions(merged);
+
+    loadRoles();
   }, []);
 
   async function handleSave(role: AdminRole) {
     setSaving(role);
-    await updateRolePermissions(role, permissions[role]);
-    setSaving(null);
-    alert(`${roleLabel[role]}权限已保存`);
+    setError('');
+    setMessage('');
+    try {
+      const response = await cloudbaseJsonFetch('/api/cloudbase/roles', { role, permissions: permissions[role] });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || '保存角色权限失败');
+      setMessage(`${roleLabel[role]}权限已保存`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存角色权限失败');
+    } finally {
+      setSaving(null);
+    }
   }
 
   function togglePermission(role: AdminRole, key: string) {
@@ -92,13 +113,15 @@ export default function RolesPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">角色管理</h1>
+      {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
+      {message && <div className="rounded-md border border-emerald-700/20 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
 
       <div className="grid gap-6 md:grid-cols-3">
         {roles.map(role => (
           <Card key={role}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base">{roleLabel[role]}</CardTitle>
-              <Badge variant="secondary">{getAdminUsers().filter(a => a.role === role).length} 人</Badge>
+              <Badge variant="secondary">{counts[role]} 人</Badge>
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(permissionLabels).map(([key, label]) => (

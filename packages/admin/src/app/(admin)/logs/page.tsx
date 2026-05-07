@@ -9,22 +9,43 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { getOperationLogs } from '@dxdy/shared';
-import { formatDateTime } from '@dxdy/shared';
-import type { OperationLog } from '@dxdy/shared';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { cloudbaseFetch } from '@/lib/admin-api-client';
+import { formatDateTime } from '@/lib/format';
+import type { OperationLog } from '@/lib/types';
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<OperationLog[]>([]);
   const [filterOperator, setFilterOperator] = useState('all');
   const [filterAction, setFilterAction] = useState('all');
   const [filterResult, setFilterResult] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedLog, setSelectedLog] = useState<OperationLog | null>(null);
 
   useEffect(() => {
-    getOperationLogs().then(setLogs);
+    async function loadLogs() {
+      setLoading(true);
+      setError('');
+      try {
+        const response = await cloudbaseFetch('/api/cloudbase/logs', { cache: 'no-store' });
+        const data = await response.json() as { logs?: OperationLog[]; error?: string };
+        if (!response.ok) throw new Error(data.error || '读取操作日志失败');
+        setLogs(data.logs || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '读取操作日志失败');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadLogs();
   }, []);
 
-  const operators = useMemo(() => [...new Set(logs.map(l => l.operatorName))], [logs]);
-  const actions = useMemo(() => [...new Set(logs.map(l => l.action))], [logs]);
+  const operators = useMemo(() => [...new Set(logs.map(l => l.operatorName).filter(Boolean))], [logs]);
+  const actions = useMemo(() => [...new Set(logs.map(l => l.action).filter(Boolean))], [logs]);
 
   const filtered = useMemo(() => {
     return logs.filter(l => {
@@ -38,8 +59,13 @@ export default function LogsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">操作日志</h1>
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Select value={filterOperator} onValueChange={v => setFilterOperator(v ?? 'all')}>
           <SelectTrigger className="w-40"><SelectValue placeholder="操作人" /></SelectTrigger>
           <SelectContent>
@@ -78,8 +104,17 @@ export default function LogsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(log => (
-                <TableRow key={log.id}>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">加载日志中...</TableCell>
+                </TableRow>
+              )}
+              {!loading && filtered.map(log => (
+                <TableRow
+                  key={log.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedLog(log)}
+                >
                   <TableCell className="text-sm text-muted-foreground">{formatDateTime(log.createdAt)}</TableCell>
                   <TableCell>{log.operatorName}</TableCell>
                   <TableCell><Badge variant="secondary">{log.operatorRole}</Badge></TableCell>
@@ -92,7 +127,7 @@ export default function LogsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 && (
+              {!loading && filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">暂无匹配日志</TableCell>
                 </TableRow>
@@ -101,6 +136,34 @@ export default function LogsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedLog} onOpenChange={open => !open && setSelectedLog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>日志详情</DialogTitle>
+            <DialogDescription>查看单条后台操作的审计信息</DialogDescription>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-2">
+                <span className="text-muted-foreground">时间</span>
+                <span>{formatDateTime(selectedLog.createdAt)}</span>
+                <span className="text-muted-foreground">操作人</span>
+                <span>{selectedLog.operatorName}（{selectedLog.operatorRole}）</span>
+                <span className="text-muted-foreground">操作</span>
+                <span>{selectedLog.action}</span>
+                <span className="text-muted-foreground">目标</span>
+                <span className="break-all">{selectedLog.target}</span>
+                <span className="text-muted-foreground">结果</span>
+                <span>{selectedLog.result === 'success' ? '成功' : '失败'}</span>
+              </div>
+              <div className="rounded-md border bg-muted/40 p-3 leading-6">
+                {selectedLog.detail || '无详情'}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

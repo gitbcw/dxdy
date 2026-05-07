@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DXDY Admin
 
-## Getting Started
+Next.js admin console for the CloudBase-backed DXDY management workflows.
 
-First, run the development server:
+## Local Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev -w packages/admin
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The dev server usually starts on `http://localhost:3000`; if that port is occupied, Next.js will pick the next available port.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required Production Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `ADMIN_SESSION_SECRET`: strong random secret used to sign the `admin_session` httpOnly cookie. Production startup/login flows must not rely on the development fallback.
 
-## Learn More
+## Development-Only Defaults
 
-To learn more about Next.js, take a look at the following resources:
+- `ADMIN_ALLOW_ANY_PASSWORD=true` may be used locally to allow the seeded admin accounts to log in with any password.
+- In production, arbitrary admin passwords are rejected. Accounts must have a real password value stored in CloudBase `users.password`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Default Admin Roles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `service`
+- `product_manager`
+- `system_admin`
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The login API can seed missing default admin accounts for development and bootstrap use.

@@ -26,14 +26,16 @@ import {
   LogOut,
   Shield,
   Key,
+  WalletCards,
 } from 'lucide-react';
-import type { AdminUser } from '@dxdy/shared';
+import type { AdminUser } from '@/lib/types';
 
 const navItems = [
   { title: '仪表盘', href: '/dashboard', icon: LayoutDashboard, roles: ['system_admin'] },
   { title: '商品管理', href: '/products', icon: Package, roles: ['product_manager', 'system_admin'] },
   { title: '订单管理', href: '/orders', icon: ShoppingCart, roles: ['service', 'system_admin'] },
   { title: '退换货', href: '/returns', icon: RotateCcw, roles: ['service', 'system_admin'] },
+  { title: '财务处理', href: '/finance', icon: WalletCards, roles: ['service', 'system_admin'] },
   { title: '用户管理', href: '/users', icon: Users, roles: ['system_admin'] },
   { title: '账号管理', href: '/accounts', icon: Shield, roles: ['system_admin'] },
   { title: '角色管理', href: '/roles', icon: Key, roles: ['system_admin'] },
@@ -44,6 +46,14 @@ const navItems = [
 export function AppSidebar({ user }: { user: AdminUser }) {
   const pathname = usePathname();
   const filtered = navItems.filter(item => item.roles.includes(user.role));
+  async function handleLogout() {
+    await fetch('/api/cloudbase/accounts/session', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    }).catch(() => null);
+    localStorage.removeItem('admin_user');
+    window.location.href = '/login';
+  }
 
   return (
     <Sidebar>
@@ -74,7 +84,7 @@ export function AppSidebar({ user }: { user: AdminUser }) {
       <SidebarFooter className="border-t p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => { localStorage.removeItem('admin_user'); window.location.href = '/login'; }}>
+            <SidebarMenuButton onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
               <span>退出登录</span>
             </SidebarMenuButton>
