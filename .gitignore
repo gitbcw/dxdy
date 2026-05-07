@@ -32,12 +32,8 @@ next-env.d.ts
 packages/miniprogram/miniprogram/app.js
 packages/miniprogram/miniprogram/pages/**/*.js
 
-# Shared package build output
-packages/shared/lib/
-packages/shared/dist/
-
-# Junction contents (src -> shared/src, do not track expanded files)
-packages/miniprogram/miniprogram/shared/src/
-
 # Claude
 .claude/
+
+# MCP secrets
+.mcp.json
