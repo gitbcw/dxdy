@@ -5,9 +5,7 @@
   "scripts": {
     "typecheck": "npx tsc -p tsconfig.json --noEmit",
     "build:devtools": "node ./scripts/build-devtools.mjs",
-    "prepare:devtools": "npm run build:devtools",
-    "setup:junction": "node ./scripts/setup-junction.mjs",
-    "postinstall": "node ./scripts/setup-junction.mjs"
+    "prepare:devtools": "npm run build:devtools"
   },
   "keywords": [],
   "author": "",

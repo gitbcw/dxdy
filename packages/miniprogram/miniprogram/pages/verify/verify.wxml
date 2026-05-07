@@ -1,8 +1,21 @@
 <view class="page">
   <view wx:if="{{status === 'pending'}}" class="status-card">
-    <view class="status-icon pending">审</view>
-    <text class="status-title">认证审核中</text>
-    <text class="status-desc">我们正在审核您的机构资质，通常 1-3 个工作日内完成</text>
+    <view class="status-head">
+      <view class="status-icon pending">医</view>
+      <view>
+        <text class="status-title">认证审核中</text>
+        <text class="status-desc">资质已提交，预计 1-3 个工作日完成审核</text>
+      </view>
+    </view>
+    <view class="material-row">
+      <text>营业执照</text>
+      <text>已上传</text>
+    </view>
+    <view class="timeline">
+      <view class="step active"><text>已提交</text><text>资料已进入审核队列</text></view>
+      <view class="step active"><text>审核中</text><text>请保持电话畅通</text></view>
+      <view class="step"><text>审核结果</text><text>通过后解锁医院价</text></view>
+    </view>
     <view class="status-info">
       <text class="info-label">联系人</text>
       <text class="info-value">{{info.contactName}}</text>
@@ -15,42 +28,72 @@
   </view>
 
   <view wx:elif="{{status === 'approved'}}" class="status-card">
-    <view class="status-icon approved">✓</view>
-    <text class="status-title">认证已通过</text>
-    <text class="status-desc">您的机构资质已通过审核，可享受机构专属价格</text>
+    <view class="status-head">
+      <view class="status-icon approved">✓</view>
+      <view>
+        <text class="status-title">认证已通过</text>
+        <text class="status-desc">可购买血包并享受医院专属价格</text>
+      </view>
+    </view>
     <view class="back-btn" bindtap="goBack">返回首页</view>
   </view>
 
   <view wx:else class="form">
-    <text class="form-title">机构实名认证</text>
-    <text class="form-subtitle">{{isPersonalCustomer ? '提交机构资质后，将切换为机构客户并进入审核流程' : '提交营业执照信息，认证后解锁机构专属商品与价格'}}</text>
+    <view class="top-tip">认证通过后可购买血包并享受医院价</view>
+    <text class="form-title">医院认证</text>
+    <text class="form-subtitle">{{isPersonalCustomer ? '提交机构资质后进入审核流程' : '请补充医院资质信息'}}</text>
 
     <view wx:if="{{status === 'rejected'}}" class="reject-notice">
       <text class="reject-label">驳回原因</text>
       <text class="reject-reason">{{info.rejectReason || '信息不完整或不符合要求'}}</text>
     </view>
 
-    <view class="form-section">
-      <text class="form-label">营业执照</text>
-      <view class="upload-area" bindtap="chooseLicense">
-        <image wx:if="{{licenseUrl}}" src="{{licenseUrl}}" class="license-preview" mode="aspectFit" />
-        <view wx:else class="upload-placeholder">
-          <text class="upload-icon">+</text>
-          <text class="upload-text">上传营业执照</text>
+    <view class="form-card">
+      <view class="field-row">
+        <text class="field-label">医院名称 *</text>
+        <input class="field-input" placeholder="请输入医院全称" value="{{hospitalName}}" data-field="hospitalName" bindinput="onFieldInput" />
+      </view>
+      <view class="upload-row">
+        <text class="field-label">营业执照上传 *</text>
+        <view class="upload-area" data-field="licenseUrl" bindtap="chooseLicense">
+          <image wx:if="{{licenseUrl}}" src="{{licenseUrl}}" class="license-preview" mode="aspectFill" />
+          <view wx:else class="upload-placeholder">
+            <text class="upload-icon">相机</text>
+            <text class="upload-text">点击上传营业执照</text>
+          </view>
+        </view>
+      </view>
+      <view class="field-row">
+        <text class="field-label">法人名称 *</text>
+        <input class="field-input" placeholder="请输入法人姓名" value="{{legalPerson}}" data-field="legalPerson" bindinput="onFieldInput" />
+      </view>
+      <view class="field-row">
+        <text class="field-label">联系方式 *</text>
+        <input class="field-input" placeholder="请输入手机号" type="number" maxlength="11" value="{{contactPhone}}" bindinput="onPhoneInput" />
+      </view>
+      <view class="field-row">
+        <text class="field-label">所在地区 *</text>
+        <input class="field-input" placeholder="请选择省 / 市 / 区" value="{{region}}" data-field="region" bindinput="onFieldInput" />
+      </view>
+      <view class="field-row">
+        <text class="field-label">详细地址 *</text>
+        <input class="field-input" placeholder="请输入详细地址" value="{{address}}" data-field="address" bindinput="onFieldInput" />
+      </view>
+      <view class="field-row">
+        <text class="field-label">联系人姓名 *</text>
+        <input class="field-input" placeholder="请输入联系人姓名" value="{{contactName}}" bindinput="onNameInput" />
+      </view>
+      <view class="upload-row">
+        <text class="field-label">经营场所照片</text>
+        <view class="upload-area small" data-field="sitePhotoUrl" bindtap="chooseLicense">
+          <image wx:if="{{sitePhotoUrl}}" src="{{sitePhotoUrl}}" class="license-preview" mode="aspectFill" />
+          <view wx:else class="upload-placeholder">
+            <text class="upload-icon">相机</text>
+            <text class="upload-text">上传门头或经营场所照片</text>
+          </view>
         </view>
       </view>
     </view>
-
-    <view class="form-section">
-      <text class="form-label">联系人姓名</text>
-      <input class="form-input" placeholder="请输入联系人姓名" value="{{contactName}}" bindinput="onNameInput" />
-    </view>
-
-    <view class="form-section">
-      <text class="form-label">联系电话</text>
-      <input class="form-input" placeholder="请输入联系电话" type="number" maxlength="11" value="{{contactPhone}}" bindinput="onPhoneInput" />
-    </view>
-
-    <view class="submit-btn" bindtap="onSubmit">提交认证</view>
+    <view class="submit-btn dx-orange-btn" bindtap="onSubmit">提交认证</view>
   </view>
 </view>

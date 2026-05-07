@@ -1,0 +1,32 @@
+<view class="page">
+  <view wx:if="{{isEmpty}}" class="empty">未找到检测报告</view>
+  <block wx:else>
+    <view class="hero-card">
+      <view class="bag">✓</view>
+      <view class="meta">
+        <view class="row"><text>血包编号</text><text>{{code}}</text></view>
+        <view class="row"><text>商品名称</text><text>{{product}}</text></view>
+        <view class="row"><text>批次号</text><text>{{batch}}</text></view>
+        <view class="row"><text>血型</text><text>{{bloodType}}</text></view>
+        <view class="row"><text>采集日期</text><text>{{collectedAt}}</text></view>
+        <view class="row"><text>检测日期</text><text>{{testedAt}}</text></view>
+        <view class="row"><text>有效期</text><text>{{validUntil}}</text></view>
+      </view>
+    </view>
+
+    <view class="grid">
+      <view class="card">
+        <text class="card-title">检测项目</text>
+        <view wx:for="{{items}}" wx:key="name" class="check-row"><text>{{item.name}}</text><text>{{item.result}}</text></view>
+      </view>
+      <view class="card">
+        <text class="card-title">储存与运输</text>
+        <view class="cold-row">{{storage}}</view>
+        <view class="cold-row">{{transport}}</view>
+      </view>
+    </view>
+
+    <view class="conclusion">检测结论：{{conclusion}}</view>
+    <view class="submit dx-orange-btn" bindtap="onDownload">{{reportFileID ? '下载 / 查看报告' : '暂无报告文件'}}</view>
+  </block>
+</view>

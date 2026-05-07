@@ -1,62 +1,65 @@
-/**app.wxss - 大熊动医华南医学检验实验室 Theme**/
-/**Design: Clinical Precision meets Warm Professionalism**/
+/**app.wxss - 大熊动医定稿 UI Theme**/
+/**Design: warm veterinary commerce, green trust + orange action**/
 
 page {
   font-family: 'PingFang SC', 'SF Pro Display', -apple-system, sans-serif;
   font-size: 28rpx;
-  color: #1A2B3C;
-  background: #F7F9FB;
+  color: #17231f;
+  background: #f6f7f6;
 }
 
 /* ============ 色彩系统 ============ */
 page {
-  /* 主色系 - 深青蓝 */
-  --color-primary: #0A6E7C;
-  --color-primary-light: #14919B;
-  --color-primary-dark: #085561;
+  /* 主色系 - 定稿绿色 */
+  --color-primary: #16a34a;
+  --color-primary-light: #37c267;
+  --color-primary-dark: #0b7f36;
+  --color-primary-soft: #eaf8ef;
 
-  /* 强调色 - 琥珀金 */
-  --color-accent: #D4A853;
-  --color-accent-light: #E8C478;
+  /* 强调色 - 操作橙 */
+  --color-accent: #ff6a00;
+  --color-accent-light: #ff8a1f;
+  --color-accent-dark: #e95300;
+  --color-accent-soft: #fff3e8;
 
   /* 背景色 */
-  --bg-page: #F7F9FB;
-  --bg-card: #FFFFFF;
-  --bg-section: #EEF2F5;
-  --bg-hover: #F0F4F7;
+  --bg-page: #f6f7f6;
+  --bg-card: #ffffff;
+  --bg-section: #f3f6f4;
+  --bg-hover: #eef7f0;
 
   /* 文字色 */
-  --text-primary: #1A2B3C;
-  --text-secondary: #5A6B7C;
-  --text-tertiary: #8A9BAC;
-  --text-inverse: #FFFFFF;
+  --text-primary: #17231f;
+  --text-secondary: #5d6964;
+  --text-tertiary: #9aa39f;
+  --text-inverse: #ffffff;
 
   /* 状态色 */
-  --color-success: #34A853;
-  --color-warning: #F5A623;
-  --color-error: #DC3545;
-  --color-info: #0A6E7C;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #2f80ed;
 
   /* 价格色 */
-  --color-price: #D4A853;
-  --color-price-light: #E8C478;
+  --color-price: #ff5a00;
+  --color-price-light: #ff8a1f;
 
   /* 边框与分割 */
-  --border-color: #E2E8F0;
-  --divider-color: #F0F4F7;
+  --border-color: #e7ece8;
+  --divider-color: #eff2f0;
 
   /* 阴影 - 简洁内敛 */
-  --shadow-xs: 0 1rpx 3rpx rgba(10, 110, 124, 0.04);
-  --shadow-sm: 0 2rpx 8rpx rgba(10, 110, 124, 0.06);
-  --shadow-md: 0 4rpx 16rpx rgba(10, 110, 124, 0.08);
-  --shadow-lg: 0 8rpx 24rpx rgba(10, 110, 124, 0.10);
-  --shadow-xl: 0 12rpx 32rpx rgba(10, 110, 124, 0.12);
+  --shadow-xs: 0 2rpx 6rpx rgba(28, 43, 36, 0.04);
+  --shadow-sm: 0 8rpx 22rpx rgba(28, 43, 36, 0.06);
+  --shadow-md: 0 14rpx 36rpx rgba(28, 43, 36, 0.08);
+  --shadow-lg: 0 24rpx 56rpx rgba(28, 43, 36, 0.10);
+  --shadow-xl: 0 32rpx 80rpx rgba(28, 43, 36, 0.12);
 
   /* 圆角 - 几何感 */
   --radius-sm: 8rpx;
-  --radius-md: 12rpx;
-  --radius-lg: 16rpx;
-  --radius-xl: 24rpx;
+  --radius-md: 14rpx;
+  --radius-lg: 20rpx;
+  --radius-xl: 28rpx;
   --radius-full: 9999rpx;
 
   /* 间距 */
@@ -80,7 +83,7 @@ page {
 /* 通用卡片 */
 .card {
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
@@ -94,7 +97,7 @@ page {
 
 /* 渐变背景 */
 .gradient-primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
 }
 
 .gradient-accent {
@@ -131,9 +134,9 @@ page {
 }
 
 .btn-accent {
-  background: var(--color-accent);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+  color: var(--text-inverse);
+  box-shadow: 0 12rpx 28rpx rgba(255, 106, 0, 0.22);
 }
 
 .btn-outline {
@@ -178,23 +181,66 @@ page {
 }
 
 .tag-primary {
-  background: rgba(10, 110, 124, 0.10);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
 .tag-accent {
-  background: rgba(212, 168, 83, 0.12);
-  color: #B8923E;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .tag-success {
-  background: rgba(52, 168, 83, 0.10);
+  background: var(--color-primary-soft);
   color: var(--color-success);
 }
 
 .tag-warning {
-  background: rgba(245, 166, 35, 0.12);
-  color: #D4890D;
+  background: #fff7df;
+  color: #d97706;
+}
+
+.dx-card {
+  background: #ffffff;
+  border: 1rpx solid rgba(22, 163, 74, 0.10);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-sm);
+}
+
+.dx-orange-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  border-radius: 18rpx;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 800;
+  background: linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%);
+  box-shadow: 0 12rpx 28rpx rgba(255, 106, 0, 0.22);
+}
+
+.dx-ghost-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80rpx;
+  border: 1rpx solid rgba(22, 163, 74, 0.35);
+  border-radius: 18rpx;
+  color: var(--color-primary);
+  font-size: 28rpx;
+  font-weight: 800;
+  background: #ffffff;
+}
+
+.dx-status-green {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.dx-status-orange {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 /* 空状态 */

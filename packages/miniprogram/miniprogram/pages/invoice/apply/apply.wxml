@@ -1,0 +1,16 @@
+<view class="page">
+  <view class="card">
+    <view class="segment">
+      <view class="{{invoiceType === 'electronic' ? 'active' : ''}}" data-type="electronic" bindtap="onTypeTap">电子发票</view>
+      <view class="{{invoiceType === 'paper' ? 'active' : ''}}" data-type="paper" bindtap="onTypeTap">纸质发票</view>
+    </view>
+    <view class="row"><text>发票抬头</text><input value="{{title}}" data-field="title" bindinput="onInput" /></view>
+    <view class="row"><text>纳税人识别号</text><input value="{{taxNo}}" data-field="taxNo" bindinput="onInput" /></view>
+    <view class="row"><text>接收邮箱</text><input value="{{email}}" data-field="email" bindinput="onInput" /></view>
+    <view class="row"><text>关联订单</text><input value="{{orderNo}}" data-field="orderNo" bindinput="onInput" disabled="{{orderLocked}}" placeholder="请输入已支付订单号" /></view>
+    <view class="row"><text>开票金额</text><text class="amount">¥{{amount}}</text></view>
+    <view class="row"><text>备注</text><input placeholder="选填，如需备注其他信息" value="{{remark}}" data-field="remark" bindinput="onInput" /></view>
+    <view wx:if="{{statusText}}" class="status">{{statusText}}</view>
+  </view>
+  <view class="submit dx-orange-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">{{submitting ? '提交中...' : '提交申请'}}</view>
+</view>

@@ -1,0 +1,9 @@
+{
+  "name": "requestWithdrawal",
+  "version": "1.0.0",
+  "description": "提交代理商提现申请并扣减可提现余额",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

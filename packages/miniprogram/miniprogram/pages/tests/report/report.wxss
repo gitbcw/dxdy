@@ -1,0 +1,111 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f7f8f7;
+  box-sizing: border-box;
+}
+
+.hero-card,
+.card,
+.conclusion {
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+}
+
+.hero-card {
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx;
+}
+
+.bag {
+  flex-shrink: 0;
+  width: 118rpx;
+  height: 118rpx;
+  line-height: 118rpx;
+  border-radius: 28rpx;
+  color: #18a44a;
+  background: #eaf8ee;
+  text-align: center;
+  font-size: 56rpx;
+  font-weight: 900;
+}
+
+.meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+  color: #69736e;
+  font-size: 23rpx;
+}
+
+.row text:last-child {
+  flex: 1;
+  min-width: 0;
+  color: #17201b;
+  font-weight: 800;
+  text-align: right;
+  word-break: break-all;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 18rpx;
+}
+
+.card {
+  padding: 22rpx;
+}
+
+.card-title {
+  display: block;
+  margin-bottom: 14rpx;
+  color: #17201b;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.check-row,
+.cold-row {
+  margin-top: 12rpx;
+  padding: 12rpx;
+  border-radius: 10rpx;
+  color: #18a44a;
+  background: #eaf8ee;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.check-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.conclusion {
+  margin-top: 18rpx;
+  padding: 22rpx;
+  color: #27733d;
+  background: #ecf8ef;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.submit {
+  margin-top: 24rpx;
+}
+
+.empty {
+  padding: 120rpx 0;
+  color: #7d8782;
+  font-size: 26rpx;
+  text-align: center;
+}

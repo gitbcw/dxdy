@@ -1,0 +1,90 @@
+.page {
+  min-height: 100vh;
+  padding: 72rpx 24rpx 32rpx;
+  background: #f7f8f7;
+  box-sizing: border-box;
+}
+
+.success-hero {
+  text-align: center;
+  padding: 42rpx 24rpx;
+}
+
+.check {
+  width: 132rpx;
+  height: 132rpx;
+  line-height: 132rpx;
+  margin: 0 auto;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #18a44a;
+  font-size: 72rpx;
+  font-weight: 900;
+}
+
+.title {
+  display: block;
+  margin-top: 26rpx;
+  color: #18a44a;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.desc {
+  display: block;
+  margin-top: 12rpx;
+  color: #7d8782;
+  font-size: 25rpx;
+}
+
+.info-card {
+  padding: 12rpx 24rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #edf0ee;
+  color: #69736e;
+  font-size: 25rpx;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row text:last-child {
+  color: #17201b;
+  font-weight: 800;
+}
+
+.row .price {
+  color: #ff5a1f;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 44rpx;
+}
+
+.outline-btn,
+.orange-btn {
+  height: 78rpx;
+  line-height: 78rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.outline-btn {
+  color: #18a44a;
+  border: 1rpx solid #9bddb0;
+  background: #ffffff;
+}

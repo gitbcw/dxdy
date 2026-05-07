@@ -33,7 +33,7 @@
       <view class="item-content">
         <view>
           <text class="item-name">{{item.name}}</text>
-          <text class="item-spec">{{item.specs[0].value}}</text>
+          <text class="item-spec">{{item.specText}}</text>
         </view>
         <view class="item-bottom">
           <view class="item-price">

@@ -1,43 +1,56 @@
-const { loginByPhone } = require('./services/index')
-
 App<IAppOption>({
   globalData: {
     userInfo: null,
     token: '',
-    userRole: 'customer_personal',
+    userRole: '',
     catalogSearchKeyword: '',
+    openid: '',
   },
+
   onLaunch() {
-    // 从本地存储恢复登录状态
+    if (!wx.cloud) return
+    wx.cloud.init({ env: 'cloudbase-d4gwpsm7gcc59b6fc', traceUser: true })
+
+    // 获取 openid
+    wx.cloud.callFunction({ name: 'getOpenId' }).then((res: any) => {
+      const openid = res.result?.openid
+      if (openid) {
+        this.globalData.openid = openid
+        this.loadUserByOpenId?.(openid)
+      }
+    }).catch(() => {})
+
+    // 优先从本地缓存恢复
     const userStr = wx.getStorageSync('current_user') as string
-    const storedRole = wx.getStorageSync('demo_role') as string
-    if (storedRole) {
-      this.globalData.userRole = storedRole
-    }
     if (userStr) {
       try {
         this.globalData.userInfo = JSON.parse(userStr)
+        this.globalData.userRole = this.resolveRole?.(this.globalData.userInfo) || ''
       } catch { /* ignore */ }
-    } else {
-      this.switchDemoRole?.('customer_personal')
     }
   },
 
-  async switchDemoRole(role: string) {
-    const phoneMap: Record<string, string> = {
-      customer_institution: '13821003456',
-      customer_personal: '13888002233',
-      salesperson: '13811001234',
-      clerk: '13833007890',
+  /** 根据 openid 从云数据库查找用户 */
+  async loadUserByOpenId(openid: string) {
+    try {
+      const db = wx.cloud.database()
+      const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
+      if (data.length > 0) {
+        const user = { ...data[0], id: data[0]._id }
+        this.globalData.userInfo = user
+        this.globalData.userRole = this.resolveRole?.(user) || ''
+        wx.setStorageSync('current_user', JSON.stringify(user))
+      }
+    } catch { /* ignore */ }
+  },
+
+  /** 从用户对象推导角色标识（页面用） */
+  resolveRole(user: any): string {
+    if (!user) return ''
+    if (user.role === 'customer') {
+      return user.customerType === 'institution' ? 'customer_institution' : 'customer_personal'
     }
-    this.globalData.userRole = role
-    wx.setStorageSync('demo_role', role)
-    const phone = phoneMap[role] || phoneMap.customer_institution
-    const result = await loginByPhone(phone)
-    if (result.success && result.user) {
-      this.globalData.userInfo = result.user
-      wx.setStorageSync('current_user', JSON.stringify(result.user))
-    }
+    return user.role // salesperson | clerk | admin
   },
 })
 

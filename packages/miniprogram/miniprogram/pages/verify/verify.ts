@@ -7,6 +7,11 @@ Page({
     licenseUrl: '',
     contactName: '',
     contactPhone: '',
+    hospitalName: '',
+    region: '',
+    address: '',
+    legalPerson: '',
+    sitePhotoUrl: '',
     isPersonalCustomer: false,
   },
 
@@ -23,19 +28,30 @@ Page({
       info: user.verificationInfo || {},
       contactName: user.verificationInfo?.contactName || '',
       contactPhone: user.verificationInfo?.contactPhone || '',
+      hospitalName: user.verificationInfo?.hospitalName || '',
+      region: user.verificationInfo?.region || '',
+      address: user.verificationInfo?.address || '',
+      legalPerson: user.verificationInfo?.legalPerson || '',
       licenseUrl: user.verificationInfo?.businessLicense || '',
+      sitePhotoUrl: user.verificationInfo?.sitePhoto || '',
       isPersonalCustomer: user.customerType !== 'institution',
     })
   },
 
-  chooseLicense() {
+  chooseLicense(e?: any) {
+    const field = e?.currentTarget?.dataset?.field || 'licenseUrl'
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
       success: (res: any) => {
-        this.setData({ licenseUrl: res.tempFiles[0].tempFilePath })
+        this.setData({ [field]: res.tempFiles[0].tempFilePath })
       },
     })
+  },
+
+  onFieldInput(e: any) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ [field]: e.detail.value })
   },
 
   onNameInput(e: any) {
@@ -47,9 +63,13 @@ Page({
   },
 
   async onSubmit() {
-    const { contactName, contactPhone, licenseUrl } = this.data
+    const { contactName, contactPhone, licenseUrl, hospitalName, legalPerson, region, address } = this.data
     if (!licenseUrl) {
       wx.showToast({ title: '请上传营业执照', icon: 'none' })
+      return
+    }
+    if (!hospitalName.trim()) {
+      wx.showToast({ title: '请输入医院名称', icon: 'none' })
       return
     }
     if (!contactName.trim()) {
@@ -66,16 +86,21 @@ Page({
     const user = app.globalData.userInfo
     const result = await submitVerification(user.id, {
       businessLicense: licenseUrl,
+      sitePhoto: this.data.sitePhotoUrl,
+      hospitalName: hospitalName.trim(),
+      legalPerson: legalPerson.trim(),
       contactName: contactName.trim(),
       contactPhone,
+      region,
+      address,
     })
     wx.hideLoading()
 
     if (result) {
       app.globalData.userInfo = result
-      app.globalData.userRole = result.customerType === 'institution' ? 'customer_institution' : 'customer_personal'
+      app.globalData.userRole = app.resolveRole?.(result) || app.globalData.userRole
       wx.setStorageSync('current_user', JSON.stringify(result))
-      wx.setStorageSync('demo_role', app.globalData.userRole)
+      wx.setStorageSync('user_role', app.globalData.userRole)
       wx.showToast({ title: '提交成功', icon: 'success' })
       this.setData({
         status: 'pending',

@@ -2,7 +2,7 @@ const {
   getOrders,
   getOrderById,
   updateOrderStatus,
-  createReturn,
+  payOrder,
   getReturns,
   formatMoney,
   formatDateTime,
@@ -29,9 +29,13 @@ Page({
     summaryCards: [] as any[],
     flowSteps: [] as any[],
     detailActions: [] as any[],
+    queryCustomerId: '',
   },
 
   onLoad(options: any) {
+    if (options.customerId) {
+      this.setData({ queryCustomerId: options.customerId })
+    }
     if (options.id) {
       this.loadOrderDetail(options.id)
       return
@@ -51,7 +55,7 @@ Page({
       this.setData({ isEmpty: true, orders: [] })
       return
     }
-    const orders = await getOrders({ customerId: user.id })
+    const orders = await getOrders({ customerId: this.data.queryCustomerId || user.id })
     const mapped = await Promise.all(orders.map((order: any) => this.mapOrder(order)))
     this.setData({
       orders: mapped,
@@ -185,11 +189,12 @@ Page({
   getDetailActions(order: any) {
     const actions = []
     if (order.status === 'pending_payment') {
-      actions.push({ key: 'pay', label: '模拟支付', primary: true })
+      actions.push({ key: 'pay', label: '去支付', primary: true })
       actions.push({ key: 'cancel', label: '取消订单' })
     }
     if (order.status === 'pending_receipt') {
       actions.push({ key: 'confirm', label: '确认收货', primary: true })
+      actions.push({ key: 'logistics', label: '查看物流' })
     }
     if (order.status === 'completed' && !order.returnRecord) {
       actions.push({ key: 'return', label: '发起退换货', primary: true })
@@ -231,57 +236,74 @@ Page({
     this.loadOrders()
   },
 
+  onInvoiceTap() {
+    const order = this.data.selectedOrder
+    if (!order) return
+    wx.navigateTo({ url: `/pages/invoice/apply/apply?orderId=${order.id}` })
+  },
+
+  onLogisticsTap() {
+    const order = this.data.selectedOrder
+    if (!order) return
+    wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${order.id}` })
+  },
+
+  onLogisticsFromList(e: any) {
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+    wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${id}` })
+  },
+
+  onTestReportTap() {
+    wx.navigateTo({ url: '/pages/tests/query/query' })
+  },
+
   async onActionTap(e: any) {
     const key = e.currentTarget.dataset.key
     const order = this.data.selectedOrder
     if (!order) return
 
     if (key === 'pay') {
-      const nextStatus = order.type === 'booking' ? 'pending_confirmation' : 'pending_shipment'
-      await updateOrderStatus(order.id, nextStatus)
-      wx.showToast({ title: order.type === 'booking' ? '预约待客服确认' : '支付成功', icon: 'success' })
-      this.loadOrderDetail(order.id)
+      const result = await payOrder(order.id, 'wechat')
+      if (result.success) {
+        wx.redirectTo({ url: `/pages/orders/pay-result/pay-result?id=${order.id}` })
+      } else {
+        wx.showToast({ title: result.error || '支付失败', icon: 'none' })
+      }
       return
     }
 
-    if (key === 'cancel') {
-      await updateOrderStatus(order.id, 'cancelled')
-      wx.showToast({ title: '订单已取消', icon: 'success' })
-      this.loadOrderDetail(order.id)
+    try {
+      if (key === 'cancel') {
+        await updateOrderStatus(order.id, 'cancelled')
+        wx.showToast({ title: '订单已取消', icon: 'success' })
+        this.loadOrderDetail(order.id)
+        return
+      }
+
+      if (key === 'confirm') {
+        await updateOrderStatus(order.id, 'completed')
+        wx.showToast({ title: '已确认收货', icon: 'success' })
+        this.loadOrderDetail(order.id)
+        return
+      }
+    } catch (e: any) {
+      wx.showToast({ title: e?.message || '操作失败', icon: 'none' })
       return
     }
 
-    if (key === 'confirm') {
-      await updateOrderStatus(order.id, 'completed')
-      wx.showToast({ title: '已确认收货', icon: 'success' })
-      this.loadOrderDetail(order.id)
+    if (key === 'logistics') {
+      wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${order.id}` })
       return
     }
 
     if (key === 'return') {
-      const firstItem = order.items[0]
-      await createReturn({
-        orderId: order.id,
-        type: 'exchange',
-        reason: '规格调整，申请换货',
-        items: [{
-          productId: firstItem.productId,
-          productName: firstItem.productName,
-          quantity: 1,
-          unitPrice: firstItem.unitPrice,
-        }],
-      })
-      wx.showToast({ title: '售后申请已提交', icon: 'success' })
-      this.loadOrderDetail(order.id)
+      wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${order.id}` })
       return
     }
 
     if (key === 'returnProgress') {
-      wx.showModal({
-        title: '售后进度',
-        content: `${order.returnStatusText}\n${order.commissionText}`,
-        showCancel: false,
-      })
+      wx.navigateTo({ url: `/pages/returns/detail/detail?orderId=${order.id}` })
       return
     }
 

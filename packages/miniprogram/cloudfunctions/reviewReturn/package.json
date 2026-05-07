@@ -1,0 +1,9 @@
+{
+  "name": "reviewReturn",
+  "version": "1.0.0",
+  "description": "审核和流转售后申请状态",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -27,6 +27,14 @@ Page({
     this.setData({ isRegister: !this.data.isRegister })
   },
 
+  showLogin() {
+    this.setData({ isRegister: false })
+  },
+
+  showRegister() {
+    this.setData({ isRegister: true })
+  },
+
   useDemoAccount(e: any) {
     this.setData({ phone: e.currentTarget.dataset.phone, isRegister: false })
   },
@@ -66,7 +74,7 @@ Page({
       app.globalData.userInfo = result.user
       app.globalData.userRole = this.inferRole(result.user)
       wx.setStorageSync('current_user', JSON.stringify(result.user))
-      wx.setStorageSync('demo_role', app.globalData.userRole)
+      wx.setStorageSync('user_role', app.globalData.userRole)
       wx.showToast({ title: isRegister ? '注册成功' : '登录成功', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 500)
     } else {

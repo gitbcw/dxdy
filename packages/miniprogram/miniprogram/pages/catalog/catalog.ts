@@ -168,8 +168,19 @@ Page({
     this.loadProducts()
   },
 
+  onAllCategoryTap() {
+    this.setData({
+      activeCategory: '',
+      keywordMode: !!this.data.searchKeyword.trim(),
+    })
+    this.loadProducts()
+  },
+
   onCategoryTap(e: any) {
-    this.setData({ activeCategory: e.currentTarget.dataset.id })
+    this.setData({
+      activeCategory: e.currentTarget.dataset.id,
+      keywordMode: false,
+    })
     this.loadProducts()
   },
 

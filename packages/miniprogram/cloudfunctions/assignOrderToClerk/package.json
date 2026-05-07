@@ -1,0 +1,9 @@
+{
+  "name": "assignOrderToClerk",
+  "version": "1.0.0",
+  "description": "后台指派订单给制单员并写入制单员待办归属",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "users": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && doc._openid == auth.openid",
+      "create": "auth.openid != null",
+      "update": "auth.openid != null && doc._openid == auth.openid",
+      "delete": "false"
+    }
+  },
+  "orders": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "create": "auth.openid != null",
+      "update": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "delete": "false"
+    }
+  },
+  "returns": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "create": "auth.openid != null",
+      "update": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "delete": "false"
+    }
+  },
+  "invoices": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "create": "auth.openid != null",
+      "update": "false",
+      "delete": "false"
+    }
+  },
+  "test_reports": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null",
+      "create": "false",
+      "update": "false",
+      "delete": "false"
+    }
+  }
+}

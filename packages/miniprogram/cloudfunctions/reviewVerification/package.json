@@ -1,0 +1,9 @@
+{
+  "name": "reviewVerification",
+  "version": "1.0.0",
+  "description": "审核医院客户认证并同步购买权限",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

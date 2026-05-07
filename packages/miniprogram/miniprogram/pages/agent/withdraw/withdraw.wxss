@@ -1,0 +1,232 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f6f7f6;
+  box-sizing: border-box;
+}
+
+.balance-card,
+.card {
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
+}
+
+.balance-card {
+  padding: 34rpx 28rpx;
+  color: #ffffff;
+  background: linear-gradient(135deg, #159447 0%, #18a34a 54%, #ff8a1f 100%);
+}
+
+.balance-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.balance-value {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 58rpx;
+  font-weight: 900;
+}
+
+.balance-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  font-size: 23rpx;
+  opacity: 0.9;
+}
+
+.card {
+  margin-top: 20rpx;
+  padding: 24rpx;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  color: #17231f;
+  font-size: 29rpx;
+  font-weight: 900;
+}
+
+.card-action {
+  color: #139445;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.bank-card {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border-radius: 16rpx;
+  color: #ffffff;
+  background: #17231f;
+}
+
+.bank-name,
+.bank-no,
+.bank-holder {
+  display: block;
+}
+
+.bank-name {
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.bank-no {
+  margin-top: 28rpx;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.bank-holder {
+  margin-top: 14rpx;
+  font-size: 23rpx;
+  opacity: 0.8;
+}
+
+.empty-bank,
+.empty-record {
+  padding: 36rpx 0 12rpx;
+  color: #7b8781;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.bank-form {
+  margin-top: 20rpx;
+  border-top: 1rpx solid #edf0ee;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #edf0ee;
+}
+
+.field-label {
+  flex-shrink: 0;
+  color: #17231f;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  color: #17231f;
+  font-size: 25rpx;
+  text-align: right;
+}
+
+.save-btn,
+.primary-btn {
+  height: 82rpx;
+  line-height: 82rpx;
+  border-radius: 14rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+  text-align: center;
+  background: #ff7a1a;
+}
+
+.save-btn {
+  margin-top: 20rpx;
+  background: #18a34a;
+}
+
+.amount-box {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 22rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #edf0ee;
+}
+
+.money-symbol {
+  color: #17231f;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.amount-input {
+  flex: 1;
+  min-width: 0;
+  color: #17231f;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.hint {
+  display: block;
+  margin: 18rpx 0 22rpx;
+  color: #7b8781;
+  font-size: 23rpx;
+}
+
+.record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 22rpx 0;
+  border-top: 1rpx solid #edf0ee;
+}
+
+.record-row:first-of-type {
+  border-top: 0;
+}
+
+.record-amount {
+  display: block;
+  color: #17231f;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.record-meta {
+  display: block;
+  margin-top: 8rpx;
+  color: #7b8781;
+  font-size: 22rpx;
+}
+
+.status {
+  flex-shrink: 0;
+  padding: 7rpx 14rpx;
+  border-radius: 999rpx;
+  color: #69756f;
+  font-size: 22rpx;
+  font-weight: 900;
+  background: #edf1ee;
+}
+
+.status.pending_review {
+  color: #b46b00;
+  background: #fff4dc;
+}
+
+.status.approved,
+.status.paid {
+  color: #139445;
+  background: #e8f8ee;
+}
+
+.status.rejected {
+  color: #ef4444;
+  background: #fff1ed;
+}

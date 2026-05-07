@@ -1,15 +1,10 @@
 <view class="page">
   <block wx:if="{{!isDetailMode}}">
-    <view class="page-hero">
-      <text class="hero-title">我的订单</text>
-      <text class="hero-subtitle"></text>
-    </view>
-
-    <view class="summary-grid">
-      <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card">
-        <text class="summary-value">{{item.value}}</text>
-        <text class="summary-label">{{item.label}}</text>
-        <text class="summary-desc">{{item.desc}}</text>
+    <view class="list-header">
+      <text class="page-title">订单</text>
+      <view class="header-actions">
+        <text>⌕</text>
+        <text>•••</text>
       </view>
     </view>
 
@@ -32,106 +27,128 @@
         data-id="{{item.id}}"
         bindtap="onOrderTap"
       >
-        <view class="order-header">
-          <view>
-            <text class="order-id">{{item.id}}</text>
-            <text class="date">{{item.dateText}}</text>
-          </view>
+        <view class="order-top">
+          <text class="order-id">订单号 {{item.id}}</text>
           <text class="order-status">{{item.statusText}}</text>
         </view>
-        <view class="priority-row">
-          <text class="priority-pill">{{item.priorityLabel}}</text>
-          <text class="priority-note">{{item.priorityNote}}</text>
-        </view>
-        <view class="product-box">
-          <text class="product-name">{{item.firstProductName}}</text>
-          <text class="product-spec">{{item.firstProductSpec}} · 共 {{item.itemCount}} 件</text>
-        </view>
-        <view wx:if="{{item.priceChanged}}" class="notice">后台已改价，优惠 ¥{{item.savedText}}，支付倒计时已重置</view>
-        <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}} · {{item.commissionText}}</view>
-        <view class="order-footer">
+        <view class="goods-row">
+          <view class="goods-img">{{item.firstProductName ? '商品' : '订单'}}</view>
+          <view class="goods-main">
+            <text class="goods-name">{{item.firstProductName}}</text>
+            <text class="goods-spec">{{item.firstProductSpec}} · 共 {{item.itemCount}} 件</text>
+            <text wx:if="{{item.priceChanged}}" class="notice">后台已改价，优惠 ¥{{item.savedText}}</text>
+          </view>
           <text class="amount">¥{{item.totalText}}</text>
-          <text class="detail-link">查看详情 ></text>
+        </view>
+        <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}} · {{item.commissionText}}</view>
+        <view class="order-actions">
+          <view
+            wx:if="{{item.status === 'pending_receipt'}}"
+            class="ghost-btn"
+            data-id="{{item.id}}"
+            catchtap="onLogisticsFromList"
+          >查看物流</view>
+          <view wx:if="{{item.status === 'completed'}}" class="ghost-btn">申请售后</view>
+          <view class="orange-btn">查看详情</view>
         </view>
       </view>
     </view>
   </block>
 
   <block wx:else>
-    <view class="detail-hero">
-      <view class="detail-top">
-        <view>
-          <text class="order-id light">{{selectedOrder.id}}</text>
-          <text class="detail-title">{{selectedOrder.statusText}}</text>
-        </view>
-        <view class="back-btn" bindtap="onBackToList">返回列表</view>
-      </view>
-      <text class="detail-desc">{{selectedOrder.statusDesc}}</text>
-      <view class="detail-amount">
-        <text>应付金额</text>
-        <text>¥{{selectedOrder.totalText}}</text>
-      </view>
+    <view class="status-card">
+      <text class="status-title">{{selectedOrder.statusText}}</text>
+      <text class="status-desc">{{selectedOrder.statusDesc}}</text>
     </view>
 
     <view class="flow-card">
-      <text class="card-title">业务流转</text>
       <view class="flow-line">
         <view wx:for="{{flowSteps}}" wx:key="key" class="flow-step">
-          <view class="flow-dot {{item.active ? 'active' : ''}}">{{index + 1}}</view>
+          <view class="flow-dot {{item.active ? 'active' : ''}}"></view>
           <text class="flow-label">{{item.label}}</text>
         </view>
       </view>
     </view>
 
     <view class="card">
-      <text class="card-title">商品与履约</text>
-      <view wx:for="{{selectedOrder.items}}" wx:key="productId" class="item-row">
-        <view>
-          <text class="item-name">{{item.productName}}</text>
-          <text class="item-spec">{{item.spec}} x{{item.quantity}}</text>
-        </view>
-        <text class="item-price">¥{{item.totalPrice}}</text>
+      <view class="order-meta">
+        <text>订单号</text>
+        <text>{{selectedOrder.id}}</text>
       </view>
-      <view class="info-row">
-        <text>履约地址</text>
-        <text>{{selectedOrder.shipping.address.full}}</text>
+      <view class="order-meta">
+        <text>下单时间</text>
+        <text>{{selectedOrder.dateText}}</text>
       </view>
-      <view wx:if="{{selectedOrder.booking}}" class="info-row">
+      <view wx:if="{{selectedOrder.booking}}" class="order-meta">
         <text>预约信息</text>
         <text>{{selectedOrder.booking.date}} · {{selectedOrder.booking.location}}</text>
       </view>
-      <view class="info-row">
-        <text>物流信息</text>
-        <text>{{selectedOrder.logisticsText}}</text>
+    </view>
+
+    <view class="card">
+      <view wx:for="{{selectedOrder.items}}" wx:key="productId" class="detail-goods">
+        <view class="goods-img small">商品</view>
+        <view class="goods-main">
+          <text class="goods-name">{{item.productName}}</text>
+          <text class="goods-spec">{{item.spec}} ×{{item.quantity}}</text>
+        </view>
+        <text class="amount">¥{{item.totalPrice}}</text>
+      </view>
+      <view class="amount-row">
+        <text>商品金额</text>
+        <text>¥{{selectedOrder.originalText}}</text>
+      </view>
+      <view class="amount-row">
+        <text>优惠金额</text>
+        <text>-¥{{selectedOrder.savedText}}</text>
+      </view>
+      <view class="amount-row strong">
+        <text>实付款</text>
+        <text>¥{{selectedOrder.totalText}}</text>
       </view>
     </view>
 
-    <view wx:if="{{selectedOrder.priceChanged}}" class="card">
+    <view class="card">
+      <view class="order-meta">
+        <text>收货信息</text>
+        <text>{{selectedOrder.shipping.address.full}}</text>
+      </view>
+      <view class="order-meta" bindtap="onLogisticsTap">
+        <text>物流信息</text>
+        <text>{{selectedOrder.logisticsText}} ></text>
+      </view>
+    </view>
+
+    <view wx:if="{{selectedOrder.priceChanged}}" class="card highlight">
       <text class="card-title">后台改价记录</text>
       <view wx:for="{{selectedOrder.pricing.priceLog}}" wx:key="operatedAt" class="price-log">
-        <view>
-          <text class="item-name">{{item.operatorName}} 调整价格</text>
-          <text class="item-spec">{{item.operatedAt}}</text>
-        </view>
-        <text class="item-price">¥{{item.originalPrice}} -> ¥{{item.modifiedPrice}}</text>
+        <text>{{item.operatorName}} · {{item.operatedAt}}</text>
+        <text>¥{{item.originalPrice}} → ¥{{item.modifiedPrice}}</text>
       </view>
       <text class="notice in-card">改价后会通知客户重新确认支付，并重置待支付倒计时。</text>
     </view>
 
     <view class="card">
-      <text class="card-title">售后与提成</text>
-      <view class="info-row">
-        <text>售后状态</text>
-        <text>{{selectedOrder.returnRecord ? selectedOrder.returnStatusText : '暂无售后申请'}}</text>
+      <view class="link-row" bindtap="onTestReportTap">
+        <text>电子检测报告</text>
+        <text>扫码/输入检测码 ></text>
       </view>
-      <view class="info-row">
-        <text>提成状态</text>
-        <text>{{selectedOrder.commissionText}}</text>
+      <view class="link-row" bindtap="onInvoiceTap">
+        <text>发票信息</text>
+        <text>申请开票 ></text>
       </view>
-      <text wx:if="{{selectedOrder.returnRecord}}" class="notice amber in-card">{{selectedOrder.returnRecord.reason}}</text>
+      <view class="link-row">
+        <text>申请售后</text>
+        <text>{{selectedOrder.returnRecord ? selectedOrder.returnStatusText : '可申请' }} ></text>
+      </view>
+      <view class="link-row">
+        <text>联系客服</text>
+        <text>></text>
+      </view>
     </view>
 
     <view class="action-bar">
+      <view class="back-action" bindtap="onBackToList">返回订单</view>
       <view
         wx:for="{{detailActions}}"
         wx:key="key"

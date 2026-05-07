@@ -1,0 +1,9 @@
+{
+  "name": "reviewAgentApplication",
+  "version": "1.0.0",
+  "description": "审核代理商申请并开通代理商角色",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

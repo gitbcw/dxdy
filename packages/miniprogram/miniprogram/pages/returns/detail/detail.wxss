@@ -1,0 +1,76 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f7f8f7;
+  box-sizing: border-box;
+}
+
+.status-card,
+.timeline-card,
+.note-card {
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ecf8ef;
+}
+
+.status,
+.note-title {
+  display: block;
+  color: #18a44a;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.desc,
+.note-desc,
+.step-time {
+  display: block;
+  margin-top: 8rpx;
+  color: #7d8782;
+  font-size: 23rpx;
+}
+
+.copy {
+  color: #18a44a;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.timeline-card,
+.note-card {
+  margin-top: 18rpx;
+}
+
+.step {
+  position: relative;
+  padding: 0 0 34rpx 42rpx;
+}
+
+.step::before {
+  content: '';
+  position: absolute;
+  left: 6rpx;
+  top: 8rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #cfd7d2;
+}
+
+.step.active::before {
+  background: #18a44a;
+}
+
+.step-title {
+  color: #17201b;
+  font-size: 26rpx;
+  font-weight: 900;
+}

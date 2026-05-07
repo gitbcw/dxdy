@@ -1,0 +1,63 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">代理商入驻</text>
+    <text class="title">提交合作资料</text>
+    <text class="subtitle">审核通过后可使用专属推广码、客户管理和提成中心。</text>
+  </view>
+
+  <view class="form-card">
+    <view class="field-row">
+      <text class="field-label">公司/机构名称 *</text>
+      <input class="field-input" placeholder="请输入公司或机构名称" value="{{companyName}}" data-field="companyName" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
+      <text class="field-label">联系人 *</text>
+      <input class="field-input" placeholder="请输入联系人姓名" value="{{contactName}}" data-field="contactName" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
+      <text class="field-label">联系电话 *</text>
+      <input class="field-input" type="number" maxlength="11" placeholder="请输入手机号" value="{{contactPhone}}" data-field="contactPhone" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
+      <text class="field-label">代理区域 *</text>
+      <input class="field-input" placeholder="如：广东省广州市" value="{{region}}" data-field="region" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
+      <text class="field-label">详细地址</text>
+      <input class="field-input" placeholder="请输入办公或经营地址" value="{{address}}" data-field="address" bindinput="onFieldInput" />
+    </view>
+  </view>
+
+  <view class="form-card">
+    <view class="block-title">渠道类型</view>
+    <view class="channel-grid">
+      <view
+        wx:for="{{channelOptions}}"
+        wx:key="key"
+        class="channel-item {{channelType === item.key ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onChannelTap"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+    <view class="field-row textarea-row">
+      <text class="field-label">业务覆盖 *</text>
+      <textarea class="field-textarea" placeholder="描述覆盖医院、诊所、社群或经销网络" value="{{businessArea}}" data-field="businessArea" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row textarea-row">
+      <text class="field-label">从业经验</text>
+      <textarea class="field-textarea" placeholder="可填写动物医疗、检验、耗材或渠道经验" value="{{experience}}" data-field="experience" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row">
+      <text class="field-label">预计月销售额</text>
+      <input class="field-input" placeholder="如：5万-10万" value="{{expectedMonthlySales}}" data-field="expectedMonthlySales" bindinput="onFieldInput" />
+    </view>
+    <view class="field-row textarea-row">
+      <text class="field-label">补充说明</text>
+      <textarea class="field-textarea" placeholder="其他希望平台了解的信息" value="{{remark}}" data-field="remark" bindinput="onFieldInput" />
+    </view>
+  </view>
+
+  <view class="submit-btn dx-orange-btn" bindtap="onSubmit">提交申请</view>
+</view>

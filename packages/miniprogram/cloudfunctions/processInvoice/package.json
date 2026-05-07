@@ -1,0 +1,9 @@
+{
+  "name": "processInvoice",
+  "version": "1.0.0",
+  "description": "处理后台开票、驳回和发票文件回写",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -44,12 +44,15 @@ Page({
     bookingLocation: '上海宠物血液中心',
     payMethod: 'wechat',
     addressText: '',
+    addressName: '请选择收货人',
+    addressPhone: '',
     customerTypeLabel: '个人客户',
     priceLabel: '零售价',
     canBooking: false,
     isBloodProduct: false,
     policyText: '',
     primaryButtonText: '提交订单',
+    specText: '标准规格',
   },
 
   _cartRaw: [] as any[],
@@ -75,6 +78,8 @@ Page({
       addressOptions: addresses.map((item: any) => `${item.name} ${item.phone} ${item.province}${item.city}${item.district}${item.detail}`),
       selectedAddressIndex: defaultAddressIndex >= 0 ? defaultAddressIndex : 0,
       addressText,
+      addressName: currentAddress?.name || '请选择收货人',
+      addressPhone: currentAddress?.phone || '',
       customerTypeLabel: isInstitution ? '宠物医院客户' : '个人宠物客户',
       priceLabel: isInstitution ? '机构价' : '零售价',
     }
@@ -87,7 +92,12 @@ Page({
 
       const displayItems = items.map((item: any) => {
         const price = isInstitution ? item.institutionPrice : (item.personalPrice || item.institutionPrice)
-        return { ...item, unitPrice: price, lineTotal: formatMoney(price * item.quantity) }
+        return {
+          ...item,
+          unitPrice: price,
+          lineTotal: formatMoney(price * item.quantity),
+          specText: item.specs?.[0]?.value || '标准规格',
+        }
       })
       const total = items.reduce((s: number, item: any) => {
         const price = isInstitution ? item.institutionPrice : (item.personalPrice || item.institutionPrice)
@@ -118,6 +128,7 @@ Page({
         product,
         isFromCart: false,
         unitPrice,
+        specText: product.specs?.[0]?.value || '标准规格',
         orderType,
         orderTypeLabel: orderType === 'booking' ? '预约采购' : '普通采购',
         canBooking,
@@ -160,6 +171,8 @@ Page({
     this.setData({
       selectedAddressIndex: index,
       addressText: `${address.province}${address.city}${address.district}${address.detail}`,
+      addressName: address.name,
+      addressPhone: address.phone,
     })
   },
 
@@ -221,31 +234,33 @@ Page({
       }]
     }
 
-    wx.showLoading({ title: '提交中...' })
-    const order = await createOrder({
-      customerId: user.id,
-      type: this.data.isFromCart ? 'normal' : this.data.orderType,
-      items: orderItems,
-      booking: (!this.data.isFromCart && this.data.orderType === 'booking')
-        ? {
-            date: this.data.bookingDate,
-            location: this.data.bookingLocation,
-            contactName: selectedAddress.name,
-            contactPhone: selectedAddress.phone,
-          }
-        : undefined,
-      shippingAddress,
-      remark: this.data.remark,
-    })
-    wx.hideLoading()
-
-    if (order) {
+    try {
+      wx.showLoading({ title: '提交中...' })
+      const order = await createOrder({
+        customerId: user.id,
+        type: this.data.isFromCart ? 'normal' : this.data.orderType,
+        items: orderItems,
+        booking: (!this.data.isFromCart && this.data.orderType === 'booking')
+          ? {
+              date: this.data.bookingDate,
+              location: this.data.bookingLocation,
+              contactName: selectedAddress.name,
+              contactPhone: selectedAddress.phone,
+            }
+          : undefined,
+        shippingAddress,
+        remark: this.data.remark,
+      })
+      wx.hideLoading()
       if (this.data.isFromCart) clearCart()
-      const label = (!this.data.isFromCart && this.data.orderType === 'booking') ? '预约已提交' : '下单成功'
+      const label = (!this.data.isFromCart && this.data.orderType === 'booking') ? '预约已提交' : '订单已提交'
       wx.showToast({ title: label, icon: 'success' })
       setTimeout(() => {
         wx.redirectTo({ url: `/pages/orders/order-detail/order-detail?id=${order.id}` })
       }, 700)
+    } catch (err: any) {
+      wx.hideLoading()
+      wx.showToast({ title: err?.message || '提交失败', icon: 'none' })
     }
   },
 })

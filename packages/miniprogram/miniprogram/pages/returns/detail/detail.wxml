@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="status-card">
+    <view>
+      <text class="status">{{statusText}}</text>
+      <text class="desc">{{statusDesc}}</text>
+    </view>
+    <text class="copy" bindtap="onCopy">复制</text>
+  </view>
+
+  <view class="timeline-card">
+    <view wx:for="{{steps}}" wx:key="title" class="step {{item.active ? 'active' : ''}}">
+      <text class="step-title">{{item.title}}</text>
+      <text class="step-time">{{item.time}}</text>
+    </view>
+  </view>
+
+  <view class="note-card">
+    <text class="note-title">商家留言</text>
+    <text class="note-desc">{{note}}</text>
+    <text class="note-desc">预计退款金额：¥{{refundAmount}}</text>
+  </view>
+</view>

@@ -1,0 +1,9 @@
+{
+  "name": "payOrder",
+  "version": "1.0.0",
+  "description": "模拟支付订单并执行订单归属与状态校验",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

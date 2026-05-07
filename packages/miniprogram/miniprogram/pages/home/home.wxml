@@ -1,97 +1,102 @@
 <view class="page">
-  <view wx:if="{{banner}}" class="cert-banner {{banner.status}}">
-    <view class="banner-main">
-      <text class="banner-text">{{banner.text}}</text>
-      <view wx:if="{{banner.actionText}}" class="banner-action" bindtap="onBannerAction">{{banner.actionText}}</view>
+  <view class="topbar">
+    <view>
+      <text class="top-title">首页</text>
+      <text class="top-sub">{{displayName}} · {{identityTag}}</text>
     </view>
-    <text wx:if="{{banner.rejectReason}}" class="banner-reason">驳回原因：{{banner.rejectReason}}</text>
-  </view>
-
-  <view class="home-header">
-    <text class="header-name">{{displayName}}</text>
     <view class="identity-tag {{identityTagClass}}">{{identityTag}}</view>
   </view>
 
   <view class="search-bar">
-    <text class="search-icon">搜</text>
+    <text class="search-icon">⌕</text>
     <input
       class="search-input"
-      placeholder="{{searchPlaceholder}}"
+      placeholder="{{searchPlaceholder}}、品牌、关键词"
       value="{{searchKeyword}}"
       confirm-type="search"
       bindinput="onSearchInput"
       bindconfirm="onSearchConfirm"
     />
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
-    <view class="search-submit" bindtap="onSearchTap">搜索</view>
   </view>
 
-  <view class="panel">
-    <view class="section-head">
-      <text class="section-title">快捷入口</text>
+  <view class="hero-card">
+    <view class="hero-copy">
+      <text class="hero-title">专业动医产品\n守护动物健康</text>
+      <text class="hero-pill">品质 · 专业 · 安心</text>
     </view>
-    <view class="quick-row">
-      <view
-        wx:for="{{quickActions}}"
-        wx:key="title"
-        class="quick-item"
-        data-action="{{item.action}}"
-        bindtap="onQuickActionTap"
-      >
-        <view class="quick-icon-sm">{{item.icon}}</view>
-        <text class="quick-title-sm">{{item.title}}</text>
-      </view>
+    <view class="hero-pets">
+      <view class="pet-circle dog"></view>
+      <view class="pet-circle cat"></view>
     </view>
   </view>
 
-  <view wx:if="{{taskCards.length > 0}}" class="panel">
-    <view class="section-head">
-      <text class="section-title">待办事项</text>
+  <view wx:if="{{banner}}" class="cert-banner {{banner.status}}" bindtap="onBannerAction">
+    <view class="cert-icon">!</view>
+    <view class="cert-copy">
+      <text class="cert-title">{{banner.text}}</text>
+      <text wx:if="{{banner.rejectReason}}" class="cert-reason">驳回原因：{{banner.rejectReason}}</text>
     </view>
-    <view class="task-list">
-      <view
-        wx:for="{{taskCards}}"
-        wx:key="title"
-        class="task-card"
-        data-action="{{item.action}}"
-        bindtap="onTaskTap"
-      >
-        <view class="task-head">
-          <text class="task-badge">{{item.badge}}</text>
-          <text class="task-action">{{item.actionText}}</text>
-        </view>
+    <view wx:if="{{banner.actionText}}" class="cert-action">{{banner.actionText}}</view>
+  </view>
+
+  <view class="quick-grid">
+    <view
+      wx:for="{{quickActions}}"
+      wx:key="title"
+      class="quick-item"
+      data-action="{{item.action}}"
+      bindtap="onQuickActionTap"
+    >
+      <view class="quick-icon">{{item.icon}}</view>
+      <text class="quick-title">{{item.title}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{taskCards.length > 0}}" class="section">
+    <view class="section-head">
+      <text class="section-title">待办提醒</text>
+      <text class="section-more">及时处理</text>
+    </view>
+    <view
+      wx:for="{{taskCards}}"
+      wx:key="title"
+      class="task-card"
+      data-action="{{item.action}}"
+      bindtap="onTaskTap"
+    >
+      <view>
+        <text class="task-badge">{{item.badge}}</text>
         <text class="task-title">{{item.title}}</text>
         <text class="task-desc">{{item.desc}}</text>
-        <text class="task-meta">{{item.meta}}</text>
       </view>
+      <view class="task-action">{{item.actionText}}</view>
     </view>
   </view>
 
-  <view wx:if="{{boardItems.length > 0}}" class="panel">
+  <view wx:if="{{boardItems.length > 0}}" class="section">
     <view class="section-head">
       <text class="section-title">{{boardTitle}}</text>
       <text class="section-more" bindtap="onBoardMoreTap">{{boardMoreText}} ></text>
     </view>
-    <view class="board-list">
+    <scroll-view scroll-x class="product-scroll">
       <view
         wx:for="{{boardItems}}"
         wx:key="id"
-        class="board-card"
+        class="product-card"
         data-idx="{{index}}"
         bindtap="onBoardItemTap"
       >
-        <view class="board-row">
-          <text class="board-badge">{{item.badge}}</text>
-          <view wx:if="{{item.type === 'product'}}" class="board-cart" data-idx="{{index}}" catchtap="onBoardCartTap">
-            <text class="cart-plus">+</text>
-          </view>
+        <view class="product-img">{{item.badge}}</view>
+        <text class="product-name">{{item.title}}</text>
+        <text class="product-spec">{{item.desc}}</text>
+        <view class="product-bottom">
+          <text class="product-price">{{item.meta}}</text>
+          <view wx:if="{{item.type === 'product'}}" class="cart-btn" data-idx="{{index}}" catchtap="onBoardCartTap">＋</view>
           <text wx:elif="{{item.actionText}}" class="board-action">{{item.actionText}}</text>
         </view>
-        <text class="board-title">{{item.title}}</text>
-        <text class="board-desc">{{item.desc}}</text>
-        <text class="board-meta">{{item.meta}}</text>
       </view>
-    </view>
+    </scroll-view>
   </view>
 
   <product-action-sheet

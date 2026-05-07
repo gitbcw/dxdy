@@ -1,37 +1,80 @@
 <view class="page">
-  <!-- 商品图片 -->
   <view class="product-image">
-    <text class="image-placeholder">商品图片</text>
+    <view class="blood-pack {{isBloodProduct ? 'blood' : ''}}">{{isBloodProduct ? '血包' : '商品'}}</view>
+    <view class="image-count">1/4</view>
   </view>
 
-  <!-- 价格 -->
-  <view class="price-bar">
-    <text class="price">¥{{price}}</text>
-    <text class="stock">库存 {{stock}}</text>
+  <view class="content-card">
+    <view class="title-row">
+      <view>
+        <text class="product-name">{{productName}}</text>
+        <text class="audience-tag">{{isBloodProduct ? '仅限认证医院购买' : '医院/个人可购'}}</text>
+      </view>
+      <text class="price">¥{{price}}</text>
+    </view>
+
+    <view class="meta-grid">
+      <view class="meta-item">
+        <text class="meta-label">规格</text>
+        <text class="meta-value">{{spec}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">血型</text>
+        <text class="meta-value">{{bloodType}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">库存</text>
+        <text class="meta-value">{{stock}}</text>
+      </view>
+    </view>
+
+    <view class="service-row">
+      <text class="service-tag">冷链配送</text>
+      <text class="service-tag">支持预约</text>
+      <text class="service-tag">质量问题售后</text>
+    </view>
+
+    <view wx:if="{{isBloodProduct}}" class="permission-card">
+      <text class="permission-title">本商品仅限通过医院认证的客户购买</text>
+      <text class="permission-desc">认证通过后可查看机构价并提交预约购买需求。</text>
+    </view>
   </view>
 
-  <!-- 商品名称和规格 -->
-  <text class="product-name">{{productName}}</text>
-  <text class="product-spec">规格：{{spec}}</text>
-
-  <!-- 商品详情（写死） -->
   <view class="detail-section">
-    <text class="detail-title">商品详情</text>
-    <text class="detail-text">本品由大熊动医华南医学检验实验室提供，品质保障，专业服务。详细参数请咨询客服或查看商品标签。</text>
+    <view class="detail-row">
+      <text>商品说明</text>
+      <text>></text>
+    </view>
+    <text class="detail-text">本品由大熊动医提供，适用于宠物医疗场景。具体参数以商品标签和检测报告为准。</text>
   </view>
 
-  <!-- 退换货规则（写死） -->
   <view class="detail-section">
-    <text class="detail-title">退换货规则</text>
-    <text class="detail-text">签收后 7 天内可申请退换货。特殊商品（血液制品等）不支持无理由退换，具体规则以商品标注为准。</text>
+    <view class="detail-row">
+      <text>配送说明</text>
+      <text>></text>
+    </view>
+    <text class="detail-text">{{isBloodProduct ? '冷链配送，专人专送，按预约时间安排。' : '常规商品按订单顺序发货。'}}</text>
   </view>
 
-  <!-- 底部留白 -->
-  <view class="bottom-spacer"></view>
+  <view class="detail-section">
+    <view class="detail-row">
+      <text>售后规则</text>
+      <text>></text>
+    </view>
+    <text class="detail-text">{{isBloodProduct ? '血包类商品仅支持质量问题售后。' : '签收后 7 天内可申请退换货。'}}</text>
+  </view>
 
-  <!-- 底部操作栏 -->
+  <view class="detail-section">
+    <view class="detail-row">
+      <text>检测信息说明</text>
+      <text>></text>
+    </view>
+    <text class="detail-text">每批次均可追溯检测信息，支持扫码查询。</text>
+  </view>
+
   <view class="bottom-bar">
+    <view class="service-btn">联系客服</view>
     <view class="btn-cart" bindtap="onAddCart">加入购物车</view>
-    <view class="btn-buy" bindtap="onBuyNow">立即购买</view>
+    <view class="btn-buy" bindtap="onBuyNow">{{isBloodProduct ? '立即预约' : '立即购买'}}</view>
   </view>
 </view>

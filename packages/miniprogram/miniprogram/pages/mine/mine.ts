@@ -53,9 +53,10 @@ Page({
   async getRoleCopy(role: string, user: any) {
     if (role === 'salesperson') {
       const summary = await getCommissionSummary()
+      const agentStatus = user.agentStatus || 'approved'
       return {
-        userRoleLabel: '业务员',
-        avatarText: user.nickname?.[0] || '业',
+        userRoleLabel: '代理商',
+        avatarText: user.nickname?.[0] || '代',
         stats: [
           { label: '累计提成', value: `¥${formatMoney(summary.total)}` },
           { label: '可提现', value: `¥${formatMoney(summary.available)}` },
@@ -67,8 +68,12 @@ Page({
         focusTitle: '',
         focusItems: [],
         menuItems: [
+          { id: 'agentStatus', title: '代理商状态', tap: 'onAgentStatusTap', accent: agentStatus !== 'approved', desc: agentStatus === 'approved' ? '合作资格已开通' : '查看申请审核进度' },
           { id: 'promote', title: '推广工具', tap: 'onPromoteTap', accent: false, desc: '查看推广二维码' },
-          { id: 'commission', title: '我的佣金', tap: 'onCommissionTap', desc: '查看提成明细和提现' },
+          { id: 'customers', title: '客户管理', tap: 'onCustomersTap', desc: '查看绑定客户和成交贡献' },
+          { id: 'agentOrders', title: '客户订单', tap: 'onAgentOrdersTap', desc: '查看绑定客户订单与提成状态' },
+          { id: 'commission', title: '提成中心', tap: 'onCommissionTap', desc: '查看提成明细和提现' },
+          { id: 'withdraw', title: '提现与银行卡', tap: 'onWithdrawTap', desc: '管理银行卡和提现记录' },
           { id: 'profile', title: '个人资料', tap: 'onProfileTap', desc: '修改头像、昵称等基本信息' },
           { id: 'help', title: '帮助中心', tap: 'onHelpTap', desc: '常见问题与在线客服' },
         ],
@@ -135,14 +140,18 @@ Page({
         pendingReceipt: orders.filter((o: any) => o.status === 'pending_receipt').length,
         completed: orders.filter((o: any) => o.status === 'completed').length,
       },
-      focusTitle: '',
-      focusItems: [],
-      menuItems: [
-        { id: 'verify', title: '机构认证', tap: 'onVerifyTap', desc: isInstitution ? '查看认证状态与资质信息' : '提交机构资质，认证后切换为机构客户' },
-        { id: 'address', title: '收货地址', tap: 'onAddressTap', desc: '管理我的收货地址' },
-        { id: 'favorites', title: '收藏商品', tap: 'onFavoritesTap', desc: '我收藏的优质商品' },
-        { id: 'profile', title: '个人资料', tap: 'onProfileTap', desc: '修改头像、昵称等基本信息' },
-        { id: 'help', title: '帮助中心', tap: 'onHelpTap', desc: '常见问题与在线客服' },
+        focusTitle: '',
+        focusItems: [],
+        menuItems: [
+        { id: 'verify', icon: '医', title: '医院认证', value: isInstitution ? '已认证' : '未认证', tap: 'onVerifyTap', desc: isInstitution ? '查看认证状态与资质信息' : '提交资质后可购买血包并享受医院价' },
+        { id: 'orders', icon: '单', title: '我的订单', tap: 'onOrdersTap', desc: '查看全部订单与售后进度' },
+        { id: 'booking', icon: '约', title: '我的预约', tap: 'onOrdersTap', desc: '查看血包与服务预约记录' },
+        { id: 'agentApply', icon: '代', title: '代理商申请', value: user.agentStatus === 'pending_review' ? '审核中' : user.agentStatus === 'rejected' ? '被驳回' : '', tap: user.agentStatus ? 'onAgentStatusTap' : 'onAgentApplyTap', desc: '申请成为代理商，开通推广和提成能力' },
+        { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
+        { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
+        { id: 'test', icon: '检', title: '检测查询', tap: 'onTestQueryTap', desc: '扫码或输入血包编号查询报告' },
+        { id: 'returns', icon: '售', title: '售后记录', tap: 'onReturnDetailTap', desc: '退货退款与售后进度' },
+        { id: 'help', icon: '客', title: '联系客服', tap: 'onHelpTap', desc: '订单、物流、售后咨询' },
       ],
     }
   },
@@ -166,25 +175,7 @@ Page({
   },
 
   onSwitchRole() {
-    const roleList = [
-      { role: 'customer_institution', name: '宠物医院客户', desc: '机构价采购' },
-      { role: 'customer_personal', name: '个人客户', desc: '零售购买' },
-      { role: 'salesperson', name: '业务员', desc: '推广拿佣金' },
-      { role: 'clerk', name: '制单员', desc: '处理订单发货' },
-    ]
-    wx.showActionSheet({
-      itemList: roleList.map(r => `${r.name}（${r.desc}）`),
-      success: async (res) => {
-        const selected = roleList[res.tapIndex]
-        if (selected.role === this.data.currentRole) return
-        wx.showLoading({ title: '切换中...' })
-        await getApp().switchDemoRole(selected.role)
-        await this.loadUserInfo()
-        wx.hideLoading()
-        wx.showToast({ title: `已切换为${selected.name}`, icon: 'success' })
-        setTimeout(() => wx.switchTab({ url: '/pages/home/home' }), 400)
-      },
-    })
+    wx.showToast({ title: '角色由账号类型决定', icon: 'none' })
   },
 
   onOrdersTap() {
@@ -201,6 +192,18 @@ Page({
 
   onCompletedTap() {
     wx.navigateTo({ url: '/pages/orders/order-detail/order-detail?list=1&status=completed' })
+  },
+
+  onInvoiceTap() {
+    wx.navigateTo({ url: '/pages/invoice/apply/apply' })
+  },
+
+  onTestQueryTap() {
+    wx.navigateTo({ url: '/pages/tests/query/query' })
+  },
+
+  onReturnDetailTap() {
+    wx.navigateTo({ url: '/pages/returns/detail/detail' })
   },
 
   onCatalogTap() {
@@ -221,6 +224,26 @@ Page({
 
   onPromoteTap() {
     wx.navigateTo({ url: '/pages/salesman/promote/promote' })
+  },
+
+  onCustomersTap() {
+    wx.navigateTo({ url: '/pages/salesman/customers/customers' })
+  },
+
+  onWithdrawTap() {
+    wx.navigateTo({ url: '/pages/agent/withdraw/withdraw' })
+  },
+
+  onAgentOrdersTap() {
+    wx.navigateTo({ url: '/pages/agent/orders/orders' })
+  },
+
+  onAgentApplyTap() {
+    wx.navigateTo({ url: '/pages/agent/apply/apply' })
+  },
+
+  onAgentStatusTap() {
+    wx.navigateTo({ url: '/pages/agent/verify-status/verify-status' })
   },
 
   onPendingOrdersTap() {

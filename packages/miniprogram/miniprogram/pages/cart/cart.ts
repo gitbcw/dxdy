@@ -68,6 +68,7 @@ Page({
           ...item,
           lineTotal: formatMoney(price * item.quantity),
           unitPrice: price,
+          specText: item.specs?.[0]?.value || '标准规格',
           bgColor: item.bgColor || colors[idx % colors.length]
         }
       }),
@@ -123,4 +124,3 @@ Page({
 })
 
 export {}
-

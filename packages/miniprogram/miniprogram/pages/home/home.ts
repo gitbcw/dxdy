@@ -16,6 +16,11 @@ type HomeAction =
   | 'catalog'
   | 'blood'
   | 'orders'
+  | 'agentApply'
+  | 'agentStatus'
+  | 'customers'
+  | 'withdraw'
+  | 'agentOrders'
   | 'promote'
   | 'commission'
   | 'clerkPending'
@@ -204,7 +209,7 @@ Page({
     if (role === 'salesperson') {
       return {
         displayName: name,
-        identityTag: '业务员',
+        identityTag: '代理商',
         identityTagClass: 'staff',
         taskCards: [
           {
@@ -225,7 +230,11 @@ Page({
           },
         ],
         quickActions: [
-          { icon: '佣', title: '我的佣金', action: 'commission' },
+          { icon: '审', title: '代理状态', action: 'agentStatus' },
+          { icon: '客', title: '客户管理', action: 'customers' },
+          { icon: '单', title: '客户订单', action: 'agentOrders' },
+          { icon: '佣', title: '提成中心', action: 'commission' },
+          { icon: '提', title: '提现管理', action: 'withdraw' },
           { icon: '推', title: '推广工具', action: 'promote' },
         ],
         boardTitle: '',
@@ -300,6 +309,7 @@ Page({
       quickActions: [
         { icon: '购', title: '商品浏览', action: 'catalog' },
         { icon: '单', title: '我的订单', action: 'orders' },
+        { icon: '代', title: data.user?.agentStatus ? '代理状态' : '申请代理', action: data.user?.agentStatus ? 'agentStatus' : 'agentApply' },
       ],
       boardTitle: '热销推荐',
       boardMoreText: '查看全部',
@@ -312,6 +322,11 @@ Page({
       blood: '/pages/blood/booking/booking',
       promote: '/pages/salesman/promote/promote',
       commission: '/pages/salesman/commission/commission',
+      customers: '/pages/salesman/customers/customers',
+      withdraw: '/pages/agent/withdraw/withdraw',
+      agentOrders: '/pages/agent/orders/orders',
+      agentApply: '/pages/agent/apply/apply',
+      agentStatus: '/pages/agent/verify-status/verify-status',
       clerkPending: '/pages/clerk/pending/pending',
       clerkOrders: '/pages/clerk/orders/orders',
       orders: '/pages/orders/order-detail/order-detail?list=1',

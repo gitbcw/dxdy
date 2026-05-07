@@ -1,0 +1,29 @@
+<view class="page">
+  <view wx:if="{{isEmpty}}" class="empty">暂无物流信息</view>
+  <block wx:else>
+    <view class="status-card">
+      <view class="truck">运</view>
+      <view class="status-main">
+        <text class="status">{{status}}</text>
+        <text class="desc">{{desc}}</text>
+      </view>
+    </view>
+
+    <view class="info-card">
+      <view class="row"><text>订单号</text><text>{{orderNo}}</text></view>
+      <view class="row"><text>快递公司</text><text>{{company}}</text></view>
+      <view class="row"><text>物流单号</text><text bindtap="onCopy">{{trackingNo || '待录入'}} {{trackingNo ? '复制' : ''}}</text></view>
+      <view class="row"><text>发货时间</text><text>{{shipTime}}</text></view>
+      <view class="row"><text>预计送达</text><text>{{eta}}</text></view>
+      <view class="row"><text>运输温控</text><text>{{temperature}}</text></view>
+    </view>
+
+    <view class="track-card">
+      <view wx:for="{{tracks}}" wx:key="title" class="track {{item.active ? 'active' : ''}}">
+        <text class="track-title">{{item.title}}</text>
+        <text class="track-time">{{item.time}}</text>
+        <text wx:if="{{item.desc}}" class="track-desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </block>
+</view>

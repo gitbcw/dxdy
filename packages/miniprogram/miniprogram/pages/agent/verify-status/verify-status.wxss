@@ -1,0 +1,168 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f6f7f6;
+  box-sizing: border-box;
+}
+
+.status-card,
+.info-card,
+.timeline {
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
+}
+
+.status-card {
+  padding: 34rpx 28rpx;
+  text-align: center;
+}
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96rpx;
+  height: 96rpx;
+  margin: 0 auto;
+  border-radius: 24rpx;
+  color: #ffffff;
+  font-size: 38rpx;
+  font-weight: 900;
+  background: #8c9892;
+}
+
+.pending .status-icon {
+  background: #ff9f1a;
+}
+
+.approved .status-icon {
+  background: #18a34a;
+}
+
+.rejected .status-icon {
+  background: #ef4444;
+}
+
+.status-title {
+  display: block;
+  margin-top: 22rpx;
+  color: #17231f;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.status-desc {
+  display: block;
+  margin-top: 10rpx;
+  color: #6d7872;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.info-card {
+  margin-top: 20rpx;
+  overflow: hidden;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22rpx;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #edf0ee;
+}
+
+.info-row:last-child {
+  border-bottom: 0;
+}
+
+.info-label {
+  flex-shrink: 0;
+  color: #6d7872;
+  font-size: 24rpx;
+}
+
+.info-value {
+  min-width: 0;
+  color: #17231f;
+  font-size: 25rpx;
+  font-weight: 800;
+  text-align: right;
+}
+
+.timeline {
+  margin-top: 20rpx;
+  padding: 28rpx;
+}
+
+.step {
+  position: relative;
+  padding: 0 0 28rpx 38rpx;
+  color: #8e9893;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+.step::before {
+  content: '';
+  position: absolute;
+  left: 4rpx;
+  top: 8rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #cfd7d2;
+}
+
+.step.active::before {
+  background: #18a34a;
+}
+
+.step text:first-child {
+  display: block;
+  color: #17231f;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.step text:last-child {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 23rpx;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 28rpx;
+}
+
+.single-action {
+  margin-top: 28rpx;
+}
+
+.ghost-btn,
+.primary-btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 14rpx;
+  font-size: 28rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.ghost-btn {
+  color: #18a34a;
+  background: #ffffff;
+  border: 1rpx solid #9bddb0;
+}
+
+.primary-btn {
+  color: #ffffff;
+  background: #ff7a1a;
+}

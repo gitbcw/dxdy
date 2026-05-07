@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="balance-card">
+    <text class="balance-label">可提现金额</text>
+    <text class="balance-value">¥{{summary.available || summary.withdrawable || 0}}</text>
+    <view class="balance-row">
+      <text>累计 ¥{{summary.total || 0}}</text>
+      <text>已提现 ¥{{summary.withdrawn || 0}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-head">
+      <text class="card-title">到账银行卡</text>
+      <text class="card-action" bindtap="onToggleBankForm">{{showBankForm ? '收起' : '添加/更换'}}</text>
+    </view>
+
+    <view wx:if="{{activeBankCard}}" class="bank-card">
+      <text class="bank-name">{{activeBankCard.bankName}}</text>
+      <text class="bank-no">**** **** **** {{activeBankCard.tailNo}}</text>
+      <text class="bank-holder">{{activeBankCard.holderName}}</text>
+    </view>
+    <view wx:else class="empty-bank">暂无银行卡，请先添加</view>
+
+    <view wx:if="{{showBankForm}}" class="bank-form">
+      <view class="field-row">
+        <text class="field-label">开户行</text>
+        <input class="field-input" placeholder="如：招商银行" value="{{form.bankName}}" data-field="bankName" bindinput="onFormInput" />
+      </view>
+      <view class="field-row">
+        <text class="field-label">银行卡号</text>
+        <input class="field-input" type="number" placeholder="请输入银行卡号" value="{{form.cardNo}}" data-field="cardNo" bindinput="onFormInput" />
+      </view>
+      <view class="field-row">
+        <text class="field-label">持卡人</text>
+        <input class="field-input" placeholder="请输入持卡人姓名" value="{{form.holderName}}" data-field="holderName" bindinput="onFormInput" />
+      </view>
+      <view class="save-btn" bindtap="onSaveBankCard">保存银行卡</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">申请提现</text>
+    <view class="amount-box">
+      <text class="money-symbol">¥</text>
+      <input class="amount-input" type="digit" placeholder="输入提现金额" value="{{amount}}" bindinput="onAmountInput" />
+    </view>
+    <text class="hint">最低提现 {{minWithdrawAmount}} 元，提交后进入平台审核。</text>
+    <view class="primary-btn" bindtap="onSubmitWithdraw">提交提现申请</view>
+  </view>
+
+  <view class="card">
+    <view class="card-head">
+      <text class="card-title">提现记录</text>
+    </view>
+    <view wx:if="{{records.length === 0}}" class="empty-record">暂无提现记录</view>
+    <view wx:for="{{records}}" wx:key="id" class="record-row">
+      <view>
+        <text class="record-amount">¥{{item.amountText}}</text>
+        <text class="record-meta">{{item.bankName}} · {{item.appliedAt}}</text>
+      </view>
+      <text class="status {{item.statusClass}}">{{item.statusText}}</text>
+    </view>
+  </view>
+</view>

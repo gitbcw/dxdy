@@ -1,0 +1,21 @@
+<view class="page">
+  <view class="success-hero">
+    <view class="check">✓</view>
+    <text class="title">支付成功</text>
+    <text class="desc">感谢您的信任，订单已提交</text>
+  </view>
+
+  <view class="info-card">
+    <view class="row"><text>订单编号</text><text>{{orderNo}}</text></view>
+    <view class="row"><text>支付金额</text><text class="price">¥{{amount}}</text></view>
+    <view class="row"><text>订单类型</text><text>{{orderType}}</text></view>
+    <view class="row"><text>预约时间</text><text>{{bookingTime}}</text></view>
+    <view class="row"><text>支付时间</text><text>{{payTime}}</text></view>
+    <view class="row"><text>支付方式</text><text>{{payMethod}}</text></view>
+  </view>
+
+  <view class="actions">
+    <view class="outline-btn" bindtap="onViewOrder">查看订单</view>
+    <view class="orange-btn dx-orange-btn" bindtap="onBackHome">返回首页</view>
+  </view>
+</view>

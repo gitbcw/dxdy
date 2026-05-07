@@ -49,9 +49,9 @@ Page({
       wx.showToast({ title: '提交成功' })
       this.setData({ showExpressPanel: false })
       this.loadOrder(this.data.order.id)
-    } catch (e) {
+    } catch (e: any) {
       wx.hideLoading()
-      wx.showToast({ title: '提交失败', icon: 'none' })
+      wx.showToast({ title: e?.message || '提交失败', icon: 'none' })
     }
   },
 

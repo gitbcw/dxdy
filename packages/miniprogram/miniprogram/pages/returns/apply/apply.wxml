@@ -1,0 +1,33 @@
+<view class="page">
+  <view class="goods-card">
+    <view class="goods-img">{{firstItem.productName ? '商品' : '售后'}}</view>
+    <view class="goods-info">
+      <text class="name">{{firstItem.productName || '请选择订单后申请售后'}}</text>
+      <text class="meta">{{firstItem.spec || '规格信息'}} ×{{firstItem.quantity || 1}}</text>
+      <text class="price">¥{{refundAmount}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="type-row">
+      <view class="type {{serviceType === 'refund_return' ? 'active' : ''}}" data-type="refund_return" bindtap="onTypeTap">退货退款</view>
+      <view class="type {{serviceType === 'refund_only' ? 'active' : ''}}" data-type="refund_only" bindtap="onTypeTap">仅退款</view>
+    </view>
+    <view class="row"><text>售后原因</text><input value="{{reason}}" bindinput="onReasonInput" /></view>
+    <view class="textarea-row">
+      <text>问题描述</text>
+      <textarea maxlength="200" value="{{description}}" placeholder="请描述商品问题、包装状态或沟通结果" bindinput="onDescriptionInput" />
+      <text class="count">{{description.length}}/200</text>
+    </view>
+    <view class="upload-row">
+      <text>上传凭证</text>
+      <view class="voucher-list">
+        <image wx:for="{{vouchers}}" wx:key="*this" src="{{item}}" mode="aspectFill" />
+        <view class="upload-btn" bindtap="onUpload">+</view>
+      </view>
+    </view>
+    <view class="row"><text>退款金额</text><text class="price">¥{{refundAmount}}</text></view>
+  </view>
+
+  <view class="submit dx-orange-btn" bindtap="onSubmit">提交申请</view>
+</view>

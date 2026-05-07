@@ -1,0 +1,158 @@
+{
+  "users": [
+    {
+      "IndexName": "phone_role",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "phone", "Direction": "1" },
+          { "Name": "role", "Direction": "1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "role_status",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "role", "Direction": "1" },
+          { "Name": "status", "Direction": "1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "verification_status",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "verificationStatus", "Direction": "1" },
+          { "Name": "updatedAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    }
+  ],
+  "orders": [
+    {
+      "IndexName": "customer_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "customerId", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "status_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "status", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "order_no",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "orderNo", "Direction": "1" }
+        ],
+        "MgoIsUnique": true
+      }
+    }
+  ],
+  "returns": [
+    {
+      "IndexName": "order_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "orderId", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "customer_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "customerId", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "status_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "status", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    }
+  ],
+  "invoices": [
+    {
+      "IndexName": "customer_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "customerId", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "order_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "orderId", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "status_created",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "status", "Direction": "1" },
+          { "Name": "createdAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    }
+  ],
+  "test_reports": [
+    {
+      "IndexName": "code",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "code", "Direction": "1" }
+        ],
+        "MgoIsUnique": true
+      }
+    },
+    {
+      "IndexName": "batch_no",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "batchNo", "Direction": "1" }
+        ],
+        "MgoIsUnique": false
+      }
+    },
+    {
+      "IndexName": "tested_at",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "testedAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    }
+  ]
+}

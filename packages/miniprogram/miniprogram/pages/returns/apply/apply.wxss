@@ -1,0 +1,160 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  padding-bottom: 130rpx;
+  background: #f7f8f7;
+  box-sizing: border-box;
+}
+
+.goods-card,
+.card {
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+}
+
+.goods-card {
+  display: flex;
+  gap: 18rpx;
+  padding: 22rpx;
+}
+
+.goods-img {
+  width: 130rpx;
+  height: 112rpx;
+  line-height: 112rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  color: #9b2d20;
+  background: #f7eeee;
+  font-weight: 900;
+}
+
+.name,
+.meta,
+.price {
+  display: block;
+}
+
+.name {
+  color: #17201b;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.meta {
+  margin-top: 8rpx;
+  color: #7d8782;
+  font-size: 23rpx;
+}
+
+.price {
+  margin-top: 8rpx;
+  color: #ff5a1f;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.card {
+  margin-top: 18rpx;
+  padding: 22rpx;
+}
+
+.type-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.type {
+  height: 66rpx;
+  line-height: 66rpx;
+  border-radius: 10rpx;
+  border: 1rpx solid #dfe7e2;
+  text-align: center;
+  color: #56605b;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+
+.type.active {
+  color: #18a44a;
+  border-color: #18a44a;
+  background: #ecf8ef;
+}
+
+.row,
+.textarea-row,
+.upload-row {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #edf0ee;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.row text:first-child,
+.textarea-row > text:first-child,
+.upload-row > text:first-child {
+  color: #17201b;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.row input {
+  flex: 1;
+  text-align: right;
+  color: #17201b;
+  font-size: 25rpx;
+}
+
+textarea {
+  width: 100%;
+  height: 148rpx;
+  margin-top: 16rpx;
+  color: #17201b;
+  font-size: 25rpx;
+  background: #f8faf9;
+  border-radius: 10rpx;
+  padding: 16rpx;
+  box-sizing: border-box;
+}
+
+.count {
+  display: block;
+  margin-top: 8rpx;
+  text-align: right;
+  color: #9aa39e;
+  font-size: 20rpx;
+}
+
+.voucher-list {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.voucher-list image,
+.upload-btn {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 10rpx;
+}
+
+.upload-btn {
+  line-height: 104rpx;
+  text-align: center;
+  color: #9aa39e;
+  background: #f2f4f3;
+  font-size: 42rpx;
+}
+
+.submit {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
+}

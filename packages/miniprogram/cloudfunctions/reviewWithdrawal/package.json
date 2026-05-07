@@ -1,0 +1,9 @@
+{
+  "name": "reviewWithdrawal",
+  "version": "1.0.0",
+  "description": "审核代理商提现并处理驳回退回余额和打款确认",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

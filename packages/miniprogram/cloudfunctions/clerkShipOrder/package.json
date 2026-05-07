@@ -1,0 +1,9 @@
+{
+  "name": "clerkShipOrder",
+  "version": "1.0.0",
+  "description": "制单员录入物流并执行权限与状态校验",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

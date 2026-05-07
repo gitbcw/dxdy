@@ -8,6 +8,8 @@ Page({
     price: '0.00',
     spec: '',
     stock: 0,
+    isBloodProduct: false,
+    bloodType: '按商品标注',
   },
 
   async onLoad(options: any) {
@@ -27,6 +29,8 @@ Page({
       price: formatMoney(price),
       spec: product.specs?.[0]?.value || '标准规格',
       stock: product.stock,
+      isBloodProduct: !!product.isBloodPack,
+      bloodType: product.specs?.find((item: any) => item.name === '血型')?.value || (product.isBloodPack ? '需指定' : '不适用'),
     })
   },
 

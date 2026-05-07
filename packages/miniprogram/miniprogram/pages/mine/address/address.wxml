@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="address-list">
+  <view wx:if="{{!showForm}}" class="address-list">
     <view
       wx:for="{{addresses}}"
       wx:key="id"
@@ -7,14 +7,15 @@
     >
       <view class="address-top">
         <view class="address-info">
+          <view wx:if="{{item.isDefault}}" class="default-badge">默认</view>
           <text class="address-name">{{item.name}}</text>
           <text class="address-phone">{{item.phone}}</text>
-          <view wx:if="{{item.tag}}" class="address-tag">{{item.tag}}</view>
-          <view wx:if="{{item.isDefault}}" class="default-badge">默认</view>
         </view>
       </view>
       <view class="address-detail">
-        <text>{{item.province}}{{item.city}}{{item.district}} {{item.detail}}</text>
+        <text class="line">所在地区：{{item.province}}{{item.city}}{{item.district}}</text>
+        <text class="line">详细地址：{{item.detail}}</text>
+        <text wx:if="{{item.hospitalName}}" class="line hospital">{{item.hospitalName}}</text>
       </view>
       <view class="address-actions">
         <view
@@ -30,12 +31,43 @@
   </view>
 
   <view class="empty-state" wx:if="{{addresses.length === 0}}">
-    <text class="empty-icon">📍</text>
+    <text class="empty-icon">地址</text>
     <text class="empty-text">暂无收货地址</text>
     <text class="empty-hint">点击下方按钮添加地址</text>
   </view>
 
-  <view class="bottom-btn" bindtap="onAddAddress">
+  <view wx:if="{{!showForm}}" class="bottom-btn dx-orange-btn" bindtap="onAddAddress">
     <text>+ 新增收货地址</text>
+  </view>
+
+  <view wx:else class="form-panel">
+    <view class="field-row">
+      <text>收货人</text>
+      <input placeholder="请输入收货人姓名" value="{{form.name}}" data-field="name" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>手机号</text>
+      <input placeholder="请输入手机号" value="{{form.phone}}" data-field="phone" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>所在地区</text>
+      <input placeholder="请选择所在地区" value="{{form.region}}" data-field="region" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>详细地址</text>
+      <input placeholder="请输入详细地址" value="{{form.detail}}" data-field="detail" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>医院名称（选填）</text>
+      <input placeholder="如：XX 动物医院" value="{{form.hospitalName}}" data-field="hospitalName" bindinput="onFormInput" />
+    </view>
+    <view class="field-row switch-row">
+      <text>设为默认地址</text>
+      <switch checked="{{form.isDefault}}" color="#18a44a" bindchange="onDefaultChange" />
+    </view>
+    <view class="form-actions">
+      <view class="outline-btn" bindtap="onCancelForm">取消</view>
+      <view class="save-btn dx-orange-btn" bindtap="onSaveAddress">保存地址</view>
+    </view>
   </view>
 </view>

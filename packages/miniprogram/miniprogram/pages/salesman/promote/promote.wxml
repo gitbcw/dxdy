@@ -1,16 +1,41 @@
 <view class="page">
-  <view class="page-header">
-    <text class="header-title">推广工具</text>
+  <view class="profile-card">
+    <view class="avatar">代</view>
+    <view class="profile-main">
+      <text class="name">{{agentName}}</text>
+      <text class="role">大熊动医 · 代理商</text>
+    </view>
+    <view class="id-pill">ID: {{promoCode}}</view>
   </view>
 
-  <view class="qrcode-section">
-    <view class="qrcode-card">
-      <image class="qrcode-img" src="{{qrcodeUrl}}" mode="aspectFit" />
-      <text class="qrcode-hint">扫码注册小程序</text>
-      <button class="btn btn-save" bindtap="onSaveQrcode">
-        <image class="btn-icon" src="{{icons.clock}}" mode="aspectFit" />
-        <text>保存二维码</text>
-      </button>
+  <view class="qrcode-card">
+    <text class="card-title">我的专属推广码</text>
+    <image class="qrcode-img" src="{{qrcodeUrl}}" mode="aspectFit" />
+    <text class="qrcode-hint">扫描二维码，客户即可成为我的推广关系</text>
+    <view class="stats-row">
+      <view class="stat">
+        <text class="stat-label">扫码访问</text>
+        <text class="stat-value">1,256</text>
+      </view>
+      <view class="stat">
+        <text class="stat-label">注册客户</text>
+        <text class="stat-value">236</text>
+      </view>
+      <view class="stat">
+        <text class="stat-label">下单客户</text>
+        <text class="stat-value">68</text>
+      </view>
     </view>
+  </view>
+
+  <view class="link-card">
+    <text class="link-label">推广链接</text>
+    <text class="link-text">{{promoLink}}</text>
+    <text class="copy-btn">复制</text>
+  </view>
+
+  <view class="bottom-actions">
+    <view class="ghost-btn" bindtap="onSaveQrcode">保存二维码</view>
+    <button class="share-btn" open-type="share">分享给微信好友</button>
   </view>
 </view>

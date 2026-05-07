@@ -6,6 +6,7 @@ Page({
     orders: [] as any[],
     isEmpty: false,
     pendingCount: 0,
+    urgentCount: 0,
     summaryCards: [] as any[],
     iconClock: icons.clock,
     iconExchange: icons.refresh,
@@ -30,10 +31,11 @@ Page({
       orders: mappedOrders,
       isEmpty: mappedOrders.length === 0,
       pendingCount: mappedOrders.length,
+      urgentCount: mappedOrders.filter((item: any) => item.type === 'exchange').length,
       summaryCards: [
-        { value: String(mappedOrders.length), label: '待发货', desc: '当前仍需处理的任务' },
-        { value: String(mappedOrders.filter((item: any) => item.type === 'exchange').length), label: '换货单', desc: '建议优先处理' },
-        { value: '实时', label: '物流同步', desc: '录单号后客户可见' },
+        { value: String(mappedOrders.length), label: '待发货' },
+        { value: String(mappedOrders.filter((item: any) => item.type === 'exchange').length), label: '换货单' },
+        { value: '实时', label: '物流同步' },
       ],
     })
   },

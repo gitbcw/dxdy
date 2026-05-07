@@ -6,7 +6,9 @@ interface IAppOption extends Record<string, any> {
     token?: string,
     userRole?: string,
     catalogSearchKeyword?: string,
+    openid?: string,
   }
-  switchDemoRole?: (role: string) => void,
+  loadUserByOpenId?: (openid: string) => Promise<void>
+  resolveRole?: (user: any) => string
   userInfoReadyCallback?: WechatMiniprogram.GetUserInfoSuccessCallback,
 }

@@ -1,0 +1,131 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f7f8f7;
+  box-sizing: border-box;
+}
+
+.scan-card,
+.input-card,
+.history-card,
+.hint {
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+}
+
+.scan-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 24rpx;
+  background: #ecf8ef;
+}
+
+.scan-icon,
+.doc-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 16rpx;
+  color: #18a44a;
+  background: #ffffff;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.scan-title,
+.label,
+.section-head text:first-child,
+.history-code {
+  display: block;
+  color: #17201b;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.scan-desc,
+.history-time {
+  display: block;
+  margin-top: 6rpx;
+  color: #7d8782;
+  font-size: 22rpx;
+}
+
+.scan-btn {
+  margin-left: auto;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  color: #ffffff;
+  background: #18a44a;
+  font-size: 23rpx;
+  font-weight: 900;
+}
+
+.input-card,
+.history-card {
+  margin-top: 18rpx;
+  padding: 24rpx;
+}
+
+input {
+  height: 76rpx;
+  margin-top: 18rpx;
+  padding: 0 20rpx;
+  border-radius: 10rpx;
+  color: #17201b;
+  background: #f6f8f7;
+  font-size: 25rpx;
+}
+
+.query-btn {
+  height: 76rpx;
+  line-height: 76rpx;
+  margin-top: 18rpx;
+  border-radius: 10rpx;
+  color: #ffffff;
+  background: #18a44a;
+  text-align: center;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.query-btn.disabled {
+  opacity: 0.55;
+}
+
+.section-head,
+.history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-head text:last-child,
+.arrow {
+  color: #7d8782;
+  font-size: 23rpx;
+}
+
+.history-row {
+  gap: 18rpx;
+  padding: 22rpx 0;
+  border-top: 1rpx solid #edf0ee;
+}
+
+.history-row > view:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.hint {
+  margin-top: 18rpx;
+  padding: 20rpx;
+  color: #6f7a75;
+  background: #ecf8ef;
+  font-size: 22rpx;
+  line-height: 1.55;
+}

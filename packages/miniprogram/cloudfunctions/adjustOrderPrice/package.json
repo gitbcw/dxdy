@@ -1,0 +1,9 @@
+{
+  "name": "adjustOrderPrice",
+  "version": "1.0.0",
+  "description": "后台订单改价并执行角色权限与状态校验",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

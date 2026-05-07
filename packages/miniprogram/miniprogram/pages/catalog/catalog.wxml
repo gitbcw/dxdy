@@ -1,14 +1,40 @@
 <view class="page">
+  <view class="page-title">商品分类</view>
+
   <view class="search-bar">
+    <text class="search-icon">⌕</text>
     <input
       class="search-input"
-      placeholder="搜索商品名称..."
+      placeholder="搜索商品、品牌、关键词"
       value="{{searchKeyword}}"
       bindinput="onSearchInput"
       confirm-type="search"
       bindconfirm="onSearchConfirm"
     />
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
+  </view>
+
+  <scroll-view scroll-x class="category-tabs">
+    <view
+      class="category-tab {{!activeCategory ? 'active' : ''}}"
+      bindtap="onAllCategoryTap"
+    >全部</view>
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
+      class="category-tab {{activeCategory === item.id ? 'active' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onCategoryTap"
+    >
+      {{item.name}}
+    </view>
+  </scroll-view>
+
+  <view class="sort-row">
+    <text class="sort-item active">综合⌄</text>
+    <text class="sort-item">销量</text>
+    <text class="sort-item">价格</text>
+    <text class="sort-item">筛选⌕</text>
   </view>
 
   <scroll-view scroll-x class="quick-filters">
@@ -19,50 +45,44 @@
       data-key="{{item.key}}"
       bindtap="onQuickFilterTap"
     >
-      {{item.label}} {{item.count}}
+      {{item.label}}
     </view>
   </scroll-view>
 
-  <view class="layout">
-    <scroll-view class="sidebar" scroll-y>
-      <view
-        wx:for="{{categories}}"
-        wx:key="id"
-        class="sidebar-item {{activeCategory === item.id ? 'active' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="onCategoryTap"
-      >
-        <text class="sidebar-name">{{item.name}}</text>
+  <view class="product-list">
+    <view
+      wx:for="{{products}}"
+      wx:key="id"
+      class="product-card {{item.lowStock ? 'warn' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onProductTap"
+    >
+      <view class="product-img">
+        <text>{{item.isBloodPack ? '血包' : '商品'}}</text>
       </view>
-    </scroll-view>
-
-    <scroll-view class="content" scroll-y>
-      <view
-        wx:for="{{products}}"
-        wx:key="id"
-        class="product-item {{item.lowStock ? 'warn' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="onProductTap"
-      >
-        <view class="product-top">
-          <text class="tag">{{item.tagText}}</text>
-          <text class="stock {{item.lowStock ? 'warn' : ''}}">库存 {{item.stock}}</text>
+      <view class="product-info">
+        <view class="product-title-row">
+          <text class="product-name">{{item.name}}</text>
+          <text class="lock" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}">锁</text>
         </view>
-        <text class="name">{{item.name}}</text>
-        <text class="spec">{{item.specText}}</text>
-        <text class="lead">{{item.leadText}}</text>
+        <text class="product-spec">{{item.specText}}</text>
+        <view class="tag-row">
+          <text class="tag green">{{item.tagText}}</text>
+          <text class="tag" wx:if="{{item.isBloodPack}}">支持预约</text>
+          <text class="tag red" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}">仅认证医院可购买</text>
+        </view>
         <view class="product-bottom">
           <text class="price">¥{{item.priceText}}</text>
+          <text class="stock {{item.lowStock ? 'warn' : ''}}">{{item.stock <= 5 ? '库存紧张' : '可采购'}}</text>
           <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
-            <text class="cart-plus-icon">+</text>
+            <text class="cart-plus-icon">购</text>
           </view>
         </view>
       </view>
-      <view wx:if="{{products.length === 0}}" class="empty">{{emptyText}}</view>
-    </scroll-view>
+    </view>
+    <view wx:if="{{products.length === 0}}" class="empty">{{emptyText}}</view>
   </view>
 
-  <!-- 商品规格选择弹框 -->
   <product-action-sheet
     visible="{{actionSheetVisible}}"
     product="{{actionSheetProduct}}"

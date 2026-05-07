@@ -1,9 +1,9 @@
 <view class="page">
   <view wx:if="{{!userInfo}}" class="login-prompt">
-    <view class="avatar-empty">DX</view>
-    <text class="login-title">登录工作账号</text>
-    <text class="login-desc">登录后可查看订单和采购</text>
-    <view class="login-btn" bindtap="onLoginTap">立即登录</view>
+    <view class="brand">大熊动医</view>
+    <text class="login-title">欢迎来到大熊动医</text>
+    <text class="login-desc">登录后查看订单、认证、售后和检测报告</text>
+    <view class="login-btn dx-orange-btn" bindtap="onLoginTap">立即登录</view>
   </view>
 
   <view wx:else>
@@ -14,6 +14,7 @@
           <text class="name">{{userInfo.nickname}}</text>
           <text class="type">{{userRoleLabel}}</text>
         </view>
+        <text class="verify-state">{{userInfo.verificationStatus === 'approved' ? '已认证' : '去认证'}}</text>
       </view>
       <view class="profile-stats" wx:if="{{stats.length > 0}}">
         <view wx:for="{{stats}}" wx:key="label" class="profile-stat">
@@ -53,6 +54,15 @@
       </view>
     </view>
 
+    <view class="cert-row" wx:if="{{showOrderBar}}" bindtap="onVerifyTap">
+      <view class="cert-icon">医</view>
+      <view class="cert-copy">
+        <text class="cert-title">医院认证</text>
+        <text class="cert-desc">认证通过后可购买血包并享受医院价</text>
+      </view>
+      <text class="cert-status">{{userInfo.verificationStatus === 'approved' ? '已认证' : '去认证'}} ›</text>
+    </view>
+
     <view class="section" wx:if="{{focusItems.length > 0}}">
       <view class="section-head">
         <text class="section-title">{{focusTitle}}</text>
@@ -85,17 +95,18 @@
           data-id="{{item.id}}"
           bindtap="onMenuItemTap"
         >
+          <view class="menu-icon">{{item.icon || '•'}}</view>
           <view>
             <text class="menu-title">{{item.title}}</text>
             <text class="menu-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
           </view>
+          <text wx:if="{{item.value}}" class="menu-value">{{item.value}}</text>
           <text class="arrow">›</text>
         </view>
       </view>
     </view>
 
     <view class="bottom-actions">
-      <view class="action-btn switch-role" bindtap="onSwitchRole">切换身份</view>
       <view class="action-btn logout" bindtap="onLogout">退出当前账号</view>
     </view>
   </view>

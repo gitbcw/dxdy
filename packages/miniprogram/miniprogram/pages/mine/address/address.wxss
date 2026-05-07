@@ -1,107 +1,180 @@
 .page {
   min-height: 100vh;
   padding: 24rpx;
-  background: var(--bg-page);
+  padding-bottom: calc(26rpx + env(safe-area-inset-bottom) + 112rpx);
+  background: #f7f8f7;
   box-sizing: border-box;
 }
 
 .address-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  padding-bottom: 140rpx;
+  gap: 18rpx;
 }
 
-.address-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
-  padding: 28rpx;
-  box-shadow: var(--shadow-sm);
-  border: 2rpx solid var(--border-color);
+.address-card,
+.form-panel {
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
 }
 
 .address-card.is-default {
-  border-color: var(--color-primary);
-}
-
-.address-top {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
+  border-top: 6rpx solid #18a44a;
 }
 
 .address-info {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 14rpx;
   flex-wrap: wrap;
 }
 
+.default-badge {
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+  color: #ffffff;
+  background: #18a44a;
+  font-size: 20rpx;
+  font-weight: 900;
+}
+
 .address-name {
+  color: #17201b;
   font-size: 30rpx;
-  font-weight: 800;
-  color: var(--text-primary);
+  font-weight: 900;
 }
 
 .address-phone {
+  color: #4d5652;
   font-size: 26rpx;
-  color: var(--text-secondary);
-}
-
-.address-tag {
-  padding: 4rpx 14rpx;
-  border-radius: var(--radius-sm);
-  font-size: 20rpx;
-  font-weight: 600;
-  background: rgba(10, 110, 124, 0.08);
-  color: var(--color-primary);
-}
-
-.default-badge {
-  padding: 4rpx 14rpx;
-  border-radius: var(--radius-sm);
-  font-size: 20rpx;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-  color: #fff;
 }
 
 .address-detail {
   margin-top: 16rpx;
-  font-size: 26rpx;
-  color: var(--text-secondary);
-  line-height: 1.6;
+}
+
+.line {
+  display: block;
+  margin-top: 8rpx;
+  color: #5d6862;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.hospital {
+  color: #18a44a;
+  font-weight: 800;
 }
 
 .address-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 28rpx;
   margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid var(--divider-color);
+  padding-top: 18rpx;
+  border-top: 1rpx solid #edf0ee;
 }
 
 .action-text {
+  color: #18a44a;
   font-size: 24rpx;
-  color: var(--text-tertiary);
-  font-weight: 500;
+  font-weight: 800;
 }
 
-.action-text.danger {
-  color: var(--color-error);
+.danger {
+  color: #ff5a1f;
+}
+
+.empty-state {
+  margin-top: 160rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+  color: #18a44a;
+  background: #eaf8ee;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.empty-text,
+.empty-hint {
+  display: block;
+}
+
+.empty-text {
+  margin-top: 24rpx;
+  color: #17201b;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.empty-hint {
+  margin-top: 8rpx;
+  color: #8b9590;
+  font-size: 24rpx;
 }
 
 .bottom-btn {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: var(--bg-card);
-  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 86rpx;
+  border-bottom: 1rpx solid #edf0ee;
+}
+
+.field-row text {
+  color: #17201b;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.field-row input {
+  flex: 1;
+  min-width: 0;
+  color: #17201b;
+  font-size: 26rpx;
+  text-align: right;
+}
+
+.switch-row {
+  border-bottom: 0;
+}
+
+.form-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 28rpx;
+}
+
+.outline-btn,
+.save-btn {
+  height: 78rpx;
+  line-height: 78rpx;
+  border-radius: 12rpx;
   text-align: center;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: var(--color-primary);
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.outline-btn {
+  color: #18a44a;
+  border: 1rpx solid #9bddb0;
+  background: #ffffff;
 }

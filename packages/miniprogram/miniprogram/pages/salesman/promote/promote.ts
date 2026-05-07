@@ -37,6 +37,9 @@ Page({
     icons,
     qrcodeUrl: '',
     userId: '',
+    agentName: '张三',
+    promoCode: 'DXY123456',
+    promoLink: 'https://dxdy.pet/m/reg/DXY123456',
   },
 
   onLoad() {
@@ -46,6 +49,9 @@ Page({
 
     this.setData({
       userId,
+      agentName: user?.nickname || '张三',
+      promoCode: `DXY${String(userId).replace(/\D/g, '').slice(-6).padStart(6, '0')}`,
+      promoLink: `https://dxdy.pet/m/reg/DXY${String(userId).replace(/\D/g, '').slice(-6).padStart(6, '0')}`,
       qrcodeUrl: buildPromoCode(userId),
     })
     wx.showShareMenu({ withShareTicket: true })

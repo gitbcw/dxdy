@@ -1,107 +1,94 @@
 <view class="page">
   <view wx:if="{{product || isFromCart}}" class="content">
-    <!-- 单品展示 -->
-    <view wx:if="{{product}}" class="hero-card">
-      <view class="hero-top">
-        <view>
-          <text class="eyebrow">{{customerTypeLabel}} · {{priceLabel}}</text>
-          <text class="name">{{product.name}}</text>
-        </view>
-        <view class="product-tag">{{isBloodProduct ? '用血预约' : orderTypeLabel}}</view>
-      </view>
-      <text class="desc">{{product.description}}</text>
-      <view class="hero-meta">
-        <text>{{product.specs[0].name}}：{{product.specs[0].value}}</text>
-        <text>库存 {{product.stock}}</text>
+    <view wx:if="{{product}}" class="goods-card">
+      <view class="goods-img">{{isBloodProduct ? '血包' : '商品'}}</view>
+      <view class="goods-main">
+        <text class="goods-name">{{product.name}}</text>
+        <text class="goods-meta">{{specText}}</text>
+        <text class="goods-price">¥{{unitPrice}}</text>
       </view>
     </view>
 
-    <!-- 购物车多商品展示 -->
-    <view wx:if="{{isFromCart}}" class="hero-card cart-hero">
-      <view class="hero-top">
-        <view>
-          <text class="eyebrow">{{customerTypeLabel}} · {{priceLabel}}</text>
-          <text class="name">购物车结算 ({{cartItems.length}}件)</text>
-        </view>
-        <view class="product-tag">批量采购</view>
-      </view>
-      <view class="cart-item-list">
-        <view wx:for="{{cartItems}}" wx:key="id" class="cart-order-item">
-          <text class="cart-item-name">{{item.name}}</text>
-          <view class="cart-item-meta">
-            <text class="cart-item-spec">{{item.specs[0].value}}</text>
-            <text class="cart-item-qty">×{{item.quantity}}</text>
-            <text class="cart-item-price">¥{{item.lineTotal}}</text>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <view wx:if="{{product}}" class="type-switch">
-      <view class="type-item active">
-        <text class="type-title">{{orderType === 'booking' ? '预约采购' : '普通采购'}}</text>
-        <text class="type-desc">{{orderType === 'booking' ? '宠物用血需提前预约排期' : '常规商品按下单后履约发货'}}</text>
+    <view wx:if="{{isFromCart}}" class="card">
+      <view class="section-title">购物车结算</view>
+      <view wx:for="{{cartItems}}" wx:key="id" class="cart-item">
+        <text class="cart-name">{{item.name}}</text>
+        <text class="cart-meta">{{item.specText}} ×{{item.quantity}}</text>
+        <text class="cart-price">¥{{item.lineTotal}}</text>
       </view>
     </view>
 
     <view wx:if="{{product}}" class="card">
       <view class="row">
-        <view>
-          <text class="label">采购数量</text>
-          <text class="hint">结算时会校验库存</text>
-        </view>
+        <text class="row-label">规格</text>
+        <text class="row-value">{{specText}} ></text>
+      </view>
+      <view class="row">
+        <text class="row-label">购买数量</text>
         <view class="quantity">
-          <view class="qty-btn" data-delta="{{-1}}" bindtap="onQuantityChange">-</view>
+          <view class="qty-btn" data-delta="{{-1}}" bindtap="onQuantityChange">−</view>
           <text class="num">{{quantity}}</text>
-          <view class="qty-btn" data-delta="{{1}}" bindtap="onQuantityChange">+</view>
+          <view class="qty-btn" data-delta="{{1}}" bindtap="onQuantityChange">＋</view>
         </view>
       </view>
-      <view class="price-line">
-        <text>单价</text>
-        <text>¥{{unitPrice}}</text>
-      </view>
-      <view class="price-line strong">
-        <text>预计合计</text>
-        <text>¥{{total}}</text>
-      </view>
-    </view>
-
-    <view wx:if="{{orderType === 'booking'}}" class="card">
-      <text class="card-title">预约信息</text>
-      <view class="field">
-        <text class="field-label">预约日期</text>
-        <picker mode="date" value="{{bookingDate}}" start="{{minBookingDate}}" bindchange="onBookingDateChange">
-          <view class="field-input picker-input">{{bookingDate}}</view>
-        </picker>
-      </view>
-      <view class="field">
-        <text class="field-label">预约地点</text>
-        <input class="field-input" data-field="bookingLocation" value="{{bookingLocation}}" bindinput="onBookingInput" />
-      </view>
-      <text class="field-note">联系人和联系电话默认取下方已选联系地址</text>
     </view>
 
     <view class="card">
-      <text class="card-title">履约信息</text>
-      <view class="field">
-        <text class="field-label">{{orderType === 'booking' ? '联系地址' : '收货地址'}}</text>
+      <view class="section-title">{{orderType === 'booking' ? '预约与配送' : '收货信息'}}</view>
+      <view class="address-card">
+        <view class="address-head">
+          <text class="address-name">{{addressName}}</text>
+          <text class="address-phone">{{addressPhone}}</text>
+          <text class="address-action">默认</text>
+        </view>
         <picker wx:if="{{addressOptions.length}}" mode="selector" range="{{addressOptions}}" value="{{selectedAddressIndex}}" bindchange="onAddressChange">
-          <view class="field-input">{{addressOptions[selectedAddressIndex]}}</view>
+          <view class="address-text">{{addressText}} ></view>
         </picker>
-        <view wx:else class="field-input">暂无可用地址</view>
+        <view wx:else class="address-text">暂无可用地址，请先新增地址</view>
       </view>
-      <view class="address-box">
-        <text class="address-title">{{orderType === 'booking' ? '已选联系地址' : '已选收货地址'}}</text>
-        <text class="address-text">{{addressText}}</text>
-      </view>
-      <view class="field">
-        <text class="field-label">订单备注</text>
-        <input class="field-input" placeholder="如宠物品种、用血血型、发票要求等" value="{{remark}}" bindinput="onRemarkInput" />
+
+      <view wx:if="{{orderType === 'booking'}}" class="booking-box">
+        <view class="row">
+          <text class="row-label">预约日期</text>
+          <picker mode="date" value="{{bookingDate}}" start="{{minBookingDate}}" bindchange="onBookingDateChange">
+            <view class="row-value">{{bookingDate}} 📅</view>
+          </picker>
+        </view>
+        <view class="row">
+          <text class="row-label">预约时间</text>
+          <input class="row-input" data-field="bookingLocation" value="{{bookingLocation}}" bindinput="onBookingInput" />
+        </view>
+        <view class="urgent-row">
+          <view>
+            <text class="urgent-title">加急配送</text>
+            <text class="urgent-desc">优先调配与配送，最快 1 小时送达</text>
+          </view>
+          <view class="switch-on"></view>
+        </view>
       </view>
     </view>
 
     <view class="card">
-      <text class="card-title">支付与规则</text>
+      <view class="row">
+        <text class="row-label">发票</text>
+        <text class="row-value">不开发票 ></text>
+      </view>
+      <view class="row">
+        <text class="row-label">优惠券</text>
+        <text class="row-value">已选 1 张，优惠 ¥20.00 ></text>
+      </view>
+      <view class="row">
+        <text class="row-label">运费</text>
+        <text class="row-value orange">¥0.00</text>
+      </view>
+      <view class="row">
+        <text class="row-label">订单备注</text>
+        <input class="remark-input" placeholder="选填，请先和商家协商一致" value="{{remark}}" bindinput="onRemarkInput" />
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">支付方式</view>
       <view class="pay-list">
         <view class="pay-item {{payMethod === 'wechat' ? 'active' : ''}}" data-method="wechat" bindtap="onPayMethodChange">
           <text>微信支付</text>
@@ -109,12 +96,11 @@
         </view>
         <view class="pay-item {{payMethod === 'wallet' ? 'active' : ''}}" data-method="wallet" bindtap="onPayMethodChange">
           <text>钱包余额</text>
-          <text>账户余额</text>
+          <text>可用余额</text>
         </view>
       </view>
       <view class="rule-box">
-        <text class="rule-title">售后规则</text>
-        <text class="rule-text">{{policyText}}</text>
+        <text>{{policyText}}</text>
       </view>
     </view>
   </view>
