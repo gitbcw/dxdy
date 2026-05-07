@@ -13,8 +13,8 @@
 
     <!-- 订单状态标签 -->
     <view class="status-bar">
-      <view class="status-tag {{order.status === 'shipped' ? 'tag-shipped' : 'tag-pending'}}">
-        <text>{{order.status === 'shipped' ? '已发货' : '待发货'}}</text>
+      <view class="status-tag {{order.status === 'shipped' ? 'tag-shipped' : order.status === 'preparing' ? 'tag-preparing' : 'tag-pending'}}">
+        <text>{{order.status === 'shipped' ? '已发货' : order.status === 'preparing' ? '备货中' : '待发货'}}</text>
       </view>
       <view class="status-tag {{order.type === 'exchange' ? 'tag-booking' : 'tag-normal'}}">
         <image wx:if="{{order.type === 'exchange'}}" src="{{iconRefresh}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
@@ -73,8 +73,11 @@
       </view>
     </view>
 
-    <!-- 底部按钮（待发货时显示） -->
-    <view wx:if="{{order.status === 'pending'}}" class="bottom-bar">
+    <!-- 底部按钮（待发货/备货中时显示） -->
+    <view wx:if="{{order.status === 'pending' || order.status === 'preparing'}}" class="bottom-bar">
+      <view wx:if="{{order.status === 'pending'}}" class="btn-scan" bindtap="onStartPreparing">
+        <text>开始备货</text>
+      </view>
       <view class="btn-scan" bindtap="onScanTap">
         <text>扫码</text>
       </view>

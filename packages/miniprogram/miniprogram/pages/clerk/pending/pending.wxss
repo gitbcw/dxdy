@@ -184,6 +184,10 @@
   font-weight: 900;
 }
 
+.status-preparing {
+  color: #3b82f6;
+}
+
 .hospital-row {
   display: flex;
   align-items: center;

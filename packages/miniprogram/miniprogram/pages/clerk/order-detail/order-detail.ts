@@ -1,5 +1,5 @@
 const icons = require('../../../services/icons')
-const { getClerkOrderById, clerkShipOrder } = require('../../../services/index')
+const { getClerkOrderById, clerkShipOrder, markOrderPreparing } = require('../../../services/index')
 
 Page({
   data: {
@@ -19,6 +19,19 @@ Page({
   async loadOrder(id: string) {
     const order = await getClerkOrderById(id)
     this.setData({ order })
+  },
+
+  async onStartPreparing() {
+    wx.showLoading({ title: '处理中...' })
+    try {
+      await markOrderPreparing(this.data.order.id)
+      wx.hideLoading()
+      wx.showToast({ title: '已开始备货', icon: 'success' })
+      this.loadOrder(this.data.order.id)
+    } catch (e: any) {
+      wx.hideLoading()
+      wx.showToast({ title: e?.message || '操作失败', icon: 'none' })
+    }
   },
 
   onInputExpress() {
@@ -46,9 +59,19 @@ Page({
         expressNo: this.data.expressNo,
       })
       wx.hideLoading()
-      wx.showToast({ title: '提交成功' })
-      this.setData({ showExpressPanel: false })
-      this.loadOrder(this.data.order.id)
+      const order = this.data.order
+      const shipping = order.shipping || {}
+      const address = shipping.address || order.shippingAddress || {}
+      const shipInfo = encodeURIComponent(JSON.stringify({
+        orderId: order.id,
+        orderNo: order.orderNo || order.id,
+        recipient: address.recipient || order.customerName || '',
+        phone: address.phone || order.customerPhone || '',
+        address: [address.province, address.city, address.district, address.detail].filter(Boolean).join('') || order.address || '',
+        expressCompany: this.data.selectedCompany,
+        expressNo: this.data.expressNo,
+      }))
+      wx.redirectTo({ url: `/pages/clerk/ship-success/ship-success?shipInfo=${shipInfo}` })
     } catch (e: any) {
       wx.hideLoading()
       wx.showToast({ title: e?.message || '提交失败', icon: 'none' })

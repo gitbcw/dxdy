@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- 成功图标区 -->
+  <view class="success-hero">
+    <view class="check-circle">
+      <text class="check-mark">✓</text>
+    </view>
+    <text class="success-title">发货成功</text>
+    <text class="order-no">订单号：{{orderNo}}</text>
+  </view>
+
+  <!-- 物流信息卡片 -->
+  <view class="info-card">
+    <view class="info-row">
+      <text class="info-label">收件人</text>
+      <text class="info-value">{{recipient}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">联系电话</text>
+      <text class="info-value">{{phone}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">收货地址</text>
+      <text class="info-value address">{{address}}</text>
+    </view>
+    <view class="divider"></view>
+    <view class="info-row">
+      <text class="info-label">物流公司</text>
+      <text class="info-value accent">{{expressCompany}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">物流单号</text>
+      <view class="express-no-wrap">
+        <text class="info-value mono">{{expressNo}}</text>
+        <view class="copy-btn" bindtap="onCopyExpressNo">
+          <text>复制</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-bar">
+    <view class="btn-primary" bindtap="onViewLogistics">
+      <text>查看物流</text>
+    </view>
+    <view class="btn-outline" bindtap="onBackHome">
+      <text>返回首页</text>
+    </view>
+  </view>
+</view>

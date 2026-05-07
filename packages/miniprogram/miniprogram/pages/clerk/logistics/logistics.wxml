@@ -1,0 +1,117 @@
+<view class="page">
+  <!-- 页面顶部 -->
+  <view class="page-header">
+    <view class="back-btn" bindtap="navigateBack">
+      <text class="back-arrow">‹</text>
+    </view>
+    <text class="header-title">物流详情</text>
+    <view class="header-placeholder"></view>
+  </view>
+
+  <!-- 物流状态卡 -->
+  <view class="status-card">
+    <view class="truck-icon">运</view>
+    <view class="status-main">
+      <text class="status-text">{{status}}</text>
+      <text class="status-desc">{{company}} {{trackingNo}}</text>
+    </view>
+  </view>
+
+  <!-- 收件信息 -->
+  <view class="info-card">
+    <view class="card-title">收件信息</view>
+    <view class="info-row">
+      <text class="info-label">收件人</text>
+      <text class="info-value">{{recipient}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">联系电话</text>
+      <text class="info-value">{{phone}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">收货地址</text>
+      <text class="info-value">{{address}}</text>
+    </view>
+  </view>
+
+  <!-- 物流信息 -->
+  <view class="info-card">
+    <view class="card-title">
+      <text>物流信息</text>
+      <view class="edit-btn" bindtap="onShowEdit">
+        <text>修改物流</text>
+      </view>
+    </view>
+    <view class="info-row">
+      <text class="info-label">快递公司</text>
+      <text class="info-value accent">{{company || '未录入'}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">物流单号</text>
+      <view class="express-no-wrap">
+        <text class="info-value mono">{{trackingNo || '未录入'}}</text>
+        <view wx:if="{{trackingNo}}" class="copy-btn" bindtap="onCopyTrackingNo">
+          <text>复制</text>
+        </view>
+      </view>
+    </view>
+    <view class="info-row">
+      <text class="info-label">发货时间</text>
+      <text class="info-value">{{shipTime || '待发货'}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">订单号</text>
+      <text class="info-value">{{orderNo}}</text>
+    </view>
+  </view>
+
+  <!-- 物流轨迹 -->
+  <view wx:if="{{tracks.length}}" class="info-card">
+    <view class="card-title">物流轨迹</view>
+    <view class="track-list">
+      <view wx:for="{{tracks}}" wx:key="title" class="track-item {{item.active ? 'active' : ''}}">
+        <view class="track-dot"></view>
+        <view class="track-line" wx:if="{{index < tracks.length - 1}}"></view>
+        <view class="track-content">
+          <text class="track-title">{{item.title}}</text>
+          <text class="track-time">{{item.time}}</text>
+          <text wx:if="{{item.desc}}" class="track-desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 修改物流面板 -->
+  <view wx:if="{{showEditPanel}}" class="edit-panel">
+    <view class="mask" bindtap="onClosePanel"></view>
+    <view class="panel-content">
+      <view class="panel-header">
+        <text class="panel-title">修改物流信息</text>
+        <view class="panel-close" bindtap="onClosePanel"><text>✕</text></view>
+      </view>
+      <view class="company-grid">
+        <view
+          wx:for="{{expressCompanies}}"
+          wx:key="index"
+          class="company-item {{selectedCompany === item ? 'company-selected' : ''}}"
+          data-company="{{item}}"
+          bindtap="onSelectCompany"
+        >
+          <text>{{item}}</text>
+        </view>
+      </view>
+      <view class="express-input-wrap">
+        <input
+          class="express-input"
+          type="text"
+          placeholder="请输入快递单号"
+          value="{{expressNo}}"
+          bindinput="onExpressNoInput"
+        />
+      </view>
+      <view class="btn-submit-panel" bindtap="onSubmitEdit">
+        <text>确认修改</text>
+      </view>
+    </view>
+  </view>
+</view>

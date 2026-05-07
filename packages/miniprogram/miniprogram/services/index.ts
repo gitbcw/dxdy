@@ -38,7 +38,7 @@ function mapClerkOrder(order: any) {
   return {
     ...order,
     rawStatus: order.status,
-    status: order.status === 'pending_receipt' ? 'shipped' : 'pending',
+    status: order.status === 'pending_receipt' ? 'shipped' : order.status === 'preparing' ? 'preparing' : 'pending',
     items,
     expressCompany: shipping.company || '',
     expressNo: shipping.trackingNo || '',
@@ -94,7 +94,7 @@ export function maskPhone(phone: string): string {
 
 export function getOrderStatusText(status: string): string {
   const map: Record<string, string> = {
-    pending_payment: '待付款', pending_shipment: '待发货', pending_receipt: '待收货',
+    pending_payment: '待付款', pending_shipment: '待发货', preparing: '备货中', pending_receipt: '待收货',
     completed: '已完成', cancelled: '已取消', pending_confirmation: '待确认',
     confirmed: '已确认', in_service: '服务中', pending_review: '待审核',
     approved: '已通过', rejected: '已驳回',
@@ -105,7 +105,7 @@ export function getOrderStatusText(status: string): string {
 export function getOrderStatusDesc(status: string): string {
   const map: Record<string, string> = {
     pending_payment: '订单等待买家付款', pending_shipment: '买家已付款，等待发货',
-    pending_receipt: '卖家已发货，等待确认收货', completed: '交易完成',
+    preparing: '制单员正在备货中', pending_receipt: '卖家已发货，等待确认收货', completed: '交易完成',
     cancelled: '订单已取消', pending_confirmation: '预约订单等待确认',
     confirmed: '预约已确认，等待服务', in_service: '服务进行中',
   }
@@ -340,7 +340,7 @@ export async function confirmBooking(orderId: string) {
 export async function getClerkOrders(options?: { status?: string }) {
   const cond: any = { clerkId: _.neq(null).and(_.neq('')) }
   if (options?.status === 'pending') {
-    cond.status = _.in(['pending_shipment', 'confirmed'])
+    cond.status = _.in(['pending_shipment', 'confirmed', 'preparing'])
   } else if (options?.status === 'shipped') {
     cond.status = 'pending_receipt'
   }
@@ -363,6 +363,14 @@ export async function clerkShipOrder(params: { orderId: string; expressCompany: 
     throw new Error(result?.error || '物流提交失败')
   }
   return result
+}
+
+export async function markOrderPreparing(orderId: string) {
+  const now = formatDateTime(new Date())
+  await db.collection('orders').doc(orderId).update({
+    data: { status: 'preparing', updatedAt: now },
+  })
+  return getOrderById(orderId)
 }
 
 // ===== 退换货服务 =====

@@ -1,11 +1,10 @@
 <view class="page">
-  <view class="notify-card">
+  <view wx:if="{{orders.length > 0}}" class="notify-card">
     <view class="bell">铃</view>
     <view class="notify-main">
-      <text class="notify-title">新任务指派</text>
-      <text class="notify-desc">客服已为您指派新订单，请及时处理。</text>
+      <text class="notify-title">待处理订单</text>
+      <text class="notify-desc">您有 {{pendingCount}} 个待处理订单，请及时处理。</text>
     </view>
-    <text class="notify-time">1 分钟前</text>
   </view>
 
   <view class="summary-grid">
@@ -24,8 +23,7 @@
   <view class="tabs">
     <text class="tab active">全部 {{pendingCount}}</text>
     <text class="tab urgent">紧急 {{urgentCount}}</text>
-    <text class="tab">今日预约 5</text>
-    <text class="tab">待发货 9</text>
+    <text class="tab">备货中 {{preparingCount}}</text>
   </view>
 
   <view wx:if="{{isEmpty}}" class="empty-state">
@@ -40,7 +38,7 @@
           <text class="badge {{item.type === 'exchange' ? 'exchange' : ''}}">{{item.badgeText}}</text>
           <text class="order-no">{{item.orderNo}}</text>
         </view>
-        <text class="status">待发货</text>
+        <text class="status {{item.status === 'preparing' ? 'status-preparing' : ''}}">{{item.statusText}}</text>
       </view>
 
       <view class="hospital-row">
@@ -48,7 +46,7 @@
         <text class="hospital">{{item.customerName}}</text>
       </view>
       <text class="address">{{item.address}}</text>
-      <text class="booking-time">预约时间　2024-05-20 14:00</text>
+      <text wx:if="{{item.bookingTime}}" class="booking-time">预约时间　{{item.bookingTime}}</text>
 
       <view wx:for="{{item.items}}" wx:for-item="prod" wx:key="name" class="product-row">
         <view class="product-img">{{item.type === 'exchange' ? '换' : '血'}}</view>

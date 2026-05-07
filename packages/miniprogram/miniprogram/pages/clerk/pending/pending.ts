@@ -7,6 +7,7 @@ Page({
     isEmpty: false,
     pendingCount: 0,
     urgentCount: 0,
+    preparingCount: 0,
     summaryCards: [] as any[],
     iconClock: icons.clock,
     iconExchange: icons.refresh,
@@ -20,10 +21,12 @@ Page({
     const orders = await getClerkOrders({ status: 'pending' })
     const mappedOrders = orders.map((order: any, index: number) => ({
       ...order,
-      statusText: getOrderStatusText(order.status),
-      badgeText: order.type === 'exchange' ? '换货优先' : index === 0 ? '当前最急' : '待发货',
+      statusText: getOrderStatusText(order.rawStatus),
+      badgeText: order.type === 'exchange' ? '换货优先' : order.status === 'preparing' ? '备货中' : index === 0 ? '当前最急' : '待发货',
       helperText: order.type === 'exchange'
         ? '关联原订单，优先补发避免客户等待'
+        : order.status === 'preparing'
+        ? '正在备货，完成后请录入物流发货'
         : '录入物流后客户可立即看到配送状态',
     }))
 
@@ -32,10 +35,11 @@ Page({
       isEmpty: mappedOrders.length === 0,
       pendingCount: mappedOrders.length,
       urgentCount: mappedOrders.filter((item: any) => item.type === 'exchange').length,
+      preparingCount: mappedOrders.filter((item: any) => item.status === 'preparing').length,
       summaryCards: [
         { value: String(mappedOrders.length), label: '待发货' },
         { value: String(mappedOrders.filter((item: any) => item.type === 'exchange').length), label: '换货单' },
-        { value: '实时', label: '物流同步' },
+        { value: String(mappedOrders.filter((item: any) => item.status === 'preparing').length), label: '备货中' },
       ],
     })
   },

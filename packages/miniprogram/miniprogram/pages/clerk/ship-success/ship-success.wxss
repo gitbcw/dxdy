@@ -1,0 +1,174 @@
+/* ship-success.wxss - 制单员发货成功页 */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ============ 成功图标区 ============ */
+.success-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 120rpx;
+  margin-bottom: 48rpx;
+}
+
+.check-circle {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 50%;
+  background: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16rpx 40rpx rgba(22, 163, 74, 0.25);
+}
+
+.check-mark {
+  font-size: 72rpx;
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.success-title {
+  margin-top: 28rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.order-no {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
+/* ============ 信息卡片 ============ */
+.info-card {
+  width: calc(100% - 64rpx);
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 28rpx 32rpx;
+  box-shadow: var(--shadow-sm);
+  border: 1rpx solid var(--border-color);
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16rpx 0;
+}
+
+.info-row:not(:last-child) {
+  border-bottom: 1rpx solid var(--divider-color);
+}
+
+.info-label {
+  font-size: 26rpx;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: right;
+  flex: 1;
+  margin-left: 24rpx;
+}
+
+.info-value.accent {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.info-value.address {
+  line-height: 1.5;
+}
+
+.info-value.mono {
+  font-family: monospace;
+  letter-spacing: 1rpx;
+}
+
+.divider {
+  height: 1rpx;
+  background: var(--border-color);
+  margin: 8rpx 0;
+}
+
+/* 快递单号复制 */
+.express-no-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  justify-content: flex-end;
+  margin-left: 24rpx;
+}
+
+.copy-btn {
+  padding: 6rpx 18rpx;
+  border-radius: var(--radius-sm);
+  background: var(--bg-section);
+  border: 1rpx solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.copy-btn text {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+}
+
+/* ============ 操作按钮 ============ */
+.action-bar {
+  width: calc(100% - 64rpx);
+  margin-top: 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.btn-primary {
+  width: 100%;
+  height: 88rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 700;
+  box-shadow: 0 8rpx 24rpx rgba(255, 106, 0, 0.25);
+}
+
+.btn-primary:active {
+  opacity: 0.85;
+  transform: scale(0.99);
+}
+
+.btn-outline {
+  width: 100%;
+  height: 88rpx;
+  border-radius: 44rpx;
+  border: 2rpx solid var(--color-accent);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.btn-outline:active {
+  background: var(--color-accent-soft);
+}

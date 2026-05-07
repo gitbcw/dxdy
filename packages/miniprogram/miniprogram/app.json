@@ -26,6 +26,8 @@
     "pages/clerk/pending/pending",
     "pages/clerk/orders/orders",
     "pages/clerk/order-detail/order-detail",
+    "pages/clerk/ship-success/ship-success",
+    "pages/clerk/logistics/logistics",
     "pages/verify/verify",
     "pages/product-detail/product-detail",
     "pages/mine/address/address",
