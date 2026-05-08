@@ -7,10 +7,22 @@
 
 .profile-card,
 .qrcode-card,
-.link-card {
+.link-card,
+.visual-card {
   border-radius: 18rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
+}
+
+.visual-card {
+  height: 220rpx;
+  margin-bottom: 18rpx;
+  overflow: hidden;
+}
+
+.visual-card image {
+  width: 100%;
+  height: 100%;
 }
 
 .profile-card {

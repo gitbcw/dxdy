@@ -8,14 +8,17 @@ const db = wx.cloud.database()
 const _ = db.command
 
 const CLOUD_STORAGE_PREFIX = 'cloud://cloudbase-d4gwpsm7gcc59b6fc.636c-cloudbase-d4gwpsm7gcc59b6fc-1428922768/dxdy/generated-ui'
+const CLOUD_STORAGE_V2_PREFIX = `${CLOUD_STORAGE_PREFIX}/v2`
 
 export const GENERATED_ASSETS = {
-  loginHero: `${CLOUD_STORAGE_PREFIX}/login-vet-hero.webp`,
-  homeBanner: `${CLOUD_STORAGE_PREFIX}/home-vet-banner.webp`,
+  loginHero: `${CLOUD_STORAGE_V2_PREFIX}/login-vet-hero-v2.jpg`,
+  homeBanner: `${CLOUD_STORAGE_V2_PREFIX}/home-vet-banner-v2.jpg`,
   bloodBag: `${CLOUD_STORAGE_PREFIX}/product-blood-bag.webp`,
   vaccineKit: `${CLOUD_STORAGE_PREFIX}/product-vaccine-kit.webp`,
   testCard: `${CLOUD_STORAGE_PREFIX}/product-test-card.webp`,
-  coldChain: `${CLOUD_STORAGE_PREFIX}/cold-chain-logistics.webp`,
+  coldChain: `${CLOUD_STORAGE_V2_PREFIX}/cold-chain-logistics-v2.jpg`,
+  testTraceability: `${CLOUD_STORAGE_V2_PREFIX}/test-traceability-v2.jpg`,
+  agentPromotion: `${CLOUD_STORAGE_V2_PREFIX}/agent-promotion-v2.jpg`,
 }
 
 // ===== Helpers =====

@@ -1,13 +1,17 @@
 <view class="page">
   <view class="brand-hero">
     <view class="brand-row">
-      <view class="logo-mark">DX</view>
+      <view class="logo-mark">
+        <image class="logo-icon" src="{{logoIcon}}" mode="aspectFit" />
+      </view>
       <view>
         <text class="brand-name">大熊动医</text>
         <text class="brand-sub">DaXiong Vet</text>
       </view>
     </view>
-    <image class="hero-image" src="{{loginHeroImage}}" mode="aspectFill" />
+    <view class="hero-visual">
+      <image class="hero-image" src="{{loginHeroImage}}" mode="widthFix" />
+    </view>
   </view>
 
   <view class="form dx-card">
@@ -51,8 +55,11 @@
     <image class="wechat-login" src="{{wechatIcon}}" mode="aspectFit" />
 
     <view class="demo-box">
-      <text class="demo-title">预置账号</text>
-      <view class="demo-list">
+      <view class="demo-head" bindtap="toggleDemoAccounts">
+        <text class="demo-title">演示账号</text>
+        <text class="demo-toggle">{{showDemoAccounts ? '收起' : '展开'}}</text>
+      </view>
+      <view wx:if="{{showDemoAccounts}}" class="demo-list">
         <view wx:for="{{demoAccounts}}" wx:key="phone" class="demo-item" data-phone="{{item.phone}}" bindtap="useDemoAccount">
           <text class="demo-label">{{item.label}}</text>
           <text class="demo-phone">{{item.phone}}</text>

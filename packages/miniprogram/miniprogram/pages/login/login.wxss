@@ -1,13 +1,12 @@
 .page {
   min-height: 100vh;
-  padding: 72rpx 40rpx 48rpx;
+  padding: 64rpx 40rpx 48rpx;
   background: linear-gradient(180deg, #f7fbf8 0%, #f6f7f6 100%);
   box-sizing: border-box;
 }
 
 .brand-hero {
   position: relative;
-  min-height: 280rpx;
 }
 
 .brand-row {
@@ -20,13 +19,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 62rpx;
-  height: 62rpx;
+  width: 66rpx;
+  height: 66rpx;
+  border: 1rpx solid rgba(22, 163, 74, 0.22);
   border-radius: 18rpx;
-  color: #ffffff;
-  font-size: 22rpx;
-  font-weight: 900;
-  background: #18a34a;
+  background: #e7f7ec;
+}
+
+.logo-icon {
+  width: 42rpx;
+  height: 42rpx;
 }
 
 .brand-name {
@@ -44,17 +46,22 @@
   font-weight: 700;
 }
 
-.hero-image {
-  position: absolute;
-  right: 14rpx;
-  bottom: 12rpx;
-  width: 300rpx;
-  height: 220rpx;
-  border-radius: 34rpx;
+.hero-visual {
+  position: relative;
+  margin-top: 28rpx;
+  height: 286rpx;
+  border-radius: 28rpx;
+  background: #edf7f0;
   box-shadow: 0 14rpx 34rpx rgba(23, 48, 32, 0.10);
+  overflow: hidden;
+}
+
+.hero-image {
+  width: 100%;
 }
 
 .form {
+  margin-top: 28rpx;
   padding: 32rpx;
   border-radius: 28rpx;
 }
@@ -209,11 +216,22 @@
   border-top: 1rpx solid #edf1ee;
 }
 
+.demo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .demo-title {
   display: block;
-  margin-bottom: 18rpx;
   color: #16251e;
   font-size: 24rpx;
+  font-weight: 800;
+}
+
+.demo-toggle {
+  color: #149447;
+  font-size: 22rpx;
   font-weight: 800;
 }
 
@@ -221,6 +239,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14rpx;
+  margin-top: 18rpx;
 }
 
 .demo-item {

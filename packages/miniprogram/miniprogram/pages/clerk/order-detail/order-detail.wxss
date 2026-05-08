@@ -7,7 +7,7 @@
 
 /* ============ 页面顶部导航 ============ */
 .page-header {
-  background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
+  background: #ffffff;
   padding: 32rpx;
   padding-top: calc(32rpx + env(safe-area-inset-top));
   display: flex;
@@ -28,7 +28,7 @@
 
 .back-arrow {
   font-size: 48rpx;
-  color: #FFFFFF;
+  color: var(--text-primary);
   font-weight: 300;
   line-height: 1;
 }
@@ -36,8 +36,8 @@
 .header-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #FFFFFF;
-  letter-spacing: 2rpx;
+  color: var(--text-primary);
+  letter-spacing: 0;
 }
 
 .header-placeholder {
@@ -49,9 +49,12 @@
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: 24rpx 32rpx;
-  background: var(--bg-card);
-  border-bottom: 1rpx solid var(--border-color);
+  margin: 20rpx 20rpx 0;
+  padding: 20rpx 22rpx;
+  background: #ffffff;
+  border: 1rpx solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .status-tag {
@@ -65,8 +68,8 @@
 }
 
 .tag-pending {
-  background: rgba(212, 168, 83, 0.15);
-  color: #D4A853;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .tag-preparing {
@@ -75,12 +78,12 @@
 }
 
 .tag-shipped {
-  background: rgba(10, 110, 124, 0.12);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
 .tag-normal {
-  background: rgba(10, 110, 124, 0.12);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
@@ -234,7 +237,7 @@
 .total-value {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 /* ============ 底部按钮 ============ */
@@ -257,7 +260,7 @@
   flex: 1;
   height: 88rpx;
   border: 2rpx solid var(--color-primary);
-  border-radius: 44rpx;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,8 +272,8 @@
 .btn-submit {
   flex: 1;
   height: 88rpx;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #0D8A9A 100%);
-  border-radius: 44rpx;
+  background: linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%);
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -477,14 +480,14 @@
 /* 提交按钮 */
 .btn-submit-panel {
   width: 100%;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #0D8A9A 100%);
+  background: linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%);
   color: #FFFFFF;
   font-size: 32rpx;
   font-weight: 700;
   text-align: center;
   padding: 24rpx 0;
   border-radius: var(--radius-xl);
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 
 .btn-submit-panel:active {

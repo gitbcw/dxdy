@@ -1,7 +1,7 @@
 <view class="page">
   <view class="scan-card">
-    <view class="scan-icon">扫</view>
-    <view>
+    <image class="scan-hero" src="{{traceabilityImage}}" mode="aspectFill" />
+    <view class="scan-copy">
       <text class="scan-title">扫描血包标签二维码</text>
       <text class="scan-desc">快速查询血包检验与运输信息</text>
     </view>

@@ -118,11 +118,23 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 | `test_reports` | 已创建，已配索引和安全规则 |
 
 **环境**：`cloudbase-d4gwpsm7gcc59b6fc`（上海，个人版）
-**MCP 注意**：全局 MCP 可能指向测试环境，项目操作应使用项目 `.mcp.json` 绑定的环境。
+**MCP 注意**：全局 MCP 可能指向测试环境，项目操作应使用项目 `.mcp.json` 绑定的环境。连接方式详见 `docs/CLOUDBASE_MCP.md`。
 
 ---
 
 ## 3. 下一步：P1
+
+### P1-0：Computer Use 视觉走查（2026-05-08）
+
+记录文档：`docs/superpowers/specs/2026-05-08-miniprogram-computer-use-visual-walkthrough.md`
+
+首轮显著问题：
+
+- 登录页新 hero 资产裁切过狠，品牌主体露出不足。
+- 制单员首页出现 `undefined 等待发货`。
+- 制单员首页无障碍树中出现客户购物浮层语义。
+- DevTools Console 有 `Error: timeout`、`returns` 全表扫描告警、`orders(customerId, createdAt)` 组合索引建议。
+- 登录页仍有 `DX` 文本 logo 和外露预置账号区，需在上线前弱化/隐藏。
 
 ### P1-1：上线前安全与运维收口（建议最先做）
 
@@ -172,6 +184,7 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 | 文档 | 内容 | 何时查阅 |
 |------|------|----------|
 | `CLAUDE.md`（项目根目录） | 项目结构、常用命令、架构决策、开发注意事项 | 每次开发前必读 |
+| `CLOUDBASE_MCP.md` | 项目级 CloudBase MCP 与全局 MCP 的区别、正确验证方式、当前环境确认结果 | 每次做云端操作前先确认 |
 | `specs/2026-05-07-dxdy-new-prd-gap-analysis.md` | 新 PRD 与当前系统的完整差异分析，P0-P3 优先级定义 | 需要了解"最终要做成什么样"时 |
 | `specs/2026-05-07-cloudbase-collections-security-baseline.md` | 数据库集合清单、索引、安全规则基线 | 涉及数据库结构或安全规则时 |
 | `specs/2026-05-07-dxdy-design-image-index.md` + `assets/dxdy-design/*.png` | 6 张设计图索引（客户 3 / 代理商 2 / 制单员 1） | 需要对照设计图时 |

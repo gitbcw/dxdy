@@ -7,10 +7,54 @@
 
 .hero-card,
 .card,
-.conclusion {
+.conclusion,
+.report-visual {
   border-radius: 16rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+}
+
+.report-visual {
+  position: relative;
+  min-height: 204rpx;
+  margin-bottom: 18rpx;
+  overflow: hidden;
+}
+
+.report-visual image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.report-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(238, 250, 242, 0.98) 0%, rgba(238, 250, 242, 0.78) 44%, rgba(238, 250, 242, 0.08) 100%);
+}
+
+.report-visual-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 390rpx;
+  padding: 30rpx;
+}
+
+.report-visual-copy text:first-child {
+  display: block;
+  color: #147d3a;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.report-visual-copy text:last-child {
+  display: block;
+  margin-top: 10rpx;
+  color: #52735c;
+  font-size: 23rpx;
+  line-height: 1.5;
 }
 
 .hero-card {

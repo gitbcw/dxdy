@@ -1,4 +1,4 @@
-const { formatMoney } = require('../../services/index')
+const { formatMoney, getProductVisualImage } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 
 const CART_KEY = 'cart_items'
@@ -69,6 +69,7 @@ Page({
           lineTotal: formatMoney(price * item.quantity),
           unitPrice: price,
           specText: item.specs?.[0]?.value || '标准规格',
+          imageUrl: item.imageUrl || item.productImage || getProductVisualImage(item),
           bgColor: item.bgColor || colors[idx % colors.length]
         }
       }),

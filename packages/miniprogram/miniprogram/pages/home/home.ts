@@ -1,7 +1,6 @@
 const {
   getProducts,
   getOrders,
-  getReturns,
   getClerkOrders,
   getCommissionSummary,
   formatMoney,
@@ -51,6 +50,10 @@ function toProductBoardItem(product: any) {
   }
 }
 
+function getDisplayOrderNo(order: any) {
+  return order?.orderNo || order?.id || '未编号订单'
+}
+
 Page({
   data: {
     displayName: '未登录客户',
@@ -69,6 +72,10 @@ Page({
     actionSheetVisible: false,
     actionSheetProduct: {} as any,
     homeBannerImage: GENERATED_ASSETS.homeBanner,
+    heroTitlePrimary: '专业动医产品',
+    heroTitleSecondary: '守护动物健康',
+    heroPill: '品质 · 专业 · 安心',
+    heroClass: 'default',
   },
 
   _rawProducts: [] as any[],
@@ -90,10 +97,9 @@ Page({
     const isInstitution = currentRole === 'customer_institution' || user?.customerType === 'institution'
     const visibility = isInstitution ? 'institution' : 'personal'
 
-    const [products, customerOrders, allReturns, clerkPending, clerkShipped, commission] = await Promise.all([
+    const [products, customerOrders, clerkPending, clerkShipped, commission] = await Promise.all([
       getProducts({ visibility }),
       user?.role === 'customer' ? getOrders({ customerId: user.id }) : Promise.resolve([]),
-      getReturns(),
       getClerkOrders ? getClerkOrders({ status: 'pending' }) : Promise.resolve([]),
       getClerkOrders ? getClerkOrders({ status: 'shipped' }) : Promise.resolve([]),
       getCommissionSummary ? getCommissionSummary() : Promise.resolve(null),
@@ -106,7 +112,6 @@ Page({
       products,
       customerOrders,
       pendingOrders,
-      allReturns,
       clerkPending,
       clerkShipped,
       commission,
@@ -116,6 +121,11 @@ Page({
       currentRole,
       isInstitution,
       banner: null,
+      homeBannerImage: GENERATED_ASSETS.homeBanner,
+      heroTitlePrimary: '专业动医产品',
+      heroTitleSecondary: '守护动物健康',
+      heroPill: '品质 · 专业 · 安心',
+      heroClass: 'default',
       ...dashboard,
       quickActions: withIcon(dashboard.quickActions || []),
       searchIcon: icons.search,
@@ -231,6 +241,11 @@ Page({
         displayName: name,
         identityTag: '代理商',
         identityTagClass: 'staff',
+        homeBannerImage: GENERATED_ASSETS.agentPromotion,
+        heroTitlePrimary: '推广获客工作台',
+        heroTitleSecondary: '提成清晰可追踪',
+        heroPill: '客户 · 订单 · 提成',
+        heroClass: 'salesperson',
         taskCards: [
           {
             badge: '推广',
@@ -270,10 +285,15 @@ Page({
         displayName: name,
         identityTag: '制单员',
         identityTagClass: 'staff',
+        homeBannerImage: GENERATED_ASSETS.coldChain,
+        heroTitlePrimary: '履约制单中心',
+        heroTitleSecondary: '发货任务清晰处理',
+        heroPill: '待办 · 发货 · 物流',
+        heroClass: 'clerk',
         taskCards: [
           {
             badge: '优先',
-            title: urgentOrders[0] ? `${urgentOrders[0].orderNo} 等待发货` : '暂无待发货任务',
+            title: urgentOrders[0] ? `${getDisplayOrderNo(urgentOrders[0])} 等待发货` : '暂无待发货任务',
             desc: urgentOrders[0] ? `${urgentOrders[0].customerName} · ${urgentOrders[0].items[0]?.name || '订单商品'}` : '',
             meta: urgentOrders[0] ? `${urgentOrders[0].type === 'exchange' ? '换货单' : '普通单'} · ${urgentOrders[0].address}` : '',
             action: 'clerkPending',
@@ -298,7 +318,7 @@ Page({
           id: order.id,
           type: 'action',
           badge: order.type === 'exchange' ? '换货单' : '普通单',
-          title: order.orderNo,
+          title: getDisplayOrderNo(order),
           desc: `${order.customerName} · ${order.items[0]?.name || '订单商品'}`,
           meta: order.address,
           action: 'clerkPending',
@@ -420,7 +440,7 @@ Page({
   onBoardCartTap(e: any) {
     const idx = e.currentTarget.dataset.idx
     const item = this.data.boardItems[idx]
-    if (!item) return
+    if (!item || item.type !== 'product') return
 
     const rawProduct = this._rawProducts.find((p: any) => p.id === item.id)
     if (!rawProduct) return

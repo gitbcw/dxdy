@@ -9,23 +9,22 @@
 
 /* ============ 顶部导航 ============ */
 .cart-header {
-  background: var(--bg-card);
-  padding: 32rpx 32rpx 24rpx;
+  background: transparent;
+  padding: 30rpx 24rpx 18rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1rpx solid var(--border-color);
 }
 
 .cart-title {
   font-size: 36rpx;
-  font-weight: 600;
+  font-weight: 900;
   color: var(--text-primary);
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
 }
 
 .cart-count {
@@ -55,7 +54,7 @@
 
 .cart-item {
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: 18rpx;
   padding: 20rpx;
   margin-bottom: 16rpx;
   display: flex;
@@ -114,6 +113,11 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.item-product-image {
+  width: 100%;
+  height: 100%;
 }
 
 .item-spec {
@@ -280,20 +284,19 @@
 }
 
 .settlement-btn {
-  background: var(--color-primary);
+  background: linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%);
   color: var(--text-inverse);
   padding: 24rpx 56rpx;
   border-radius: var(--radius-md);
   font-size: 30rpx;
   font-weight: 600;
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
   box-shadow: var(--shadow-md);
   transition: all 0.2s ease;
 }
 
 .settlement-btn:active {
   transform: scale(0.97);
-  background: var(--color-primary-dark);
 }
 
 /* ============ 空购物车 ============ */
@@ -335,20 +338,19 @@
 }
 
 .shop-btn {
-  background: var(--color-primary);
+  background: linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%);
   color: var(--text-inverse);
   padding: 24rpx 64rpx;
   border-radius: var(--radius-md);
   font-size: 30rpx;
   font-weight: 600;
-  letter-spacing: 2rpx;
+  letter-spacing: 0;
   box-shadow: var(--shadow-md);
   transition: all 0.2s ease;
 }
 
 .shop-btn:active {
   transform: scale(0.97);
-  background: var(--color-primary-dark);
 }
 
 /* ============ 动画 ============ */

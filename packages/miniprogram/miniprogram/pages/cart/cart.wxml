@@ -26,7 +26,8 @@
       class="cart-item"
     >
       <view class="item-image">
-        <view class="image-placeholder">
+        <image wx:if="{{item.imageUrl}}" class="item-product-image" src="{{item.imageUrl}}" mode="aspectFit" />
+        <view wx:else class="image-placeholder">
           <view class="placeholder-hexagon"></view>
         </view>
       </view>

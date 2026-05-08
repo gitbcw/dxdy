@@ -1,4 +1,8 @@
 <view class="page">
+  <view class="visual-card">
+    <image src="{{promotionImage}}" mode="aspectFill" />
+  </view>
+
   <view class="profile-card">
     <view class="avatar">代</view>
     <view class="profile-main">

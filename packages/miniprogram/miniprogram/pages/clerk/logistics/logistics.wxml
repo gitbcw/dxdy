@@ -10,7 +10,7 @@
 
   <!-- 物流状态卡 -->
   <view class="status-card">
-    <image class="truck-icon" src="{{coldChainImage}}" mode="aspectFill" />
+    <image class="status-bg" src="{{coldChainImage}}" mode="aspectFill" />
     <view class="status-main">
       <text class="status-text">{{status}}</text>
       <text class="status-desc">{{company}} {{trackingNo}}</text>

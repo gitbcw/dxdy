@@ -92,7 +92,7 @@ packages/
 - **环境 ID**：`cloudbase-d4gwpsm7gcc59b6fc`（上海，个人版）
 - **小程序 appid**：`wxa418af3099ad148c`
 - **主要集合**：users, products, categories, orders, returns, invoices, test_reports, commission_records, withdrawals, notifications, config
-- **CloudBase MCP**：切换项目后确认环境绑定正确（`auth action=status`）
+- **CloudBase MCP**：必须按项目 `.mcp.json` 启动/验证，避免误用全局 MCP 自动绑定的测试环境。详见 `docs/CLOUDBASE_MCP.md`
 
 ## 开发注意事项
 

@@ -1,32 +1,25 @@
 <view class="commission-page">
-  <!-- 页面顶部：标题 -->
   <view class="page-header">
-    <text class="page-title">我的佣金</text>
+    <text class="page-title">提成中心</text>
+    <text class="page-subtitle">查看订单提成、冻结金额和可提现余额</text>
   </view>
 
-  <!-- 核心数字卡片 -->
-  <view class="main-card">
-    <view class="main-card-inner">
-      <text class="withdrawable-amount">¥{{summary.withdrawable}}</text>
-      <text class="withdrawable-label">可提现</text>
+  <view class="summary-grid">
+    <view class="summary-card green">
+      <text class="summary-label">累计提成</text>
+      <text class="summary-value">¥{{summary.total}}</text>
     </view>
-  </view>
-
-  <!-- 三列统计卡片 -->
-  <view class="stat-row">
-    <view class="stat-item">
-      <text class="stat-value">¥{{summary.total}}</text>
-      <text class="stat-label">累计佣金</text>
+    <view class="summary-card blue">
+      <text class="summary-label">冻结中</text>
+      <text class="summary-value">¥{{summary.pending}}</text>
     </view>
-    <view class="stat-divider"></view>
-    <view class="stat-item">
-      <text class="stat-value">¥{{summary.withdrawn}}</text>
-      <text class="stat-label">已提现</text>
+    <view class="summary-card orange">
+      <text class="summary-label">可提现</text>
+      <text class="summary-value">¥{{summary.withdrawable}}</text>
     </view>
-    <view class="stat-divider"></view>
-    <view class="stat-item">
-      <text class="stat-value">¥{{summary.pending}}</text>
-      <text class="stat-label">待抵扣</text>
+    <view class="summary-card">
+      <text class="summary-label">已提现</text>
+      <text class="summary-value">¥{{summary.withdrawn}}</text>
     </view>
   </view>
 
@@ -50,7 +43,6 @@
     </view>
   </view>
 
-  <!-- 底部申请提现按钮 -->
   <view class="btn-wrap">
     <button
       class="btn-withdraw {{canWithdraw ? '' : 'btn-disabled'}}"

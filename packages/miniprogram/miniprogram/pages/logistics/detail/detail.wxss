@@ -14,30 +14,39 @@
 }
 
 .status-card {
-  display: flex;
-  gap: 18rpx;
-  padding: 24rpx;
+  position: relative;
+  min-height: 210rpx;
+  padding: 32rpx;
   background: #ecf8ef;
+  overflow: hidden;
 }
 
 .status-main {
+  position: relative;
+  z-index: 1;
+  max-width: 390rpx;
   flex: 1;
   min-width: 0;
 }
 
-.truck {
-  width: 74rpx;
-  height: 74rpx;
-  border-radius: 18rpx;
-  background: #ffffff;
-  overflow: hidden;
-  flex-shrink: 0;
+.status-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.status-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(236, 248, 239, 0.98) 0%, rgba(236, 248, 239, 0.80) 44%, rgba(236, 248, 239, 0.06) 100%);
 }
 
 .status {
   display: block;
   color: #18a44a;
-  font-size: 31rpx;
+  font-size: 40rpx;
   font-weight: 900;
 }
 
@@ -77,22 +86,35 @@
 
 .track {
   position: relative;
-  padding: 18rpx 0 22rpx 42rpx;
+  padding: 18rpx 0 22rpx 48rpx;
 }
 
 .track::before {
   content: '';
   position: absolute;
-  left: 6rpx;
+  z-index: 1;
+  left: 4rpx;
   top: 28rpx;
-  width: 16rpx;
-  height: 16rpx;
+  width: 20rpx;
+  height: 20rpx;
+  border: 4rpx solid #ffffff;
   border-radius: 50%;
   background: #cfd7d2;
+  box-shadow: 0 0 0 1rpx #cfd7d2;
 }
 
 .track.active::before {
   background: #18a44a;
+  box-shadow: 0 0 0 1rpx #18a44a;
+}
+
+.track-line {
+  position: absolute;
+  left: 15rpx;
+  top: 52rpx;
+  bottom: -20rpx;
+  width: 2rpx;
+  background: #dfe7e2;
 }
 
 .track-title {

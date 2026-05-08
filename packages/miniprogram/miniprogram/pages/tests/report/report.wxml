@@ -1,6 +1,14 @@
 <view class="page">
   <view wx:if="{{isEmpty}}" class="empty">未找到检测报告</view>
   <block wx:else>
+    <view class="report-visual">
+      <image src="{{traceabilityImage}}" mode="aspectFill" />
+      <view class="report-visual-copy">
+        <text>检测报告详情</text>
+        <text>血包检验、储存与运输信息可追溯</text>
+      </view>
+    </view>
+
     <view class="hero-card">
       <image class="bag" src="{{testIcon}}" mode="aspectFit" />
       <view class="meta">

@@ -1,4 +1,4 @@
-const { getTestReportByCode, formatDateTime } = require('../../../services/index')
+const { GENERATED_ASSETS, getTestReportByCode, formatDateTime } = require('../../../services/index')
 
 const HISTORY_KEY = 'test_report_query_history'
 
@@ -25,6 +25,7 @@ Page({
     code: '',
     history: [] as any[],
     querying: false,
+    traceabilityImage: GENERATED_ASSETS.testTraceability,
   },
 
   onShow() {

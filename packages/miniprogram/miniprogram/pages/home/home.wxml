@@ -20,12 +20,12 @@
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
   </view>
 
-  <view class="hero-card">
+  <view class="hero-card {{heroClass}}">
     <image class="hero-bg-image" src="{{homeBannerImage}}" mode="aspectFill" />
     <view class="hero-copy">
-      <text class="hero-title">专业动医产品</text>
-      <text class="hero-title">守护动物健康</text>
-      <text class="hero-pill">品质 · 专业 · 安心</text>
+      <text class="hero-title">{{heroTitlePrimary}}</text>
+      <text class="hero-title">{{heroTitleSecondary}}</text>
+      <text class="hero-pill">{{heroPill}}</text>
     </view>
   </view>
 
@@ -86,7 +86,7 @@
         bindtap="onBoardItemTap"
       >
         <view class="product-img">
-          <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFit" />
+          <image wx:if="{{item.imageUrl}}" class="product-card-image" src="{{item.imageUrl}}" mode="aspectFit" />
           <text wx:else>{{item.badge}}</text>
         </view>
         <text class="product-name">{{item.title}}</text>
@@ -101,6 +101,7 @@
   </view>
 
   <product-action-sheet
+    wx:if="{{actionSheetVisible}}"
     visible="{{actionSheetVisible}}"
     product="{{actionSheetProduct}}"
     isInstitution="{{isInstitution}}"

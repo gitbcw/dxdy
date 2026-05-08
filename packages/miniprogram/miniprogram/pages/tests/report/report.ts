@@ -1,4 +1,4 @@
-const { getTestReportByCode } = require('../../../services/index')
+const { GENERATED_ASSETS, getTestReportByCode } = require('../../../services/index')
 const icons = require('../../../services/icons')
 
 function mapItems(items: any[]) {
@@ -27,6 +27,7 @@ Page({
     reportFileID: '',
     isEmpty: false,
     testIcon: icons.test,
+    traceabilityImage: GENERATED_ASSETS.testTraceability,
   },
 
   onLoad(options: any) {

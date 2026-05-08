@@ -2,7 +2,7 @@
   <view wx:if="{{isEmpty}}" class="empty">暂无物流信息</view>
   <block wx:else>
     <view class="status-card">
-      <image class="truck" src="{{coldChainImage}}" mode="aspectFill" />
+      <image class="status-bg" src="{{coldChainImage}}" mode="aspectFill" />
       <view class="status-main">
         <text class="status">{{status}}</text>
         <text class="desc">{{desc}}</text>
@@ -20,6 +20,7 @@
 
     <view class="track-card">
       <view wx:for="{{tracks}}" wx:key="title" class="track {{item.active ? 'active' : ''}}">
+        <view class="track-line" wx:if="{{index < tracks.length - 1}}"></view>
         <text class="track-title">{{item.title}}</text>
         <text class="track-time">{{item.time}}</text>
         <text wx:if="{{item.desc}}" class="track-desc">{{item.desc}}</text>

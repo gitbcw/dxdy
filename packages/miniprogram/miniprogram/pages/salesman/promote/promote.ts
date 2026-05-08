@@ -1,3 +1,4 @@
+const { GENERATED_ASSETS } = require('../../../services/index')
 const icons = require('../../../services/icons')
 
 function buildPromoCode(userId: string) {
@@ -41,6 +42,7 @@ Page({
     agentName: '张三',
     promoCode: 'DXY123456',
     promoLink: 'https://dxdy.pet/m/reg/DXY123456',
+    promotionImage: GENERATED_ASSETS.agentPromotion,
   },
 
   onLoad() {

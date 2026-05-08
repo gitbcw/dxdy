@@ -14,6 +14,10 @@ function withMenuIcons(items: any[]) {
   }))
 }
 
+function getDisplayOrderNo(order: any) {
+  return order?.orderNo || order?.id || '未编号订单'
+}
+
 Page({
   data: {
     userInfo: null as any,
@@ -121,7 +125,7 @@ Page({
               ? `普通发货与换货发货统一从待处理订单进入`
               : '当前没有待处理发货任务',
             meta: pending[0]
-              ? `最近订单：${pending[0].orderNo} · ${pending[0].customerName}`
+              ? `最近订单：${getDisplayOrderNo(pending[0])} · ${pending[0].customerName || '客户'}`
               : '进入待处理订单查看后续任务',
             tap: 'onPendingOrdersTap',
           },
@@ -154,10 +158,9 @@ Page({
         pendingReceipt: orders.filter((o: any) => o.status === 'pending_receipt').length,
         completed: orders.filter((o: any) => o.status === 'completed').length,
       },
-        focusTitle: '',
-        focusItems: [],
-        menuItems: [
-        { id: 'verify', icon: '医', title: '医院认证', value: isInstitution ? '已认证' : '未认证', tap: 'onVerifyTap', desc: isInstitution ? '查看认证状态与资质信息' : '提交资质后可购买血包并享受医院价' },
+      focusTitle: '',
+      focusItems: [],
+      menuItems: [
         { id: 'orders', icon: '单', title: '我的订单', tap: 'onOrdersTap', desc: '查看全部订单与售后进度' },
         { id: 'booking', icon: '约', title: '我的预约', tap: 'onOrdersTap', desc: '查看血包与服务预约记录' },
         { id: 'agentApply', icon: '代', title: '代理商申请', value: user.agentStatus === 'pending_review' ? '审核中' : user.agentStatus === 'rejected' ? '被驳回' : '', tap: user.agentStatus ? 'onAgentStatusTap' : 'onAgentApplyTap', desc: '申请成为代理商，开通推广和提成能力' },

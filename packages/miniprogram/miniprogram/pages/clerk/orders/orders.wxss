@@ -7,8 +7,8 @@
 
 /* ============ 页面顶部导航 ============ */
 .page-header {
-  background: linear-gradient(160deg, var(--color-primary) 0%, #0D8A9A 100%);
-  padding: 32rpx;
+  background: transparent;
+  padding: 30rpx 24rpx 18rpx;
   padding-top: calc(32rpx + env(safe-area-inset-top));
   display: flex;
   align-items: center;
@@ -20,17 +20,18 @@
 
 .header-title {
   font-size: 36rpx;
-  font-weight: 700;
-  color: #FFFFFF;
-  letter-spacing: 2rpx;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: 0;
 }
 
 /* ============ Tab 栏 ============ */
 .tab-bar {
   display: flex;
-  background: #FFFFFF;
-  padding: 0 20rpx;
-  border-bottom: 1rpx solid var(--border-color);
+  gap: 14rpx;
+  background: transparent;
+  padding: 0 20rpx 14rpx;
+  border-bottom: 0;
   position: sticky;
   top: calc(32rpx + env(safe-area-inset-top) + 88rpx);
   z-index: 99;
@@ -41,7 +42,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24rpx 0;
+  padding: 16rpx 0;
+  border-radius: var(--radius-full);
+  background: #ffffff;
   position: relative;
   transition: all 0.25s ease;
 }
@@ -54,28 +57,15 @@
 }
 
 .tab-active .tab-label {
-  color: #FFFFFF;
-  font-weight: 600;
+  color: var(--color-primary);
+  font-weight: 900;
 }
 
-.tab-active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80rpx;
-  height: 6rpx;
-  background: #FFFFFF;
-  border-radius: 3rpx;
-}
-
-/* 选中太的 Tab 项背景 */
 .tab-bar .tab-item.tab-active {
-  background: var(--color-primary);
-  margin: 12rpx 8rpx;
+  background: var(--color-primary-soft);
+  margin: 0;
   border-radius: var(--radius-lg);
-  box-shadow: 0 4rpx 12rpx rgba(10, 110, 124, 0.3);
+  box-shadow: none;
 }
 
 /* ============ 订单列表 ============ */
@@ -129,13 +119,13 @@
 }
 
 .status-tag.tag-normal {
-  background: rgba(10, 110, 124, 0.12);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
 .status-tag.tag-booking {
-  background: rgba(212, 168, 83, 0.15);
-  color: #D4A853;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 /* 订单商品 */
@@ -217,7 +207,7 @@
 
 /* 快递信息 */
 .express-info {
-  background: rgba(10, 110, 124, 0.08);
+  background: #eef7ff;
   border-radius: var(--radius-md);
   padding: 16rpx 20rpx;
   margin: 16rpx 0;
