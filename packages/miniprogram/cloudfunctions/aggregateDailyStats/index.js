@@ -16,7 +16,7 @@ const PAGE_SIZE = 200
  */
 exports.main = async (event) => {
   const targetDate = event.date || getDateStr(-1)
-  const nextDate = getDateStr(0, new Date(targetDate + 'T00:00:00+08:00'))
+  const nextDate = getDateStr(1, new Date(targetDate + 'T00:00:00+08:00'))
 
   console.log(`[aggregateDailyStats] aggregating for ${targetDate}`)
 
@@ -110,6 +110,13 @@ function dateRange(dateStr) {
   return { start, end }
 }
 
+function dateStringRange(dateStr) {
+  return {
+    start: dateStr,
+    end: getDateStr(1, new Date(dateStr + 'T00:00:00+08:00')),
+  }
+}
+
 async function fetchAll(collection, query, select) {
   const results = []
   let offset = 0
@@ -153,14 +160,12 @@ async function aggregateTracking(dateStr, nextDateStr) {
 }
 
 async function aggregateOrders(dateStr, nextDateStr) {
-  const { start, end } = dateRange(dateStr)
-  const startISO = start.toISOString()
-  const endISO = end.toISOString()
+  const { start, end } = dateStringRange(dateStr)
 
   const orders = await fetchAll('orders', {
-    createdAt: _.gte(startISO).and(_.lt(endISO)),
+    createdAt: _.gte(start).and(_.lt(end)),
     status: _.neq('cancelled'),
-  }, { totalAmount: true, customerId: true, customerType: true, status: true })
+  }, { pricing: true, customerId: true, customerType: true, status: true, payment: true })
 
   let totalRevenue = 0
   let institutionRevenue = 0, institutionCount = 0
@@ -168,7 +173,8 @@ async function aggregateOrders(dateStr, nextDateStr) {
   const customerSet = new Set()
 
   for (const o of orders) {
-    const amt = o.totalAmount || 0
+    if (o.status === 'pending_payment' || o.payment?.status === 'unpaid') continue
+    const amt = o.pricing?.actualAmount || o.pricing?.originalAmount || 0
     totalRevenue += amt
     customerSet.add(o.customerId)
     if (o.customerType === 'institution') {
@@ -192,13 +198,11 @@ async function aggregateOrders(dateStr, nextDateStr) {
 }
 
 async function aggregateCustomers(dateStr, nextDateStr) {
-  const { start, end } = dateRange(dateStr)
-  const startISO = start.toISOString()
-  const endISO = end.toISOString()
+  const { start, end } = dateStringRange(dateStr)
 
   const users = await fetchAll('users', {
     role: 'customer',
-    createdAt: _.gte(startISO).and(_.lt(endISO)),
+    createdAt: _.gte(start).and(_.lt(end)),
   }, { customerType: true })
 
   let institutionNew = 0, personalNew = 0
@@ -211,17 +215,16 @@ async function aggregateCustomers(dateStr, nextDateStr) {
 }
 
 async function countRepeatCustomers(dateStr, nextDateStr) {
-  const { start, end } = dateRange(dateStr)
-  const startISO = start.toISOString()
-  const endISO = end.toISOString()
+  const { start, end } = dateStringRange(dateStr)
 
   const orders = await fetchAll('orders', {
-    createdAt: _.gte(startISO).and(_.lt(endISO)),
+    createdAt: _.gte(start).and(_.lt(end)),
     status: _.neq('cancelled'),
-  }, { customerId: true })
+  }, { customerId: true, status: true, payment: true })
 
   const counts = {}
   for (const o of orders) {
+    if (o.status === 'pending_payment' || o.payment?.status === 'unpaid') continue
     const cid = o.customerId
     if (!cid) continue
     counts[cid] = (counts[cid] || 0) + 1
@@ -231,13 +234,11 @@ async function countRepeatCustomers(dateStr, nextDateStr) {
 }
 
 async function aggregateRefunds(dateStr, nextDateStr) {
-  const { start, end } = dateRange(dateStr)
-  const startISO = start.toISOString()
-  const endISO = end.toISOString()
+  const { start, end } = dateStringRange(dateStr)
 
   const returns = await fetchAll('returns', {
-    createdAt: _.gte(startISO).and(_.lt(endISO)),
-    status: _.in(['approved', 'refunded']),
+    updatedAt: _.gte(start).and(_.lt(end)),
+    status: _.in(['refunding', 'return_completed']),
   }, { refundAmount: true })
 
   let totalAmount = 0
@@ -249,13 +250,11 @@ async function aggregateRefunds(dateStr, nextDateStr) {
 }
 
 async function aggregateAgentContribution(dateStr, nextDateStr) {
-  const { start, end } = dateRange(dateStr)
-  const startISO = start.toISOString()
-  const endISO = end.toISOString()
+  const { start, end } = dateStringRange(dateStr)
 
   const records = await fetchAll('commission_records', {
-    createdAt: _.gte(startISO).and(_.lt(endISO)),
-  }, { salespersonId: true, salespersonName: true, orderAmount: true, commission: true })
+    createdAt: _.gte(start).and(_.lt(end)),
+  }, { salespersonId: true, salespersonName: true, orderNo: true, amount: true, orderAmount: true, commission: true })
 
   const map = {}
   for (const r of records) {
@@ -265,7 +264,7 @@ async function aggregateAgentContribution(dateStr, nextDateStr) {
     }
     map[sid].orderCount++
     map[sid].revenue += r.orderAmount || 0
-    map[sid].commission += r.commission || 0
+    map[sid].commission += r.amount || r.commission || 0
   }
 
   return Object.values(map)
@@ -274,17 +273,16 @@ async function aggregateAgentContribution(dateStr, nextDateStr) {
 }
 
 async function aggregateTopProducts(dateStr, nextDateStr) {
-  const { start, end } = dateRange(dateStr)
-  const startISO = start.toISOString()
-  const endISO = end.toISOString()
+  const { start, end } = dateStringRange(dateStr)
 
   const orders = await fetchAll('orders', {
-    createdAt: _.gte(startISO).and(_.lt(endISO)),
+    createdAt: _.gte(start).and(_.lt(end)),
     status: _.neq('cancelled'),
-  }, { items: true })
+  }, { items: true, status: true, payment: true })
 
   const map = {}
   for (const o of orders) {
+    if (o.status === 'pending_payment' || o.payment?.status === 'unpaid') continue
     for (const item of (o.items || [])) {
       const pid = item.productId
       if (!pid) continue
@@ -292,7 +290,7 @@ async function aggregateTopProducts(dateStr, nextDateStr) {
         map[pid] = { productId: pid, productName: item.productName || '未知商品', views: 0, addToCarts: 0, orders: 0, revenue: 0 }
       }
       map[pid].orders++
-      map[pid].revenue += (item.price || 0) * (item.quantity || 1)
+      map[pid].revenue += item.totalPrice || (item.unitPrice || item.price || 0) * (item.quantity || 1)
     }
   }
 

@@ -8,6 +8,7 @@ const db = wx.cloud.database()
 const _ = db.command
 
 export const GENERATED_ASSETS = {
+  brandLogo: '/assets/images/dxdy-logo.jpg',
   loginHero: '/assets/generated/optimized/login-vet-hero.webp',
   homeBanner: '/assets/generated/optimized/home-vet-banner.webp',
   bloodBag: '/assets/generated/optimized/product-blood-bag.webp',

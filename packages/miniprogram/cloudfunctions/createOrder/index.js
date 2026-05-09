@@ -274,6 +274,7 @@ exports.main = async (event) => {
     status: 'pending_payment',
     customerId: customer._id,
     customerName: customer.nickname || customer.name || customer.phone || '客户',
+    customerType: customer.customerType || 'personal',
     customerOpenid: openid,
     salespersonId: type === 'card_order' ? customer._id : (customer.boundSalespersonId || ''),
     clerkId: null,
@@ -334,6 +335,7 @@ exports.main = async (event) => {
             giftHistory: [],
             currentHolderId: null,
             currentHolderName: '',
+            currentHolderOpenid: '',
             redeemedOrderId: '',
             redeemedProductId: '',
             redeemedProductName: '',
@@ -356,9 +358,11 @@ exports.main = async (event) => {
       await db.collection('commission_records').add({
         data: {
           salespersonId: order.salespersonId,
+          salespersonName: customer.boundSalespersonName || '',
           customerId: customer._id,
           orderId: _id,
           orderNo: order.orderNo,
+          orderAmount: order.pricing.actualAmount,
           amount: order.commission.amount,
           status: 'pending',
           sourceType: 'order',

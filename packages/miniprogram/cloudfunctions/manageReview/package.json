@@ -1,0 +1,9 @@
+{
+  "name": "manageReview",
+  "version": "1.0.0",
+  "description": "管理商品评论提交、审核、驳回和回复",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

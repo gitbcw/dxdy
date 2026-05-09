@@ -172,6 +172,7 @@ export default function ReportsPage() {
       <Input placeholder="搜索血包编号 / 商品名 / 批次号" value={search} onChange={e => setSearch(e.target.value)} />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-muted-foreground">正在加载检测报告...</p>}
 
       <Card>
         <CardContent className="p-0">

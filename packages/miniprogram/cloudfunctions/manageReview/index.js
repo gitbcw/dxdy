@@ -62,6 +62,7 @@ exports.main = async (event) => {
       productName: product.name,
       productImage: (product.images && product.images[0]) || '',
       userId: user._id,
+      userOpenid: openid,
       userNickname: user.nickname || user.phone || '用户',
       userAvatar: user.avatar || '',
       rating: Number(rating),
