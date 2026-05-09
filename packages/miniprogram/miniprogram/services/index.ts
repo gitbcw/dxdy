@@ -138,6 +138,38 @@ export function getOrderStatusDesc(status: string): string {
   return map[status] || ''
 }
 
+/** 判断商品是否处于促销期 */
+export function isOnPromotion(product: any, now?: Date): boolean {
+  if (!product?.promotionPrice || product.promotionPrice <= 0) return false
+  if (!product.promotionStart || !product.promotionEnd) return false
+  const t = now || new Date()
+  const start = new Date(product.promotionStart.replace(/-/g, '/'))
+  const end = new Date(product.promotionEnd.replace(/-/g, '/'))
+  return t >= start && t <= end
+}
+
+/** 获取商品有效价格（促销价优先） */
+export function getEffectivePrice(product: any, customerType?: string): number {
+  if (isOnPromotion(product)) return Number(product.promotionPrice)
+  const ct = customerType || 'personal'
+  if (ct === 'institution') return Number(product.institutionPrice || product.personalPrice || 0)
+  return Number(product.personalPrice || product.institutionPrice || 0)
+}
+
+/** 积分过期延迟检查 — 过滤已过期历史记录，重算余额 */
+export function checkPointsExpiry(user: any, expiryDays?: number): { balance: number; history: any[] } {
+  const days = expiryDays || 365
+  if (!days || days <= 0) return { balance: user?.points?.balance || 0, history: user?.points?.history || [] }
+  const now = Date.now()
+  const history = (user?.points?.history || []).filter((entry: any) => {
+    if (entry.change < 0) return true  // 消耗记录不过期
+    const created = new Date(entry.createdAt.replace(/-/g, '/')).getTime()
+    return (now - created) < days * 86400000
+  })
+  const balance = history.reduce((sum: number, entry: any) => sum + entry.change, 0)
+  return { balance: Math.max(0, balance), history }
+}
+
 export function getProductVisualImage(productOrName: any): string {
   const name = typeof productOrName === 'string'
     ? productOrName
@@ -191,21 +223,39 @@ export function logout() {
   wx.removeStorageSync('current_user')
 }
 
-export async function registerCustomer(phone: string, nickname: string, customerType: string = 'personal') {
+export async function registerCustomer(phone: string, nickname: string, customerType: string = 'personal', referralCode?: string) {
   try {
     const { data: existing } = await db.collection('users').where({ phone }).get()
     if (existing.length > 0) {
       return { success: false, error: '该手机号已注册' }
     }
+
+    // 处理推荐码
+    let referredBy = ''
+    if (referralCode) {
+      const { data: referrers } = await db.collection('users').where({ referralCode }).limit(1).get()
+      if (referrers && referrers.length) {
+        referredBy = referrers[0]._id
+      }
+    }
+
     const user = {
       phone, nickname, avatar: '', role: 'customer', customerType,
       verificationStatus: 'none', boundSalespersonId: null,
       wallet: { balance: 0, rechargeHistory: [] },
       points: { balance: 200, history: [{ id: generateId('pts'), change: 200, balance: 200, reason: '注册赠送', createdAt: formatDate(new Date()) }] },
-      addresses: [] as any[], createdAt: formatDate(new Date()),
+      addresses: [] as any[],
+      referralCode: '',
+      ...(referredBy ? { referredBy, referredAt: formatDate(new Date()) } : {}),
+      createdAt: formatDate(new Date()),
     }
     const { _id } = await db.collection('users').add({ data: user })
-    const result = { ...user, id: _id }
+
+    // 生成推荐码
+    const code = `R${_id.slice(-6).toUpperCase()}`
+    await db.collection('users').doc(_id).update({ data: { referralCode: code } })
+
+    const result = { ...user, id: _id, referralCode: code }
     wx.setStorageSync('current_user', JSON.stringify(result))
     return { success: true, user: result }
   } catch (err) {

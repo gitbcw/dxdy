@@ -1,11 +1,11 @@
 # 大熊动医 — 项目进度基准
 
-> 最后更新：2026-05-09 (9a88f33)
+> 最后更新：2026-05-09
 > 本文档是新 AI 进入项目时的**入口文档**，读完这篇就知道项目做到哪了、下一步做什么。
 
 ## 一句话总结
 
-P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员补齐 + 血包卡券）。卡券系统已实施：购买→赠送→认领→转赠→兑换→核销完整流程，含云函数、小程序页面、后台管理。下一步 **P2：运营增长 / 微信通知**。
+P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价（后台配置+前端展示+倒计时）、积分闭环（赚取+抵扣+过期+历史页）、钱包充值（档位配置+充值流程+钱包支付）、商品评论（提交+展示+Admin审核）、拉新奖励（推荐码+首单奖励+分享页）。下一步 **P3：数据化运营 / 微信支付接入**。
 
 ---
 
@@ -70,6 +70,7 @@ P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员�
 | 检测报告 | CloudBase `test_reports` | 已完成（列表/搜索/创建/编辑/删除/状态管理） |
 | 提成管理 | CloudBase `commission_records` | 已完成（列表/搜索/筛选/汇总） |
 | 卡券管理 | CloudBase `card_vouchers` | 已完成（列表/搜索/筛选/作废） |
+| 评论管理 | CloudBase `product_reviews` | 已完成（列表/审核/驳回/回复） |
 
 **后台安全**：
 - HTTP-only `admin_session` cookie 鉴权，禁用账号旧 session 立即失效
@@ -81,7 +82,7 @@ P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员�
 
 ## 2. 云端资源清单
 
-### 2.1 已部署云函数（19 个）
+### 2.1 已部署云函数（21 个）
 
 | 云函数 | 用途 |
 |--------|------|
@@ -104,8 +105,10 @@ P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员�
 | `reviewVerification` | 医院认证审核 |
 | `manageTestReport` | 检测报告 CRUD |
 | `manageCardVoucher` | 卡券赠送/认领/转赠/兑换/作废 |
+| `createRechargeOrder` | 创建充值订单 |
+| `manageReview` | 商品评论提交/审核/回复 |
 
-### 2.2 数据库集合（13 个）
+### 2.2 数据库集合（14 个）
 
 | 集合 | 状态 |
 |------|------|
@@ -122,6 +125,7 @@ P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员�
 | `invoices` | 已创建，已配索引和安全规则 |
 | `test_reports` | 已创建，已配索引和安全规则 |
 | `card_vouchers` | 已创建，已配索引和安全规则（卡券 7 状态生命周期） |
+| `product_reviews` | 已创建，已配索引（商品评论，pending/approved/rejected 状态） |
 
 **环境**：`cloudbase-d4gwpsm7gcc59b6fc`（上海，个人版）
 **MCP 注意**：全局 MCP 可能指向测试环境，项目操作应使用项目 `.mcp.json` 绑定的环境。连接方式详见 `docs/CLOUDBASE_MCP.md`。
@@ -219,7 +223,15 @@ P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员�
 - ~~修复 clerk/pending 硬编码数据~~
 - ~~今日发货/配送中/已签收视角~~（已完成 2026-05-09）
 
-### P2/P3：运营增长与数据化
+### P2：运营增长核心闭环（已完成 2026-05-09）
+
+- **P2-3 限时促销价**：Product 新增 promotionPrice/promotionStart/promotionEnd 字段；Admin 商品表单添加促销配置区；createOrder 云函数 getUnitPrice 支持促销价；小程序商品详情/分类/结账页展示促销标签、原价划线、倒计时
+- **P2-1 积分闭环**：订单完成自动赚取积分（actualAmount × pointsRate）；下单时可使用积分抵扣（100积分=1元）；checkPointsExpiry 延迟过期检查；新增 pages/points/history 积分明细页；结账页添加积分抵扣选择
+- **P2-2 钱包充值**：新增 createRechargeOrder 云函数；payOrder 支持充值入账（金额+赠送）和钱包扣款；新增 pages/wallet/recharge 充值页；Admin 系统配置添加 rechargeTiers 编辑器
+- **P2-4 商品评论**：新建 product_reviews 集合；新增 manageReview 云函数（提交/审核/驳回/回复）；新增 pages/reviews/submit 评论提交页；商品详情页展示评论+平均分；订单详情 completed 状态添加"评价订单"按钮；新增 Admin 评论管理页
+- **P2-5 拉新奖励**：Customer 新增 referralCode/referredBy 字段；registerCustomer 自动生成推荐码并支持推荐码参数；updateOrderStatus 首单完成奖励推荐人积分；新增 pages/referral/share 推荐分享页（推荐码+小程序分享）；Admin 系统配置添加 referralRewardPoints
+
+### P3：数据化运营
 
 详见 `docs/superpowers/specs/2026-05-07-dxdy-new-prd-gap-analysis.md` 第 4 节。
 

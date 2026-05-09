@@ -81,6 +81,10 @@
         <text class="row-label">优惠券</text>
         <text class="row-value">{{couponText}} ></text>
       </view>
+      <view class="row" bindtap="onPointsTap">
+        <text class="row-label">积分抵扣</text>
+        <text class="row-value">{{pointsText}} ></text>
+      </view>
       <view class="row">
         <text class="row-label">运费</text>
         <text class="row-value orange">¥0.00</text>

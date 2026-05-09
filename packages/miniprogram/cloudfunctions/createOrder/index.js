@@ -29,6 +29,15 @@ function isVisibleToCustomer(product, customer) {
 }
 
 function getUnitPrice(product, customer) {
+  // 促销价判断：当前时间在促销窗口内且促销价有效时优先使用
+  if (product.promotionPrice > 0 && product.promotionStart && product.promotionEnd) {
+    const now = new Date()
+    const start = new Date(product.promotionStart.replace(/-/g, '/'))
+    const end = new Date(product.promotionEnd.replace(/-/g, '/'))
+    if (now >= start && now <= end) {
+      return Number(product.promotionPrice)
+    }
+  }
   const customerType = customer.customerType || 'personal'
   if (customerType === 'institution') {
     return Number(product.institutionPrice || product.personalPrice || 0)
@@ -235,6 +244,30 @@ exports.main = async (event) => {
     actualAmount = couponResult.finalAmount
   }
 
+  // --- 积分抵扣 ---
+  let pointsDeduction = 0
+  if (event.pointsToUse > 0 && type !== 'recharge') {
+    try {
+      const balance = customer.points?.balance || 0
+      const requested = Math.min(Number(event.pointsToUse), balance)
+      if (requested >= 100) {
+        pointsDeduction = Math.floor(requested / 100)  // 100积分=1元
+        const pointsConsumed = pointsDeduction * 100
+        actualAmount = Math.max(0.01, Math.round((actualAmount - pointsDeduction) * 100) / 100)
+        await db.collection('users').doc(customer._id).update({
+          data: {
+            'points.balance': db.command.inc(-pointsConsumed),
+            'points.history': db.command.push({
+              id: `pts_${Date.now()}`, change: -pointsConsumed,
+              reason: `订单积分抵扣`, createdAt: now,
+            }),
+            updatedAt: now,
+          }
+        })
+      }
+    } catch (_e) { /* skip points deduction */ }
+  }
+
   const order = {
     orderNo: `DD${Date.now()}`,
     type,
@@ -249,7 +282,7 @@ exports.main = async (event) => {
       originalAmount: Math.round(totalAmount * 100) / 100,
       actualAmount,
       priceLog: [],
-      shippingFee: 0, urgentFee, pointsDeduction: 0, refundedAmount: 0,
+      shippingFee: 0, urgentFee, pointsDeduction, refundedAmount: 0,
       ...(couponRecord ? { coupon: couponRecord } : {}),
     },
     payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },

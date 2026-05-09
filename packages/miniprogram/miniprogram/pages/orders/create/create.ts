@@ -1,4 +1,4 @@
-const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount } = require('../../../services/index')
+const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry } = require('../../../services/index')
 
 const CART_KEY = 'cart_items'
 
@@ -62,6 +62,10 @@ Page({
     urgentFee: 0,
     urgentDescription: '',
     canUrgent: false,
+    availablePoints: 0,
+    pointsToUse: 0,
+    pointsDeduction: 0,
+    pointsText: '加载中...',
   },
 
   _cartRaw: [] as any[],
@@ -100,7 +104,7 @@ Page({
       this._cartRaw = items
 
       const displayItems = items.map((item: any) => {
-        const price = isInstitution ? item.institutionPrice : (item.personalPrice || item.institutionPrice)
+        const price = getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
         return {
           ...item,
           unitPrice: price,
@@ -110,7 +114,7 @@ Page({
         }
       })
       const total = items.reduce((s: number, item: any) => {
-        const price = isInstitution ? item.institutionPrice : (item.personalPrice || item.institutionPrice)
+        const price = getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
         return s + price * item.quantity
       }, 0)
 
@@ -127,9 +131,7 @@ Page({
       const product = await getProductById(options.productId)
       if (!product) return
 
-      const unitPrice = isInstitution
-        ? product.institutionPrice
-        : (product.personalPrice || product.institutionPrice)
+      const unitPrice = getEffectivePrice(product, isInstitution ? 'institution' : 'personal')
       const canBooking = !!product.isBloodPack
       const orderType = canBooking ? 'booking' : 'normal'
       const urgentConfig = product.urgentConfig
@@ -155,8 +157,9 @@ Page({
       this.calcTotal()
     }
 
-    // 加载可用优惠券
+    // 加载可用优惠券和积分
     this._loadCoupons()
+    this._loadPoints()
   },
 
   async _loadCoupons() {
@@ -169,6 +172,42 @@ Page({
     } catch {
       this.setData({ couponText: '暂无可用' })
     }
+  },
+
+  _loadPoints() {
+    const user = getApp().globalData.userInfo
+    if (!user) return
+    const checked = checkPointsExpiry(user)
+    this.setData({
+      availablePoints: checked.balance,
+      pointsText: checked.balance >= 100 ? `${checked.balance} 积分可用，可抵 ¥${Math.floor(checked.balance / 100)}` : '积分不足',
+    })
+  },
+
+  onPointsTap() {
+    const { availablePoints } = this.data
+    if (availablePoints < 100) {
+      wx.showToast({ title: '积分不足100，无法抵扣', icon: 'none' })
+      return
+    }
+    const maxPoints = availablePoints
+    const items = ['不使用积分', `使用全部 ${maxPoints} 积分（抵 ¥${Math.floor(maxPoints / 100)}）`]
+    wx.showActionSheet({
+      itemList: items,
+      success: (res: any) => {
+        if (res.tapIndex === 0) {
+          this.setData({ pointsToUse: 0 })
+        } else {
+          this.setData({ pointsToUse: maxPoints })
+        }
+        this.calcTotal()
+        this.setData({
+          pointsText: this.data.pointsToUse > 0
+            ? `已选 ${this.data.pointsToUse} 积分，抵 ¥${this.data.pointsDeduction}`
+            : (this.data.availablePoints >= 100 ? `${this.data.availablePoints} 积分可用，可抵 ¥${Math.floor(this.data.availablePoints / 100)}` : '积分不足'),
+        })
+      },
+    })
   },
 
   onQuantityChange(e: any) {
@@ -227,9 +266,14 @@ Page({
         discount = result.discountAmount
       }
     }
+    let pointsDeduction = 0
+    if (this.data.pointsToUse > 0) {
+      pointsDeduction = Math.floor(this.data.pointsToUse / 100)
+    }
     this.setData({
-      total: formatMoney(Math.max(0.01, total - discount)),
+      total: formatMoney(Math.max(0.01, total - discount - pointsDeduction)),
       couponDiscount: discount,
+      pointsDeduction,
     })
   },
 
@@ -288,7 +332,7 @@ Page({
     if (this.data.isFromCart) {
       const isInstitution = user.customerType === 'institution'
       orderItems = this._cartRaw.map((item: any) => {
-        const price = isInstitution ? item.institutionPrice : (item.personalPrice || item.institutionPrice)
+        const price = getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
         return {
           productId: item.id,
           productName: item.name,
@@ -338,6 +382,7 @@ Page({
         shippingAddress,
         remark: this.data.remark,
         couponId: this.data.selectedCoupon?.id || undefined,
+        pointsToUse: this.data.pointsToUse || undefined,
       })
       wx.hideLoading()
       if (this.data.isFromCart) clearCart()

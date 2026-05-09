@@ -41,6 +41,9 @@ export interface Customer extends User {
   wallet: { balance: number; rechargeHistory: { id: string; amount: number; bonus: number; createdAt: string }[] };
   points: { balance: number; history: { id: string; change: number; balance: number; reason: string; createdAt: string }[] };
   addresses: Address[];
+  referralCode?: string;
+  referredBy?: string;
+  referredAt?: string;
 }
 
 export interface Salesperson extends User {
@@ -132,6 +135,9 @@ export interface Product {
   deliveryConfig?: DeliveryConfig;
   redeemableCategory?: string;
   validDays?: number;
+  promotionPrice?: number;
+  promotionStart?: string;
+  promotionEnd?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -216,6 +222,7 @@ export interface SystemConfig {
   pointsRate: number;
   pointsExpiryDays: number;
   rechargeTiers: RechargeTier[];
+  referralRewardPoints: number;
 }
 
 export interface OperationLog {

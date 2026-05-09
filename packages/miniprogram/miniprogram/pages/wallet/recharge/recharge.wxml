@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="balance-card">
+    <text class="balance-label">当前余额</text>
+    <text class="balance-value">¥{{balance}}</text>
+  </view>
+
+  <view class="section-title">选择充值档位</view>
+
+  <view class="tiers">
+    <view
+      wx:for="{{tiers}}"
+      wx:key="index"
+      class="tier-card {{selectedIndex === item.index ? 'selected' : ''}}"
+      bindtap="onTierTap"
+      data-idx="{{item.index}}"
+    >
+      <view class="tier-main">
+        <text class="tier-amount">¥{{item.amountText}}</text>
+        <text wx:if="{{item.bonusText}}" class="tier-bonus">{{item.bonusText}}</text>
+      </view>
+      <text class="tier-label">{{item.label}}</text>
+      <view wx:if="{{selectedIndex === item.index}}" class="tier-check">✓</view>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <view class="recharge-btn {{loading ? 'disabled' : ''}}" bindtap="onRechargeTap">
+      {{loading ? '充值中...' : (selectedIndex >= 0 ? '确认充值' : '请选择档位')}}
+    </view>
+  </view>
+</view>

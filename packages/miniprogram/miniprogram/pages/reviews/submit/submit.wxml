@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="product-card">
+    <image wx:if="{{productImageUrl}}" class="product-img" src="{{productImageUrl}}" mode="aspectFit" />
+    <view class="product-info">
+      <text class="product-name">{{productName}}</text>
+    </view>
+  </view>
+
+  <view class="rating-section">
+    <text class="section-label">商品评分</text>
+    <view class="stars">
+      <view wx:for="{{stars}}" wx:key="*this" class="star {{rating >= item ? 'active' : ''}}" bindtap="onStarTap" data-star="{{item}}">
+        ★
+      </view>
+    </view>
+  </view>
+
+  <view class="content-section">
+    <text class="section-label">评价内容</text>
+    <textarea class="content-input" placeholder="分享您的使用体验..." value="{{content}}" bindinput="onContentInput" maxlength="500" />
+    <text class="char-count">{{content.length}}/500</text>
+  </view>
+
+  <view class="submit-bar">
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">
+      {{submitting ? '提交中...' : '提交评价'}}
+    </view>
+  </view>
+</view>

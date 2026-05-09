@@ -9,9 +9,18 @@
     <view class="title-row">
       <view>
         <text class="product-name">{{productName}}</text>
-        <text class="audience-tag">{{isBloodProduct ? '仅限认证医院购买' : '医院/个人可购'}}</text>
+        <view class="tag-row">
+          <text class="audience-tag">{{isBloodProduct ? '仅限认证医院购买' : '医院/个人可购'}}</text>
+          <text wx:if="{{isOnPromotion}}" class="promotion-tag">限时促销</text>
+        </view>
       </view>
-      <text class="price">¥{{price}}</text>
+      <view class="price-col">
+        <text class="price">¥{{price}}</text>
+        <text wx:if="{{originalPrice}}" class="original-price">¥{{originalPrice}}</text>
+      </view>
+    </view>
+    <view wx:if="{{isOnPromotion && promotionCountdown}}" class="promotion-bar">
+      <text class="promotion-countdown">距结束 {{promotionCountdown}}</text>
     </view>
 
     <view class="meta-grid">
@@ -72,6 +81,25 @@
       <text>></text>
     </view>
     <text class="detail-text">每批次均可追溯检测信息，支持扫码查询。</text>
+  </view>
+
+  <view wx:if="{{reviewCount > 0}}" class="detail-section">
+    <view class="detail-row">
+      <text>用户评价 ({{reviewCount}})</text>
+      <text>{{averageRating}} 分</text>
+    </view>
+    <view wx:for="{{reviews}}" wx:key="id" class="review-item">
+      <view class="review-header">
+        <text class="review-user">{{item.userNickname}}</text>
+        <text class="review-stars">{{item.ratingStars}}</text>
+      </view>
+      <text class="review-content">{{item.content}}</text>
+      <view wx:if="{{item.adminReply}}" class="review-reply">
+        <text class="reply-label">商家回复：</text>
+        <text>{{item.adminReply}}</text>
+      </view>
+      <text class="review-date">{{item.dateText}}</text>
+    </view>
   </view>
 
   <view class="bottom-bar">

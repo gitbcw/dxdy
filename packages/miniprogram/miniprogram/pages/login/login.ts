@@ -12,6 +12,7 @@ Page({
     shieldIcon: icons.shield,
     wechatIcon: icons.service,
     logoIcon: icons.hospital,
+    referralCode: '',
     showDemoAccounts: false,
     demoAccounts: [
       { label: '普通客户', phone: '13888002233' },
@@ -24,6 +25,10 @@ Page({
   },
 
   onLoad(options: Record<string, string | undefined> = {}) {
+    if (options.referralCode) {
+      this.setData({ referralCode: options.referralCode, isRegister: true })
+    }
+
     const demoPhone = options.demoPhone || ''
     if (!/^1\d{10}$/.test(demoPhone)) return
 
@@ -119,7 +124,7 @@ Page({
         wx.showToast({ title: '请输入昵称', icon: 'none' })
         return
       }
-      result = await registerCustomer(phone, nickname)
+      result = await registerCustomer(phone, nickname, undefined, this.data.referralCode || undefined)
     } else {
       result = await loginByPhone(phone)
     }

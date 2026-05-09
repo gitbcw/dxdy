@@ -50,6 +50,10 @@ type ProductFormState = {
   urgentDescription: string;
   redeemableCategory: string;
   validDays: string;
+  promotionEnabled: boolean;
+  promotionPrice: string;
+  promotionStart: string;
+  promotionEnd: string;
 };
 
 const visibilityLabel: Record<string, string> = {
@@ -103,6 +107,10 @@ const emptyProductForm = (): ProductFormState => ({
   urgentDescription: '',
   redeemableCategory: '',
   validDays: '365',
+  promotionEnabled: false,
+  promotionPrice: '',
+  promotionStart: '',
+  promotionEnd: '',
 });
 
 function productSpecsToText(specs: Product['specs']) {
@@ -313,6 +321,10 @@ export default function ProductsPage() {
       urgentDescription: product.urgentConfig?.description || '',
       redeemableCategory: product.redeemableCategory || '',
       validDays: String(product.validDays || 365),
+      promotionEnabled: !!(product.promotionPrice > 0 && product.promotionStart),
+      promotionPrice: String(product.promotionPrice || ''),
+      promotionStart: product.promotionStart || '',
+      promotionEnd: product.promotionEnd || '',
     });
   }
 
@@ -345,6 +357,11 @@ export default function ProductsPage() {
       } : undefined,
       redeemableCategory: productType === 'card_voucher' ? form.redeemableCategory : undefined,
       validDays: productType === 'card_voucher' ? (parseInt(form.validDays, 10) || 365) : undefined,
+      ...(form.promotionEnabled && form.promotionPrice ? {
+        promotionPrice: parseFloat(form.promotionPrice) || 0,
+        promotionStart: form.promotionStart,
+        promotionEnd: form.promotionEnd,
+      } : { promotionPrice: 0, promotionStart: '', promotionEnd: '' }),
     };
   }
 
@@ -883,6 +900,28 @@ export default function ProductsPage() {
                 />
               </div>
             </div>
+            <div className="space-y-3 rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={editForm.promotionEnabled} onChange={e => setEditForm(form => ({ ...form, promotionEnabled: e.target.checked }))} className="rounded" />
+                <Label>启用限时促销</Label>
+              </div>
+              {editForm.promotionEnabled && (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>促销价</Label>
+                    <Input type="number" value={editForm.promotionPrice} onChange={e => setEditForm(form => ({ ...form, promotionPrice: e.target.value }))} placeholder="0.01" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>开始时间</Label>
+                    <Input type="datetime-local" value={editForm.promotionStart} onChange={e => setEditForm(form => ({ ...form, promotionStart: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>结束时间</Label>
+                    <Input type="datetime-local" value={editForm.promotionEnd} onChange={e => setEditForm(form => ({ ...form, promotionEnd: e.target.value }))} />
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="editStock">库存</Label>
@@ -1013,6 +1052,28 @@ export default function ProductsPage() {
                   onChange={event => setCreateForm(form => ({ ...form, personalPrice: event.target.value }))}
                 />
               </div>
+            </div>
+            <div className="space-y-3 rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={createForm.promotionEnabled} onChange={e => setCreateForm(form => ({ ...form, promotionEnabled: e.target.checked }))} className="rounded" />
+                <Label>启用限时促销</Label>
+              </div>
+              {createForm.promotionEnabled && (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>促销价</Label>
+                    <Input type="number" value={createForm.promotionPrice} onChange={e => setCreateForm(form => ({ ...form, promotionPrice: e.target.value }))} placeholder="0.01" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>开始时间</Label>
+                    <Input type="datetime-local" value={createForm.promotionStart} onChange={e => setCreateForm(form => ({ ...form, promotionStart: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>结束时间</Label>
+                    <Input type="datetime-local" value={createForm.promotionEnd} onChange={e => setCreateForm(form => ({ ...form, promotionEnd: e.target.value }))} />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">

@@ -1,0 +1,98 @@
+.page {
+  min-height: 100vh;
+  background: #f6f7f6;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.balance-card {
+  margin: 22rpx;
+  padding: 32rpx 26rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #139445, #0f7f39);
+  color: #ffffff;
+}
+
+.balance-label {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+.balance-value {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 56rpx;
+  font-weight: 900;
+}
+
+.balance-hint {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 20rpx;
+  opacity: 0.7;
+}
+
+.section-title {
+  margin: 26rpx 22rpx 14rpx;
+  color: #17231f;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.history-list {
+  margin: 0 22rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 26rpx;
+  border-bottom: 1rpx solid #f0f2f0;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-left {
+  flex: 1;
+}
+
+.history-reason {
+  display: block;
+  color: #17231f;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.history-date {
+  display: block;
+  margin-top: 6rpx;
+  color: #a2aaa6;
+  font-size: 20rpx;
+}
+
+.history-amount {
+  flex-shrink: 0;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.history-amount.positive {
+  color: #139445;
+}
+
+.history-amount.negative {
+  color: #ff5a00;
+}
+
+.empty {
+  padding: 60rpx 0;
+  text-align: center;
+  color: #a2aaa6;
+  font-size: 26rpx;
+}

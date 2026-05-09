@@ -1,0 +1,122 @@
+.page {
+  min-height: 100vh;
+  padding-bottom: 140rpx;
+  background: #f6f7f6;
+  box-sizing: border-box;
+}
+
+.balance-card {
+  margin: 22rpx;
+  padding: 32rpx 26rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #ff8a1f, #ff5a00);
+  color: #ffffff;
+}
+
+.balance-label {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+.balance-value {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 56rpx;
+  font-weight: 900;
+}
+
+.section-title {
+  margin: 26rpx 22rpx 14rpx;
+  color: #17231f;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.tiers {
+  margin: 0 22rpx;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.tier-card {
+  position: relative;
+  padding: 28rpx 24rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  border: 2rpx solid #e8ebe8;
+  transition: all 0.2s;
+}
+
+.tier-card.selected {
+  border-color: #ff5a00;
+  background: #fff8f4;
+}
+
+.tier-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.tier-amount {
+  color: #17231f;
+  font-size: 38rpx;
+  font-weight: 900;
+}
+
+.tier-bonus {
+  color: #e11d48;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.tier-label {
+  display: block;
+  margin-top: 8rpx;
+  color: #89948f;
+  font-size: 20rpx;
+}
+
+.tier-check {
+  position: absolute;
+  top: 12rpx;
+  right: 14rpx;
+  width: 36rpx;
+  height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 900;
+  background: #ff5a00;
+}
+
+.bottom-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 16rpx 22rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 -8rpx 24rpx rgba(24, 45, 32, 0.08);
+}
+
+.recharge-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  border-radius: 18rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 800;
+  background: linear-gradient(180deg, #ff8a1f, #ff5a00);
+}
+
+.recharge-btn.disabled {
+  opacity: 0.5;
+}

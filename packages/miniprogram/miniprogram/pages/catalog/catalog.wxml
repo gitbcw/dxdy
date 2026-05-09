@@ -71,9 +71,13 @@
           <text class="tag green">{{item.tagText}}</text>
           <text class="tag" wx:if="{{item.isBloodPack}}">支持预约</text>
           <text class="tag red" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}">仅认证医院可购买</text>
+          <text class="tag promo" wx:if="{{item.isPromo}}">促销</text>
         </view>
         <view class="product-bottom">
-          <text class="price">¥{{item.priceText}}</text>
+          <view class="price-group">
+            <text class="price">¥{{item.priceText}}</text>
+            <text wx:if="{{item.originalPriceText}}" class="original-price">¥{{item.originalPriceText}}</text>
+          </view>
           <text class="stock {{item.lowStock ? 'warn' : ''}}">{{item.stock <= 5 ? '库存紧张' : '可采购'}}</text>
           <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
             <image class="cart-plus-icon" src="{{cartIcon}}" mode="aspectFit" />

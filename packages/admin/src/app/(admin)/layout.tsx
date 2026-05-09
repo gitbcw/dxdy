@@ -24,6 +24,7 @@ const routeAccess: Record<string, AdminRole[]> = {
   reports: ['system_admin'],
   commissions: ['system_admin'],
   cards: ['system_admin'],
+  reviews: ['system_admin'],
   logs: ['system_admin'],
 };
 

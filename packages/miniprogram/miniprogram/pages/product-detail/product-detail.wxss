@@ -76,7 +76,6 @@
 
 .audience-tag {
   display: inline-flex;
-  margin-top: 12rpx;
   padding: 6rpx 14rpx;
   border-radius: 999rpx;
   color: #139445;
@@ -85,11 +84,51 @@
   background: #e9f8ee;
 }
 
-.price {
+.tag-row {
+  display: flex;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+
+.promotion-tag {
+  display: inline-flex;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ff5a00, #e11d48);
+}
+
+.price-col {
   flex-shrink: 0;
+  text-align: right;
+}
+
+.price {
   color: #ff5a00;
   font-size: 36rpx;
   font-weight: 900;
+}
+
+.original-price {
+  display: block;
+  color: #a2aaa6;
+  font-size: 22rpx;
+  text-decoration: line-through;
+}
+
+.promotion-bar {
+  margin-top: 16rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 10rpx;
+  background: linear-gradient(135deg, #fff5f0, #fff0f5);
+}
+
+.promotion-countdown {
+  color: #e11d48;
+  font-size: 22rpx;
+  font-weight: 700;
 }
 
 .meta-grid {
@@ -232,4 +271,58 @@
 .btn-buy {
   color: #ffffff;
   background: linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%);
+}
+
+.review-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0f2f0;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.review-user {
+  color: #17231f;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.review-stars {
+  color: #f59e0b;
+  font-size: 20rpx;
+}
+
+.review-content {
+  display: block;
+  margin-top: 8rpx;
+  color: #5f6b66;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.review-reply {
+  margin-top: 8rpx;
+  padding: 10rpx 14rpx;
+  border-radius: 10rpx;
+  background: #f0f7ff;
+  font-size: 22rpx;
+  color: #4a6fa5;
+}
+
+.reply-label {
+  font-weight: 700;
+}
+
+.review-date {
+  display: block;
+  margin-top: 6rpx;
+  color: #a2aaa6;
+  font-size: 20rpx;
 }

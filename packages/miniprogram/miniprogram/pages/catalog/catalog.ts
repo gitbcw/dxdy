@@ -1,4 +1,4 @@
-const { getCategories, getProducts, formatMoney, addToCart, getProductVisualImage } = require('../../services/index')
+const { getCategories, getProducts, formatMoney, addToCart, getProductVisualImage, isOnPromotion, getEffectivePrice } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
 
@@ -77,15 +77,21 @@ Page({
       keyword: keyword || undefined,
     })
     this.setData({ isInstitution })
-    const mappedProducts = products.map((product: any) => ({
-      ...product,
-      priceText: formatMoney(isInstitution ? product.institutionPrice : (product.personalPrice || product.institutionPrice)),
-      specText: product.specs?.[0]?.value || '标准规格',
-      tagText: product.visibility === 'institution_only' ? '机构专属' : product.isBloodPack ? '预约服务' : '可采购',
-      lowStock: product.stock <= 5,
-      leadText: product.isBloodPack ? '可预约' : product.stock <= 5 ? '库存紧张' : '可采购',
-      imageUrl: getProductVisualImage(product),
-    }))
+    const mappedProducts = products.map((product: any) => {
+      const onPromo = isOnPromotion(product)
+      const effectivePrice = onPromo ? product.promotionPrice : getEffectivePrice(product, isInstitution ? 'institution' : 'personal')
+      return {
+        ...product,
+        priceText: formatMoney(effectivePrice),
+        originalPriceText: onPromo ? formatMoney(getEffectivePrice(product, isInstitution ? 'institution' : 'personal')) : '',
+        isPromo: onPromo,
+        specText: product.specs?.[0]?.value || '标准规格',
+        tagText: product.visibility === 'institution_only' ? '机构专属' : product.isBloodPack ? '预约服务' : '可采购',
+        lowStock: product.stock <= 5,
+        leadText: product.isBloodPack ? '可预约' : product.stock <= 5 ? '库存紧张' : '可采购',
+        imageUrl: getProductVisualImage(product),
+      }
+    })
 
     const quickFilters = this.getQuickFilters(mappedProducts, isInstitution)
     const activeQuickFilter = quickFilters.some((item: any) => item.key === this.data.activeQuickFilter)

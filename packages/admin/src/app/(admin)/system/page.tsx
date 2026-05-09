@@ -132,6 +132,46 @@ export default function SystemPage() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader><CardTitle>充值档位配置</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {(config.rechargeTiers || []).map((tier, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Input type="number" placeholder="金额" className="w-24" value={String(tier.amount)} onChange={e => {
+                  const tiers = [...(config.rechargeTiers || [])];
+                  tiers[i] = { ...tiers[i], amount: parseFloat(e.target.value) || 0 };
+                  setConfig({ ...config, rechargeTiers: tiers });
+                }} />
+                <Input type="number" placeholder="赠送" className="w-24" value={String(tier.bonus)} onChange={e => {
+                  const tiers = [...(config.rechargeTiers || [])];
+                  tiers[i] = { ...tiers[i], bonus: parseFloat(e.target.value) || 0 };
+                  setConfig({ ...config, rechargeTiers: tiers });
+                }} />
+                <Input placeholder="标签（可选）" className="flex-1" value={tier.label || ''} onChange={e => {
+                  const tiers = [...(config.rechargeTiers || [])];
+                  tiers[i] = { ...tiers[i], label: e.target.value };
+                  setConfig({ ...config, rechargeTiers: tiers });
+                }} />
+                <Button variant="outline" size="sm" onClick={() => {
+                  const tiers = (config.rechargeTiers || []).filter((_, j) => j !== i);
+                  setConfig({ ...config, rechargeTiers: tiers });
+                }}>删除</Button>
+              </div>
+            ))}
+            <Button variant="outline" onClick={() => {
+              setConfig({ ...config, rechargeTiers: [...(config.rechargeTiers || []), { amount: 0, bonus: 0, label: '' }] });
+            }}>添加档位</Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>推荐奖励</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>推荐奖励积分（被推荐人首单完成后奖励给推荐人）</Label>
+              <Input type="number" value={config.referralRewardPoints} onChange={e => setConfig({ ...config, referralRewardPoints: parseInt(e.target.value) || 0 })} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

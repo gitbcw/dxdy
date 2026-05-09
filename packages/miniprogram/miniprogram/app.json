@@ -38,7 +38,11 @@
     "pages/agent/cards/cards",
     "pages/agent/card-gift/card-gift",
     "pages/card-detail/card-detail",
-    "pages/card-wallet/card-wallet"
+    "pages/card-wallet/card-wallet",
+    "pages/points/history/history",
+    "pages/wallet/recharge/recharge",
+    "pages/reviews/submit/submit",
+    "pages/referral/share/share"
   ],
   "window": {
     "navigationBarTextStyle": "black",

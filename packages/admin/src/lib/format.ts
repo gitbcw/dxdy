@@ -58,4 +58,5 @@ export const defaultSystemConfig: SystemConfig = {
     { amount: 500, bonus: 40, label: '充500送40' },
     { amount: 1000, bonus: 100, label: '充1000送100' },
   ],
+  referralRewardPoints: 500,
 };

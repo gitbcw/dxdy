@@ -163,6 +163,51 @@ exports.main = async (event) => {
     } catch (_e) { /* non-critical */ }
   }
 
+  // 订单完成 → 积分赚取
+  if (status === 'completed' && order.pricing?.actualAmount > 0 && order.type !== 'recharge') {
+    try {
+      const { data: cfg } = await db.collection('config').doc('system').get()
+      const rate = cfg?.pointsRate || 1
+      const earned = Math.floor(order.pricing.actualAmount * rate)
+      if (earned > 0) {
+        const entry = { id: `pts_${Date.now()}`, change: earned, reason: `订单完成奖励`, createdAt: now }
+        await db.collection('users').doc(order.customerId).update({
+          data: {
+            'points.balance': db.command.inc(earned),
+            'points.history': db.command.push(entry),
+            updatedAt: now,
+          }
+        })
+      }
+    } catch (_e) { /* non-critical */ }
+  }
+
+  // 订单完成 → 推荐奖励（被推荐用户的首单）
+  if (status === 'completed' && order.type !== 'recharge') {
+    try {
+      const { data: customerDoc } = await db.collection('users').doc(order.customerId).get()
+      if (customerDoc?.referredBy) {
+        // 检查是否首单
+        const { total } = await db.collection('orders').where({
+          customerId: order.customerId,
+          status: 'completed',
+        }).count()
+        if (total <= 1) {
+          const { data: cfg } = await db.collection('config').doc('system').get()
+          const reward = cfg?.referralRewardPoints || 500
+          const refEntry = { id: `pts_${Date.now()}`, change: reward, reason: `推荐新用户奖励`, createdAt: now }
+          await db.collection('users').doc(customerDoc.referredBy).update({
+            data: {
+              'points.balance': db.command.inc(reward),
+              'points.history': db.command.push(refEntry),
+              updatedAt: now,
+            }
+          })
+        }
+      }
+    } catch (_e) { /* non-critical */ }
+  }
+
   const operatorName = String(event.operatorName || '').trim() || user.realName || user.nickname || user.name || user.username || '用户'
   await db.collection('logs').add({
     data: {

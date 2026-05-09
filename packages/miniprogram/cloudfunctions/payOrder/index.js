@@ -53,8 +53,27 @@ exports.main = async (event) => {
   const paidAt = formatDateTime(new Date())
   const nextStatus = order.type === 'booking' ? 'pending_confirmation'
     : order.type === 'card_order' ? 'completed'
+    : order.type === 'recharge' ? 'completed'
     : 'pending_shipment'
   const transactionId = `PAY${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+
+  // 钱包支付：先扣款再更新订单
+  if (method === 'wallet' && order.type !== 'recharge') {
+    try {
+      const { data: userDoc } = await db.collection('users').doc(order.customerId).get()
+      if (!userDoc || (userDoc.wallet?.balance || 0) < actualAmount) {
+        return error('钱包余额不足', 'INSUFFICIENT_BALANCE')
+      }
+      await db.collection('users').doc(order.customerId).update({
+        data: {
+          'wallet.balance': db.command.inc(-actualAmount),
+          updatedAt: paidAt,
+        }
+      })
+    } catch (_e) {
+      return error('钱包扣款失败', 'WALLET_ERROR')
+    }
+  }
 
   await db.collection('orders').doc(order._id).update({
     data: {
@@ -66,10 +85,35 @@ exports.main = async (event) => {
         transactionId,
         amount: actualAmount,
       },
-      'commission.status': 'locked',
+      ...(order.type !== 'recharge' ? { 'commission.status': 'locked' } : {}),
       updatedAt: paidAt,
     },
   })
+
+  // 充值订单：增加钱包余额
+  if (order.type === 'recharge') {
+    try {
+      const tier = order.rechargeTier || {}
+      const credit = (tier.amount || actualAmount) + (tier.bonus || 0)
+      if (credit > 0) {
+        await db.collection('users').doc(order.customerId).update({
+          data: {
+            'wallet.balance': db.command.inc(credit),
+            'wallet.rechargeHistory': db.command.push({
+              id: `rch_${Date.now()}`,
+              amount: tier.amount || actualAmount,
+              bonus: tier.bonus || 0,
+              createdAt: paidAt,
+            }),
+            updatedAt: paidAt,
+          }
+        })
+      }
+    } catch (_e) { /* non-critical */ }
+
+    const updated = await getOrder(order._id)
+    return { success: true, order: { ...updated, id: updated._id } }
+  }
 
   // 锁定对应的提成记录
   try {

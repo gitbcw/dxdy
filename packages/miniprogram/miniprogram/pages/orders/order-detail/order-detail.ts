@@ -204,6 +204,7 @@ Page({
     }
     if (order.status === 'completed' && !order.returnRecord) {
       actions.push({ key: 'return', label: '发起退换货', primary: true })
+      actions.push({ key: 'review', label: '评价订单', primary: false })
     }
     if (order.returnRecord) {
       actions.push({ key: 'returnProgress', label: '查看售后进度', primary: true })
@@ -326,6 +327,14 @@ Page({
 
     if (key === 'returnProgress') {
       wx.navigateTo({ url: `/pages/returns/detail/detail?orderId=${order.id}` })
+      return
+    }
+
+    if (key === 'review') {
+      const item = order.items?.[0]
+      if (item) {
+        wx.navigateTo({ url: `/pages/reviews/submit/submit?orderId=${order.id}&productId=${item.productId}` })
+      }
       return
     }
 

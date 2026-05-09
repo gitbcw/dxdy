@@ -216,6 +216,11 @@
   background: #fff2e8;
 }
 
+.tag.promo {
+  color: #fff;
+  background: linear-gradient(135deg, #ff5a00, #e11d48);
+}
+
 .product-bottom {
   display: flex;
   align-items: center;
@@ -223,10 +228,22 @@
   margin-top: 14rpx;
 }
 
+.price-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
 .price {
   color: #ff5a00;
   font-size: 30rpx;
   font-weight: 900;
+}
+
+.original-price {
+  color: #a2aaa6;
+  font-size: 20rpx;
+  text-decoration: line-through;
 }
 
 .stock {
