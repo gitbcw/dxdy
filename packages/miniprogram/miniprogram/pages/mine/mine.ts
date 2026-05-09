@@ -241,15 +241,15 @@ Page({
   },
 
   onCommissionTap() {
-    wx.navigateTo({ url: '/pages/salesman/commission/commission' })
+    wx.navigateTo({ url: '/pages/agent/commission/commission' })
   },
 
   onPromoteTap() {
-    wx.navigateTo({ url: '/pages/salesman/promote/promote' })
+    wx.navigateTo({ url: '/pages/agent/promote/promote' })
   },
 
   onCustomersTap() {
-    wx.navigateTo({ url: '/pages/salesman/customers/customers' })
+    wx.navigateTo({ url: '/pages/agent/customers/customers' })
   },
 
   onWithdrawTap() {

@@ -16,6 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
+import cloudbaseApp from '@/lib/cloudbase';
 import { fetchProductsAndCategories, createProduct, updateProduct } from '@/lib/services/database';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
@@ -117,9 +118,32 @@ function readFileAsDataUrl(file: File) {
   });
 }
 
-async function readFilesAsDataUrls(files: FileList | null) {
+async function uploadFileToStorage(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const cloudPath = `products/${timestamp}-${safeName}`;
+  const result = await cloudbaseApp.uploadFile({
+    cloudPath,
+    filePath: new File([arrayBuffer], file.name, { type: file.type }) as any,
+  });
+  return result.fileID || '';
+}
+
+async function processImageFiles(files: FileList | null): Promise<string[]> {
   if (!files || files.length === 0) return [];
-  return Promise.all(Array.from(files).map(readFileAsDataUrl));
+  const results = await Promise.all(
+    Array.from(files).map(async (file) => {
+      try {
+        const cloudUrl = await uploadFileToStorage(file);
+        if (cloudUrl) return cloudUrl;
+      } catch (e) {
+        console.warn('Upload to storage failed, falling back to data URL', e);
+      }
+      return readFileAsDataUrl(file);
+    }),
+  );
+  return results;
 }
 
 function RichTextEditor({
@@ -422,13 +446,13 @@ export default function ProductsPage() {
   }
 
   async function handleCreateImageUpload(files: FileList | null) {
-    const images = await readFilesAsDataUrls(files);
+    const images = await processImageFiles(files);
     if (images.length === 0) return;
     setCreateForm(form => ({ ...form, images: [...form.images, ...images] }));
   }
 
   async function handleEditImageUpload(files: FileList | null) {
-    const images = await readFilesAsDataUrls(files);
+    const images = await processImageFiles(files);
     if (images.length === 0) return;
     setEditForm(form => ({ ...form, images: [...form.images, ...images] }));
   }

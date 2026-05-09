@@ -371,9 +371,9 @@ Page({
     const routes: Record<string, string> = {
       testQuery: '/pages/tests/query/query',
       blood: '/pages/blood/booking/booking',
-      promote: '/pages/salesman/promote/promote',
-      commission: '/pages/salesman/commission/commission',
-      customers: '/pages/salesman/customers/customers',
+      promote: '/pages/agent/promote/promote',
+      commission: '/pages/agent/commission/commission',
+      customers: '/pages/agent/customers/customers',
       withdraw: '/pages/agent/withdraw/withdraw',
       agentOrders: '/pages/agent/orders/orders',
       agentApply: '/pages/agent/apply/apply',

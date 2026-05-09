@@ -67,11 +67,11 @@ Page({
   },
 
   onPromoteTap() {
-    wx.navigateTo({ url: '/pages/salesman/promote/promote' })
+    wx.navigateTo({ url: '/pages/agent/promote/promote' })
   },
 
   onCommissionTap() {
-    wx.navigateTo({ url: '/pages/salesman/commission/commission' })
+    wx.navigateTo({ url: '/pages/agent/commission/commission' })
   },
 
   onBackTap() {

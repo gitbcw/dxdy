@@ -230,9 +230,8 @@ P0 阶段已完成。P1 全部完成（安全收口 + 行业能力 + 制单员�
 - `orders/users/returns` 安全规则已发布，前端直写路径已受控
 - 后台密码字段存 `***`，实际认证走 CloudBase Auth
 - 支付为模拟支付，未接真实支付回调
-- 代理商路由仍用 `salesman` 前缀
 - `packages/shared` 已废弃并于 `acf4023` 提交中删除
-- 商品图片以 base64 data URL 存储在数据库，待迁移至 CloudBase Storage
+- 商品图片上传已改为 CloudBase Storage，新上传的图片存储为 `cloud://` URL
 
 ---
 
