@@ -158,6 +158,13 @@
   line-height: 1.5;
 }
 
+.test-link {
+  margin-top: 14rpx;
+  color: #ea580c;
+  font-size: 23rpx;
+  font-weight: 700;
+}
+
 .detail-section {
   margin: 16rpx 22rpx 0;
   padding: 22rpx 26rpx;

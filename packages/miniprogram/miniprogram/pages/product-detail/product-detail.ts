@@ -1,4 +1,4 @@
-const { getProductById, formatMoney, addToCart, getProductVisualImage } = require('../../services/index')
+const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase } = require('../../services/index')
 
 Page({
   _product: null as any,
@@ -38,13 +38,23 @@ Page({
 
   onAddCart() {
     if (!this._product) return
+    const user = getApp().globalData.userInfo
+    const check = canPurchase(this._product, user)
+    if (!check.allowed) { wx.showToast({ title: check.reason, icon: 'none' }); return }
     addToCart(this._product)
     wx.showToast({ title: '已加入购物车', icon: 'success' })
   },
 
   onBuyNow() {
     if (!this._product) return
+    const user = getApp().globalData.userInfo
+    const check = canPurchase(this._product, user)
+    if (!check.allowed) { wx.showToast({ title: check.reason, icon: 'none' }); return }
     wx.navigateTo({ url: `/pages/orders/create/create?productId=${this._product.id}` })
+  },
+
+  onTestQuery() {
+    wx.navigateTo({ url: '/pages/tests/query/query' })
   },
 })
 

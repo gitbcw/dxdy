@@ -4,6 +4,9 @@ Page({
   data: {
     orderId: '',
     orderNo: '',
+    orderType: '',
+    returnId: '',
+    originalOrderId: '',
     company: '',
     trackingNo: '',
     shipTime: '',
@@ -16,6 +19,16 @@ Page({
     packageWeight: '',
     boxTemperature: '',
     modifyReason: '',
+    abnormalFlag: false,
+    abnormalType: '',
+    abnormalReason: '',
+    abnormalTypes: [
+      { value: 'partial', label: '部分发货' },
+      { value: 'damaged', label: '商品破损' },
+      { value: 'address_changed', label: '地址变更' },
+      { value: 'near_expiry', label: '临期商品' },
+      { value: 'other', label: '其他' },
+    ],
     tracks: [] as any[],
     showEditPanel: false,
     selectedCompany: '',
@@ -44,8 +57,12 @@ Page({
     const addr = shipping.address || order.shippingAddress || {}
 
     const tracks = this.buildTracks(order, shipping)
+    const abnormal = shipping.abnormal || {}
     this.setData({
       orderNo: order.orderNo || order.id,
+      orderType: order.type || 'normal',
+      returnId: order.returnId || '',
+      originalOrderId: order.originalOrderId || '',
       company: shipping.company || '',
       trackingNo: shipping.trackingNo || '',
       shipTime: shipping.shippedAt || '',
@@ -58,6 +75,9 @@ Page({
       packageWeight: coldChain.weight || order.packageWeight || '',
       boxTemperature: coldChain.boxTemperature || order.boxTemperature || '',
       modifyReason: '',
+      abnormalFlag: !!abnormal.flagged,
+      abnormalType: abnormal.type || '',
+      abnormalReason: abnormal.reason || '',
       tracks,
     })
   },
@@ -98,6 +118,9 @@ Page({
       packageWeight: this.data.packageWeight,
       boxTemperature: this.data.boxTemperature,
       modifyReason: '',
+      abnormalFlag: false,
+      abnormalType: '',
+      abnormalReason: '',
     })
   },
 
@@ -120,6 +143,21 @@ Page({
   onColdFieldInput(e: any) {
     const field = e.currentTarget.dataset.field
     this.setData({ [field]: e.detail.value })
+  },
+
+  onAbnormalToggle() {
+    this.setData({ abnormalFlag: !this.data.abnormalFlag })
+    if (!this.data.abnormalFlag) {
+      this.setData({ abnormalType: '', abnormalReason: '' })
+    }
+  },
+
+  onAbnormalTypeTap(e: any) {
+    this.setData({ abnormalType: e.currentTarget.dataset.value })
+  },
+
+  onAbnormalReasonInput(e: any) {
+    this.setData({ abnormalReason: e.detail.value })
   },
 
   onClosePanel() {
@@ -150,6 +188,9 @@ Page({
         packageWeight: this.data.packageWeight,
         boxTemperature: this.data.boxTemperature,
         modifyReason: this.data.modifyReason.trim(),
+        abnormalFlag: this.data.abnormalFlag,
+        abnormalType: this.data.abnormalType,
+        abnormalReason: this.data.abnormalReason.trim(),
       })
       wx.hideLoading()
       wx.showToast({ title: '修改成功' })

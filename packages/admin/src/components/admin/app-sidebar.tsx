@@ -27,31 +27,36 @@ import {
   Shield,
   Key,
   WalletCards,
+  Ticket,
+  ClipboardCheck,
+  Receipt,
 } from 'lucide-react';
-import type { AdminUser } from '@/lib/types';
+import { useAuth, type AdminProfile } from '@/hooks/use-auth';
 
-const navItems = [
+type AdminRole = AdminProfile['role'];
+
+const navItems: { title: string; href: string; icon: typeof LayoutDashboard; roles: AdminRole[] }[] = [
   { title: '仪表盘', href: '/dashboard', icon: LayoutDashboard, roles: ['system_admin'] },
   { title: '商品管理', href: '/products', icon: Package, roles: ['product_manager', 'system_admin'] },
   { title: '订单管理', href: '/orders', icon: ShoppingCart, roles: ['service', 'system_admin'] },
   { title: '退换货', href: '/returns', icon: RotateCcw, roles: ['service', 'system_admin'] },
   { title: '财务处理', href: '/finance', icon: WalletCards, roles: ['service', 'system_admin'] },
+  { title: '提成管理', href: '/commissions', icon: Receipt, roles: ['system_admin'] },
   { title: '用户管理', href: '/users', icon: Users, roles: ['system_admin'] },
   { title: '账号管理', href: '/accounts', icon: Shield, roles: ['system_admin'] },
   { title: '角色管理', href: '/roles', icon: Key, roles: ['system_admin'] },
   { title: '系统配置', href: '/system', icon: Settings, roles: ['system_admin'] },
+  { title: '优惠券', href: '/coupons', icon: Ticket, roles: ['system_admin'] },
+  { title: '检测报告', href: '/reports', icon: ClipboardCheck, roles: ['system_admin'] },
   { title: '操作日志', href: '/logs', icon: FileText, roles: ['system_admin'] },
 ];
 
-export function AppSidebar({ user }: { user: AdminUser }) {
+export function AppSidebar({ user }: { user: AdminProfile }) {
   const pathname = usePathname();
+  const { signOut } = useAuth();
   const filtered = navItems.filter(item => item.roles.includes(user.role));
   async function handleLogout() {
-    await fetch('/api/cloudbase/accounts/session', {
-      method: 'DELETE',
-      credentials: 'same-origin',
-    }).catch(() => null);
-    localStorage.removeItem('admin_user');
+    await signOut();
     window.location.href = '/login';
   }
 

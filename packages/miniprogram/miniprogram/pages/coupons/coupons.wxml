@@ -1,0 +1,38 @@
+<view class="page">
+  <!-- Tab -->
+  <view class="tabs">
+    <view
+      wx:for="{{tabs}}" wx:key="key"
+      class="tab {{activeTab === item.key ? 'active' : ''}}"
+      data-tab="{{item.key}}"
+      bindtap="onTabChange"
+    >{{item.label}}</view>
+  </view>
+
+  <!-- 列表 -->
+  <view class="coupon-list">
+    <view
+      wx:for="{{coupons}}" wx:key="id"
+      wx:if="{{item.status === activeTab}}"
+      class="coupon-card {{item.status}}"
+    >
+      <view class="coupon-left">
+        <text class="coupon-value">
+          {{item.couponType === 'fixed' ? '¥' + item.couponValue : item.couponType === 'discount' ? item.couponValue + '折' : '¥' + item.couponValue}}
+        </text>
+        <text class="coupon-condition">
+          {{item.couponType === 'full_reduction' ? '满' + item.minAmount + '可用' : '无门槛'}}
+        </text>
+      </view>
+      <view class="coupon-right">
+        <text class="coupon-name">{{item.couponName}}</text>
+        <text class="coupon-scope">{{item.scope === 'all' ? '全场通用' : '限定商品'}}</text>
+        <text class="coupon-expire">{{item.validTo ? '有效期至 ' + item.validTo.slice(0, 10) : ''}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{!coupons.length}}" class="empty">
+      <text>暂无优惠券</text>
+    </view>
+  </view>
+</view>

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchRoles, updateRolePermissions } from '@/lib/services/database';
+import { writeAdminLog } from '@/lib/admin-log';
 import type { AdminRole } from '@/lib/types';
 
 const roleLabel: Record<AdminRole, string> = {
@@ -49,6 +51,7 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
 };
 
 export default function RolesPage() {
+  const { user } = useAuth();
   const [permissions, setPermissions] = useState<Record<AdminRole, Record<string, boolean>>>(() => {
     const result = {} as Record<AdminRole, Record<string, boolean>>;
     for (const role of Object.keys(defaultPermissions) as AdminRole[]) {
@@ -65,13 +68,7 @@ export default function RolesPage() {
     async function loadRoles() {
       setError('');
       try {
-        const response = await cloudbaseFetch('/api/cloudbase/roles', { cache: 'no-store' });
-        const data = await response.json() as {
-          permissions?: Record<AdminRole, Record<string, boolean>>;
-          counts?: Record<AdminRole, number>;
-          error?: string;
-        };
-        if (!response.ok) throw new Error(data.error || '读取角色权限失败');
+        const data = await fetchRoles();
         if (data.permissions) setPermissions(data.permissions);
         if (data.counts) setCounts(data.counts);
       } catch (err) {
@@ -87,9 +84,8 @@ export default function RolesPage() {
     setError('');
     setMessage('');
     try {
-      const response = await cloudbaseJsonFetch('/api/cloudbase/roles', { role, permissions: permissions[role] });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || '保存角色权限失败');
+      await updateRolePermissions(role, permissions[role]);
+      await writeAdminLog({ operator: user, action: 'update_role_permissions', target: role, detail: `更新 ${roleLabel[role]} 权限` });
       setMessage(`${roleLabel[role]}权限已保存`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存角色权限失败');

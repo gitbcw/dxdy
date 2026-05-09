@@ -438,3 +438,100 @@
   opacity: 0.85;
   transform: scale(0.99);
 }
+
+/* ============ 换货标识 ============ */
+.exchange-tag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  background: rgba(255, 138, 31, 0.15);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8rpx;
+}
+
+.exchange-tag text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #ff8a1f;
+}
+
+/* ============ 异常发货标记 ============ */
+.abnormal-badge {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 16rpx;
+  padding: 14rpx 20rpx;
+  background: #FFF3F0;
+  border-radius: var(--radius-md);
+  border: 1rpx solid #FFD5CC;
+}
+
+.abnormal-tag {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #FF3B30;
+  padding: 4rpx 14rpx;
+  background: #FFE5E1;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.abnormal-reason {
+  font-size: 24rpx;
+  color: #666;
+  flex: 1;
+}
+
+/* ============ 异常发货开关 ============ */
+.abnormal-toggle-wrap {
+  margin-bottom: 18rpx;
+  padding: 18rpx 20rpx;
+  background: var(--bg-section);
+  border-radius: var(--radius-md);
+  border: 1rpx solid var(--border-color);
+}
+
+.abnormal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.abnormal-toggle text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggle-switch {
+  width: 84rpx;
+  height: 48rpx;
+  background: #D1D3D9;
+  border-radius: 24rpx;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle-switch.toggle-on {
+  background: var(--color-primary);
+}
+
+.toggle-dot {
+  width: 40rpx;
+  height: 40rpx;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  transition: transform 0.2s;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
+}
+
+.toggle-on .toggle-dot {
+  transform: translateX(36rpx);
+}
+
+.abnormal-form {
+  margin-bottom: 18rpx;
+}

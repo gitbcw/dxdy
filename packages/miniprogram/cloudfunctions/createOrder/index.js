@@ -100,10 +100,85 @@ async function buildOrderItems(rawItems, customer) {
   return { items }
 }
 
+// --- 优惠券验证与核销 ---
+async function applyCoupon(couponId, customerId, openid, orderItems, totalAmount, now) {
+  try {
+    const { data: coupon } = await db.collection('user_coupons').doc(couponId).get()
+    if (!coupon) return { success: false, error: '优惠券不存在' }
+    if (coupon.status !== 'available') return { success: false, error: '优惠券不可用' }
+    if (coupon.userId !== customerId) return { success: false, error: '优惠券不属于当前用户' }
+
+    // 有效期检查
+    if (coupon.validFrom && now < coupon.validFrom) return { success: false, error: '优惠券尚未生效' }
+    if (coupon.validTo && now > coupon.validTo) return { success: false, error: '优惠券已过期' }
+
+    // 门槛检查
+    if (coupon.minAmount > 0 && totalAmount < coupon.minAmount) {
+      return { success: false, error: `未满 ¥${coupon.minAmount}，不可使用该优惠券` }
+    }
+
+    // 适用范围检查
+    if (coupon.scope === 'products') {
+      const match = orderItems.some(item => coupon.scopeIds.includes(item.productId))
+      if (!match) return { success: false, error: '优惠券不适用于当前商品' }
+    } else if (coupon.scope === 'categories') {
+      let found = false
+      for (const item of orderItems) {
+        const product = await getProduct(item.productId)
+        if (product && coupon.scopeIds.includes(product.category)) { found = true; break }
+      }
+      if (!found) return { success: false, error: '优惠券不适用于当前商品分类' }
+    }
+
+    // 计算折扣
+    let discount = 0
+    if (coupon.couponType === 'fixed') {
+      discount = Math.min(coupon.couponValue, totalAmount - 0.01)
+    } else if (coupon.couponType === 'discount') {
+      discount = Math.round(totalAmount * (1 - coupon.couponValue / 10) * 100) / 100
+    } else if (coupon.couponType === 'full_reduction') {
+      if (totalAmount >= coupon.minAmount) {
+        discount = Math.min(coupon.couponValue, totalAmount - 0.01)
+      }
+    }
+
+    const finalAmount = Math.max(0.01, Math.round((totalAmount - discount) * 100) / 100)
+
+    // 原子核销：更新状态为 used
+    const updateRes = await db.collection('user_coupons').doc(couponId).update({
+      data: { status: 'used', usedAt: now, updatedAt: now }
+    })
+    if (updateRes.stats.updated === 0) {
+      return { success: false, error: '优惠券已被使用' }
+    }
+
+    return {
+      success: true,
+      discountAmount: discount,
+      finalAmount,
+      couponRecord: {
+        userCouponId: couponId,
+        couponName: coupon.couponName,
+        couponType: coupon.couponType,
+        discountAmount: discount,
+      }
+    }
+  } catch (e) {
+    return { success: false, error: '优惠券验证失败' }
+  }
+}
+
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
   if (!openid) return error('登录状态无效', 'UNAUTHORIZED')
+
+  // 读取系统配置（佣金率等）
+  let commissionRate = 0.2
+  try {
+    const { data: configDoc } = await db.collection('config').doc('system').get()
+    if (configDoc && typeof configDoc.commissionRate === 'number') commissionRate = configDoc.commissionRate
+  } catch (_e) { /* use default */ }
 
   const customer = await getCustomer(event.customerId, openid)
   if (!customer) return error('客户不存在或无权下单', 'FORBIDDEN')
@@ -124,8 +199,38 @@ exports.main = async (event) => {
   if (!shippingAddress) return error('请选择收货地址')
 
   const totalAmount = built.items.reduce((sum, item) => sum + item.totalPrice, 0)
-  const actualAmount = Math.round(totalAmount * 100) / 100
+  let actualAmount = Math.round(totalAmount * 100) / 100
   const now = formatDateTime(new Date())
+
+  // --- 加急费用 ---
+  let urgentFee = 0
+  let isUrgent = false
+  if (event.isUrgent) {
+    // 查第一个商品的 urgentConfig
+    const firstItem = built.items[0]
+    if (firstItem) {
+      try {
+        const { data: product } = await db.collection('products').doc(firstItem.productId).get()
+        if (product && product.urgentConfig && product.urgentConfig.enabled) {
+          urgentFee = parseFloat(product.urgentConfig.extraFee) || 0
+          isUrgent = true
+          actualAmount = Math.round((actualAmount + urgentFee) * 100) / 100
+        }
+      } catch (_e) { /* skip urgent */ }
+    }
+  }
+
+  // --- 优惠券处理 ---
+  let couponRecord = null
+  let discountAmount = 0
+  if (event.couponId) {
+    const couponResult = await applyCoupon(event.couponId, customer._id, openid, built.items, actualAmount, now)
+    if (!couponResult.success) return error(couponResult.error)
+    couponRecord = couponResult.couponRecord
+    discountAmount = couponResult.discountAmount
+    actualAmount = couponResult.finalAmount
+  }
+
   const order = {
     orderNo: `DD${Date.now()}`,
     type,
@@ -136,19 +241,26 @@ exports.main = async (event) => {
     salespersonId: customer.boundSalespersonId || '',
     clerkId: null,
     items: built.items,
-    pricing: { originalAmount: actualAmount, actualAmount, priceLog: [] },
+    pricing: {
+      originalAmount: Math.round(totalAmount * 100) / 100,
+      actualAmount,
+      priceLog: [],
+      shippingFee: 0, urgentFee, pointsDeduction: 0, refundedAmount: 0,
+      ...(couponRecord ? { coupon: couponRecord } : {}),
+    },
     payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
     shipping: {
       address: shippingAddress,
       trackingNo: null,
       company: null,
       logistics: [],
+      ...(isUrgent ? { urgent: true } : {}),
     },
     ...(type === 'booking' ? { booking: event.booking } : {}),
     returnRecordId: null,
     commission: {
       status: 'pending',
-      amount: Math.round(actualAmount * 0.2 * 100) / 100,
+      amount: Math.round(actualAmount * commissionRate * 100) / 100,
       settledAt: null,
     },
     ...(event.remark ? { remark: event.remark } : {}),
@@ -157,5 +269,26 @@ exports.main = async (event) => {
   }
 
   const { _id } = await db.collection('orders').add({ data: order })
+
+  // 生成提成记录
+  if (order.salespersonId && order.commission.amount > 0) {
+    try {
+      await db.collection('commission_records').add({
+        data: {
+          salespersonId: order.salespersonId,
+          customerId: customer._id,
+          orderId: _id,
+          orderNo: order.orderNo,
+          amount: order.commission.amount,
+          status: 'pending',
+          sourceType: 'order',
+          description: `订单 ${order.orderNo} 提成 ¥${order.commission.amount}`,
+          createdAt: now,
+          updatedAt: now,
+        },
+      })
+    } catch (_e) { /* non-critical */ }
+  }
+
   return { success: true, order: { ...order, id: _id } }
 }

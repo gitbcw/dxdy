@@ -121,11 +121,38 @@ exports.main = async (event) => {
 
   const now = formatDateTime(new Date())
   const updateData = { status, updatedAt: now }
-  if (status === 'completed' && order.commission && order.commission.status === 'pending') {
-    updateData['commission.status'] = 'locked'
+  if (status === 'completed') updateData.completedAt = now
+  if (status === 'completed' && order.commission) {
+    updateData['commission.status'] = 'settled'
+    updateData['commission.settledAt'] = now
   }
 
   await db.collection('orders').doc(order._id).update({ data: updateData })
+
+  // 订单完成时结算提成入账
+  if (status === 'completed' && order.salespersonId && order.commission && order.commission.amount > 0) {
+    try {
+      const commissionAmount = order.commission.amount
+      // 更新提成记录状态为 settled
+      const { data: lockedRecords } = await db.collection('commission_records').where({
+        orderId: order._id,
+        status: 'locked',
+      }).get()
+      for (const rec of (lockedRecords || [])) {
+        await db.collection('commission_records').doc(rec._id).update({
+          data: { status: 'settled', settledAt: now, updatedAt: now },
+        })
+      }
+      // 入账代理商余额
+      await db.collection('users').doc(order.salespersonId).update({
+        data: {
+          'commission.total': db.command.inc(commissionAmount),
+          'commission.available': db.command.inc(commissionAmount),
+          updatedAt: now,
+        },
+      })
+    } catch (_e) { /* non-critical */ }
+  }
 
   const operatorName = String(event.operatorName || '').trim() || user.realName || user.nickname || user.name || user.username || '用户'
   await db.collection('logs').add({

@@ -38,6 +38,7 @@
     <view wx:if="{{isBloodProduct}}" class="permission-card">
       <text class="permission-title">本商品仅限通过医院认证的客户购买</text>
       <text class="permission-desc">认证通过后可查看机构价并提交预约购买需求。</text>
+      <view class="test-link" bindtap="onTestQuery">查看检测报告 ></view>
     </view>
   </view>
 
@@ -65,7 +66,7 @@
     <text class="detail-text">{{isBloodProduct ? '血包类商品仅支持质量问题售后。' : '签收后 7 天内可申请退换货。'}}</text>
   </view>
 
-  <view class="detail-section">
+  <view class="detail-section" bindtap="onTestQuery">
     <view class="detail-row">
       <text>检测信息说明</text>
       <text>></text>

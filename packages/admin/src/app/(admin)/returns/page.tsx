@@ -12,9 +12,12 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchReturns } from '@/lib/services/database';
+import { reviewReturn } from '@/lib/services/functions';
+import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney, formatDateTime } from '@/lib/format';
-import type { AdminUser, ReturnRecord } from '@/lib/types';
+import type { ReturnRecord } from '@/lib/types';
 
 const statusLabel: Record<string, string> = {
   pending_review: '待审核',
@@ -32,6 +35,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function ReturnsPage() {
+  const { user } = useAuth();
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
   const [reviewTarget, setReviewTarget] = useState<ReturnRecord | null>(null);
   const [reviewNote, setReviewNote] = useState('');
@@ -44,27 +48,18 @@ export default function ReturnsPage() {
   }, []);
 
   function getOperator() {
-    if (typeof window === 'undefined') return { operatorId: 'admin_001', operatorName: '后台管理员' };
-    try {
-      const stored = window.localStorage.getItem('admin_user');
-      const user = stored ? JSON.parse(stored) as AdminUser : null;
-      return {
-        operatorId: user?.id || 'admin_001',
-        operatorName: user?.realName || user?.username || '后台管理员',
-      };
-    } catch {
-      return { operatorId: 'admin_001', operatorName: '后台管理员' };
-    }
+    return {
+      operatorId: user?.id || 'admin_001',
+      operatorName: user?.realName || user?.username || '后台管理员',
+    };
   }
 
   async function loadReturns() {
     setLoading(true);
     setError('');
     try {
-      const response = await cloudbaseFetch('/api/cloudbase/returns', { cache: 'no-store' });
-      const data = await response.json() as { returns?: ReturnRecord[]; error?: string };
-      if (!response.ok) throw new Error(data.error || '读取售后数据失败');
-      setReturns(data.returns || []);
+      const data = await fetchReturns();
+      setReturns(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '读取售后数据失败');
     } finally {
@@ -72,25 +67,21 @@ export default function ReturnsPage() {
     }
   }
 
-  function updateRecord(updated?: ReturnRecord) {
-    if (!updated) return;
-    setReturns(prev => prev.map(record => record.id === updated.id ? updated : record));
-  }
-
   async function handleReview(approved: boolean) {
     if (!reviewTarget) return;
     setSubmittingId(reviewTarget.id);
     setError('');
+    const op = getOperator();
     try {
-      const response = await cloudbaseJsonFetch('/api/cloudbase/returns', {
-          id: reviewTarget.id,
-          approved,
-          note: reviewNote,
-          ...getOperator(),
-        });
-      const data = await response.json() as { record?: ReturnRecord; error?: string };
-      if (!response.ok) throw new Error(data.error || '审核失败');
-      updateRecord(data.record);
+      const result = await reviewReturn({
+        id: reviewTarget.id,
+        approved,
+        note: reviewNote,
+        ...op,
+      });
+      if (!result.success) throw new Error(result.error || '审核失败');
+      await writeAdminLog({ operator: user, action: approved ? 'approve_return' : 'reject_return', target: reviewTarget.id, detail: `审核退换货 ${reviewTarget.id}: ${approved ? '通过' : '拒绝'}` });
+      await loadReturns();
       setReviewTarget(null);
       setReviewNote('');
     } catch (err) {
@@ -103,15 +94,16 @@ export default function ReturnsPage() {
   async function handleAdvance(id: string, status: string) {
     setSubmittingId(id);
     setError('');
+    const op = getOperator();
     try {
-      const response = await cloudbaseJsonFetch('/api/cloudbase/returns', {
-          id,
-          status,
-          ...getOperator(),
-        });
-      const data = await response.json() as { record?: ReturnRecord; error?: string };
-      if (!response.ok) throw new Error(data.error || '处理失败');
-      updateRecord(data.record);
+      const result = await reviewReturn({
+        id,
+        status,
+        ...op,
+      });
+      if (!result.success) throw new Error(result.error || '处理失败');
+      await writeAdminLog({ operator: user, action: 'advance_return', target: id, detail: `售后状态推进至 ${status}` });
+      await loadReturns();
     } catch (err) {
       setError(err instanceof Error ? err.message : '处理失败');
     } finally {
@@ -162,7 +154,7 @@ export default function ReturnsPage() {
                 <TableRow key={record.id}>
                   <TableCell className="font-mono text-sm">{record.id}</TableCell>
                   <TableCell className="font-mono text-sm">{record.orderId}</TableCell>
-                  <TableCell>{record.type === 'return' ? '退货' : '换货'}</TableCell>
+                  <TableCell>{record.type === 'exchange' ? '换货' : record.type === 'refund_only' ? '仅退款' : '退货退款'}</TableCell>
                   <TableCell>
                     <Badge variant={record.status === 'pending_review' ? 'outline' : 'default'}>
                       {statusLabel[record.status] ?? record.status}
@@ -188,7 +180,7 @@ export default function ReturnsPage() {
                           确认收货验货
                         </Button>
                       )}
-                      {record.type === 'return' && ['received', 'verifying'].includes(record.status) && (
+                      {record.type !== 'exchange' && ['received', 'verifying'].includes(record.status) && (
                         <>
                           <Button variant="outline" size="sm" onClick={() => handleAdvance(record.id, 'refunding')} disabled={submittingId === record.id}>
                             验货合格

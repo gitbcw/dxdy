@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/admin/app-sidebar';
 import { Separator } from '@/components/ui/separator';
-import type { AdminUser } from '@/lib/types';
+import { useAuth, type AdminProfile } from '@/hooks/use-auth';
+import { db } from '@/lib/cloudbase';
 
-const routeAccess: Record<string, AdminUser['role'][]> = {
+type AdminRole = AdminProfile['role'];
+
+const routeAccess: Record<string, AdminRole[]> = {
   dashboard: ['system_admin'],
   products: ['product_manager', 'system_admin'],
   orders: ['service', 'system_admin'],
@@ -17,10 +20,13 @@ const routeAccess: Record<string, AdminUser['role'][]> = {
   accounts: ['system_admin'],
   roles: ['system_admin'],
   system: ['system_admin'],
+  coupons: ['system_admin'],
+  reports: ['system_admin'],
+  commissions: ['system_admin'],
   logs: ['system_admin'],
 };
 
-function getLandingPath(role: AdminUser['role']) {
+function getLandingPath(role: AdminRole) {
   if (role === 'system_admin') return '/dashboard';
   if (role === 'product_manager') return '/products';
   return '/orders';
@@ -29,51 +35,42 @@ function getLandingPath(role: AdminUser['role']) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const { user, loading } = useAuth();
 
+  // 未登录则跳转登录页
   useEffect(() => {
-    let canceled = false;
-    async function loadSession() {
-      try {
-        const response = await fetch('/api/cloudbase/accounts/session', {
-          cache: 'no-store',
-          credentials: 'same-origin',
-        });
-        if (!response.ok) throw new Error('session invalid');
-        const data = await response.json() as { user?: AdminUser };
-        if (!canceled && data.user) {
-          setUser(data.user);
-          window.localStorage.setItem('admin_user', JSON.stringify(data.user));
-        }
-      } catch {
-        window.localStorage.removeItem('admin_user');
-      } finally {
-        if (!canceled) setMounted(true);
-      }
-    }
-    void loadSession();
-    return () => {
-      canceled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (mounted && !user) {
+    if (!loading && !user) {
       router.replace('/login');
     }
-  }, [router, user, mounted]);
+  }, [router, user, loading]);
 
+  // 权限不足则跳转到对应首页
   useEffect(() => {
-    if (!mounted || !user) return;
+    if (loading || !user) return;
     const section = pathname.split('/').filter(Boolean)[0];
     const allowedRoles = section ? routeAccess[section] : null;
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       router.replace(getLandingPath(user.role));
     }
-  }, [mounted, pathname, router, user]);
+  }, [loading, pathname, router, user]);
 
-  if (!mounted || !user) return null;
+  // 定期检查用户状态（被禁用则自动登出）
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    intervalRef.current = setInterval(async () => {
+      try {
+        const res = await db.collection('users').doc(user.id).get()
+        const doc = (res.data as any[])?.[0]
+        if (!doc || doc.status === 'disabled') {
+          router.replace('/login')
+        }
+      } catch { /* ignore */ }
+    }, 60_000)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [user, router])
+
+  if (loading || !user) return null;
 
   return (
     <SidebarProvider>

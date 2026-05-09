@@ -13,23 +13,38 @@
       <image class="bag" src="{{testIcon}}" mode="aspectFit" />
       <view class="meta">
         <view class="row"><text>血包编号</text><text>{{code}}</text></view>
+        <view wx:if="{{reportNo}}" class="row"><text>报告编号</text><text>{{reportNo}}</text></view>
         <view class="row"><text>商品名称</text><text>{{product}}</text></view>
         <view class="row"><text>批次号</text><text>{{batch}}</text></view>
         <view class="row"><text>血型</text><text>{{bloodType}}</text></view>
         <view class="row"><text>采集日期</text><text>{{collectedAt}}</text></view>
         <view class="row"><text>检测日期</text><text>{{testedAt}}</text></view>
         <view class="row"><text>有效期</text><text>{{validUntil}}</text></view>
+        <view wx:if="{{orderId}}" class="row"><text>关联订单</text><text>{{orderId}}</text></view>
       </view>
     </view>
 
     <view class="grid">
-      <view class="card">
+      <view class="card full-width">
         <text class="card-title">检测项目</text>
-        <view wx:for="{{items}}" wx:key="name" class="check-row"><text>{{item.name}}</text><text>{{item.result}}</text></view>
+        <view wx:for="{{items}}" wx:key="name" class="check-item">
+          <view class="check-header">
+            <text class="check-name">{{item.name}}</text>
+            <text class="check-result {{item.result === '合格' || item.result === '正常' || item.result === '阴性' ? 'pass' : 'warn'}}">{{item.result}}</text>
+          </view>
+          <view wx:if="{{item.value}}" class="check-detail">
+            <text>检测值：{{item.value}}{{item.unit ? ' ' + item.unit : ''}}</text>
+            <text wx:if="{{item.referenceRange}}">参考范围：{{item.referenceRange}}</text>
+          </view>
+        </view>
+        <view wx:if="{{items.length === 0}}" class="check-empty">暂无检测指标数据</view>
       </view>
       <view class="card">
-        <text class="card-title">储存与运输</text>
+        <text class="card-title">储存条件</text>
         <view class="cold-row">{{storage}}</view>
+      </view>
+      <view class="card">
+        <text class="card-title">运输要求</text>
         <view class="cold-row">{{transport}}</view>
       </view>
     </view>

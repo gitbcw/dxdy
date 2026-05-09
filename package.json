@@ -7,5 +7,9 @@
   ],
   "scripts": {
     "dev:admin": "npm run dev -w packages/admin"
+  },
+  "dependencies": {
+    "@cloudbase/signature-nodejs": "^2.0.0",
+    "jsonwebtoken": "^9.0.3"
   }
 }

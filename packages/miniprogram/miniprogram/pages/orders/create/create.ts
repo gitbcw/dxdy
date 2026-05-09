@@ -1,4 +1,4 @@
-const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage } = require('../../../services/index')
+const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount } = require('../../../services/index')
 
 const CART_KEY = 'cart_items'
 
@@ -54,6 +54,14 @@ Page({
     primaryButtonText: '提交订单',
     specText: '标准规格',
     productImageUrl: '',
+    availableCoupons: [] as any[],
+    selectedCoupon: null as any,
+    couponDiscount: 0,
+    couponText: '加载中...',
+    isUrgent: false,
+    urgentFee: 0,
+    urgentDescription: '',
+    canUrgent: false,
   },
 
   _cartRaw: [] as any[],
@@ -124,6 +132,8 @@ Page({
         : (product.personalPrice || product.institutionPrice)
       const canBooking = !!product.isBloodPack
       const orderType = canBooking ? 'booking' : 'normal'
+      const urgentConfig = product.urgentConfig
+      const canUrgent = !!(product.isBloodPack && urgentConfig && urgentConfig.enabled)
 
       this.setData({
         ...sharedData,
@@ -138,8 +148,26 @@ Page({
         productImageUrl: getProductVisualImage(product),
         policyText: product.returnPolicy?.note || '以商品详情页说明为准',
         primaryButtonText: orderType === 'booking' ? '提交预约' : '提交订单',
+        canUrgent,
+        urgentFee: canUrgent ? (urgentConfig.extraFee || 0) : 0,
+        urgentDescription: canUrgent ? (urgentConfig.description || '优先调配与配送') : '',
       })
       this.calcTotal()
+    }
+
+    // 加载可用优惠券
+    this._loadCoupons()
+  },
+
+  async _loadCoupons() {
+    try {
+      const coupons = await getAvailableCoupons()
+      this.setData({
+        availableCoupons: coupons,
+        couponText: coupons.length > 0 ? `${coupons.length} 张可用` : '暂无可用',
+      })
+    } catch {
+      this.setData({ couponText: '暂无可用' })
     }
   },
 
@@ -167,6 +195,12 @@ Page({
     this.setData({ payMethod: e.currentTarget.dataset.method })
   },
 
+  onUrgentToggle(e: any) {
+    const isUrgent = e.detail.value
+    this.setData({ isUrgent })
+    this.calcTotal()
+  },
+
   onAddressChange(e: any) {
     const index = Number(e.detail.value)
     const address = this.data.addresses[index]
@@ -180,8 +214,57 @@ Page({
   },
 
   calcTotal() {
-    const total = this.data.unitPrice * this.data.quantity
-    this.setData({ total: formatMoney(total) })
+    let total = this.data.unitPrice * this.data.quantity
+    if (this.data.isUrgent) total += this.data.urgentFee
+    let discount = 0
+    if (this.data.selectedCoupon) {
+      const result = calculateCouponDiscount(
+        this.data.selectedCoupon,
+        [{ productId: this.data.product?.id, totalPrice: total }],
+        total,
+      )
+      if (result.canUse) {
+        discount = result.discountAmount
+      }
+    }
+    this.setData({
+      total: formatMoney(Math.max(0.01, total - discount)),
+      couponDiscount: discount,
+    })
+  },
+
+  onCouponTap() {
+    const coupons = this.data.availableCoupons
+    if (coupons.length === 0) {
+      wx.showToast({ title: '暂无可用优惠券', icon: 'none' })
+      return
+    }
+    const items = ['不使用优惠券', ...coupons.map((c: any) => {
+      const valueText = c.couponType === 'fixed' ? `减¥${c.couponValue}`
+        : c.couponType === 'discount' ? `${c.couponValue}折`
+        : `满${c.minAmount}减${c.couponValue}`
+      return `${c.couponName} (${valueText})`
+    })]
+    const currentIndex = this.data.selectedCoupon
+      ? coupons.findIndex((c: any) => c.id === this.data.selectedCoupon.id) + 1
+      : 0
+    wx.showActionSheet({
+      itemList: items,
+      success: (res: any) => {
+        if (res.tapIndex === 0) {
+          this.setData({ selectedCoupon: null, couponDiscount: 0 })
+        } else {
+          const coupon = coupons[res.tapIndex - 1]
+          this.setData({ selectedCoupon: coupon })
+        }
+        this.calcTotal()
+        this.setData({
+          couponText: this.data.selectedCoupon
+            ? `已选 1 张，优惠 ¥${formatMoney(this.data.couponDiscount)}`
+            : `${coupons.length} 张可用`,
+        })
+      },
+    })
   },
 
   async onSubmit() {
@@ -243,6 +326,7 @@ Page({
         customerId: user.id,
         type: this.data.isFromCart ? 'normal' : this.data.orderType,
         items: orderItems,
+        isUrgent: this.data.isUrgent,
         booking: (!this.data.isFromCart && this.data.orderType === 'booking')
           ? {
               date: this.data.bookingDate,
@@ -253,6 +337,7 @@ Page({
           : undefined,
         shippingAddress,
         remark: this.data.remark,
+        couponId: this.data.selectedCoupon?.id || undefined,
       })
       wx.hideLoading()
       if (this.data.isFromCart) clearCart()

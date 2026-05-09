@@ -247,21 +247,9 @@
   font-size: 21rpx;
 }
 
-.switch-on {
-  width: 78rpx;
-  height: 42rpx;
-  border-radius: 999rpx;
-  background: #18a34a;
-}
-
-.switch-on::after {
-  content: '';
-  display: block;
-  width: 34rpx;
-  height: 34rpx;
-  margin: 4rpx 4rpx 4rpx auto;
-  border-radius: 50%;
-  background: #ffffff;
+.fee-detail {
+  color: #ea580c;
+  font-size: 20rpx;
 }
 
 .remark-input {

@@ -15,7 +15,9 @@ import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchAdminAccounts, createAdminAccount, updateAdminAccount, deleteAdminAccount } from '@/lib/services/database';
+import { writeAdminLog } from '@/lib/admin-log';
 import type { AdminUser, AdminRole } from '@/lib/types';
 
 const roleLabel: Record<AdminRole, string> = {
@@ -30,6 +32,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function AccountsPage() {
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,10 +51,8 @@ export default function AccountsPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await cloudbaseFetch('/api/cloudbase/accounts', { cache: 'no-store' });
-      const data = await response.json() as { accounts?: AdminUser[]; error?: string };
-      if (!response.ok) throw new Error(data.error || '读取账号失败');
-      setAccounts(data.accounts || []);
+      const data = await fetchAdminAccounts();
+      setAccounts(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '读取账号失败');
     } finally {
@@ -91,19 +92,17 @@ export default function AccountsPage() {
           status: form.status,
         };
         if (form.password) data.password = form.password;
-        const response = await cloudbaseJsonFetch('/api/cloudbase/accounts', { id: editTarget.id, updates: data }, { method: 'PATCH' });
-        const result = await response.json() as { error?: string };
-        if (!response.ok) throw new Error(result.error || '更新账号失败');
+        await updateAdminAccount(editTarget.id, data);
+        await writeAdminLog({ operator: user, action: 'update_account', target: editTarget.id, detail: `更新账号 ${editTarget.username}` });
       } else {
-        const response = await cloudbaseJsonFetch('/api/cloudbase/accounts', {
+        await createAdminAccount({
           username: form.username,
           password: form.password,
           realName: form.realName,
           phone: form.phone,
           role: form.role,
         });
-        const result = await response.json() as { error?: string };
-        if (!response.ok) throw new Error(result.error || '创建账号失败');
+        await writeAdminLog({ operator: user, action: 'create_account', target: form.username, detail: `创建账号 ${form.username}` });
       }
       setDialogOpen(false);
       await loadAccounts();
@@ -114,24 +113,24 @@ export default function AccountsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('确认删除该账号？')) return;
-    const response = await cloudbaseFetch(`/api/cloudbase/accounts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-    const result = await response.json() as { error?: string };
-    if (!response.ok) {
-      setError(result.error || '删除账号失败');
-      return;
+    try {
+      await deleteAdminAccount(id);
+      await writeAdminLog({ operator: user, action: 'delete_account', target: id, detail: `删除账号 ${id}` });
+      await loadAccounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '删除账号失败');
     }
-    await loadAccounts();
   }
 
-  async function handleToggleStatus(user: AdminUser) {
-    const next = user.status === 'active' ? 'disabled' : 'active';
-    const response = await cloudbaseJsonFetch('/api/cloudbase/accounts', { id: user.id, updates: { status: next } }, { method: 'PATCH' });
-    const result = await response.json() as { error?: string };
-    if (!response.ok) {
-      setError(result.error || '更新账号状态失败');
-      return;
+  async function handleToggleStatus(target: AdminUser) {
+    const next = target.status === 'active' ? 'disabled' : 'active';
+    try {
+      await updateAdminAccount(target.id, { status: next });
+      await writeAdminLog({ operator: user, action: 'toggle_account_status', target: target.id, detail: `账号 ${target.username} 状态变更为 ${next}` });
+      await loadAccounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新账号状态失败');
     }
-    await loadAccounts();
   }
 
   return (

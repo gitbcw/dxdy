@@ -51,7 +51,7 @@
             data-id="{{item.id}}"
             catchtap="onLogisticsFromList"
           >查看物流</view>
-          <view wx:if="{{item.status === 'completed'}}" class="ghost-btn">申请售后</view>
+          <view wx:if="{{item.status === 'completed'}}" class="ghost-btn" data-id="{{item.id}}" catchtap="onReturnFromList">申请售后</view>
           <view class="orange-btn">查看详情</view>
         </view>
       </view>

@@ -12,7 +12,7 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { cloudbaseFetch } from '@/lib/admin-api-client';
+import { fetchLogs } from '@/lib/services/database';
 import { formatDateTime } from '@/lib/format';
 import type { OperationLog } from '@/lib/types';
 
@@ -21,6 +21,8 @@ export default function LogsPage() {
   const [filterOperator, setFilterOperator] = useState('all');
   const [filterAction, setFilterAction] = useState('all');
   const [filterResult, setFilterResult] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedLog, setSelectedLog] = useState<OperationLog | null>(null);
@@ -30,10 +32,8 @@ export default function LogsPage() {
       setLoading(true);
       setError('');
       try {
-        const response = await cloudbaseFetch('/api/cloudbase/logs', { cache: 'no-store' });
-        const data = await response.json() as { logs?: OperationLog[]; error?: string };
-        if (!response.ok) throw new Error(data.error || '读取操作日志失败');
-        setLogs(data.logs || []);
+        const data = await fetchLogs();
+        setLogs(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : '读取操作日志失败');
       } finally {
@@ -52,9 +52,11 @@ export default function LogsPage() {
       if (filterOperator !== 'all' && l.operatorName !== filterOperator) return false;
       if (filterAction !== 'all' && l.action !== filterAction) return false;
       if (filterResult !== 'all' && l.result !== filterResult) return false;
+      if (dateFrom && l.createdAt < dateFrom) return false;
+      if (dateTo && l.createdAt > dateTo + 'T23:59:59') return false;
       return true;
     });
-  }, [logs, filterOperator, filterAction, filterResult]);
+  }, [logs, filterOperator, filterAction, filterResult, dateFrom, dateTo]);
 
   return (
     <div className="space-y-6">
@@ -88,6 +90,8 @@ export default function LogsPage() {
             <SelectItem value="failure">失败</SelectItem>
           </SelectContent>
         </Select>
+        <input type="date" className="h-9 rounded-md border px-2 text-sm" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="开始日期" />
+        <input type="date" className="h-9 rounded-md border px-2 text-sm" value={dateTo} onChange={e => setDateTo(e.target.value)} title="结束日期" />
       </div>
 
       <Card>

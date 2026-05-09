@@ -33,7 +33,8 @@
     "pages/mine/address/address",
     "pages/mine/favorites/favorites",
     "pages/mine/profile/profile",
-    "pages/mine/help/help"
+    "pages/mine/help/help",
+    "pages/coupons/coupons"
   ],
   "window": {
     "navigationBarTextStyle": "black",

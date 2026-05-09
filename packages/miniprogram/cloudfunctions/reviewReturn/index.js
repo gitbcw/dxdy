@@ -171,6 +171,16 @@ exports.main = async (event) => {
     timeline: db.command.push(timelineEntry),
   }
 
+  // 客户寄回物流信息
+  if (targetStatus === 'customer_shipping' && event.sendLogistics && event.sendLogistics.trackingNo) {
+    updateData.sendLogistics = {
+      company: String(event.sendLogistics.company || '').trim(),
+      trackingNo: String(event.sendLogistics.trackingNo || '').trim(),
+      sentAt: now,
+    }
+    timelineEntry.desc = `客户已寄回：${event.sendLogistics.company} ${event.sendLogistics.trackingNo}`
+  }
+
   if (canonicalStatus(record.status) === 'pending_review') {
     updateData.reviewerId = user._id
     updateData.reviewNote = note
@@ -185,6 +195,147 @@ exports.main = async (event) => {
   }
 
   await db.collection('returns').doc(record._id).update({ data: updateData })
+
+  // 退款审批通过时，累计订单的已退款金额
+  if (targetStatus === 'refunding' && record.orderId) {
+    const refundAmount = record.refundAmount || record.amount || 0
+    if (refundAmount > 0) {
+      try {
+        await db.collection('orders').doc(record.orderId).update({
+          data: {
+            'pricing.refundedAmount': db.command.inc(refundAmount),
+            updatedAt: now,
+          },
+        })
+      } catch (_e) { /* non-critical: log but don't block */ }
+    }
+  }
+
+  // 退款完成时扣回提成
+  if (targetStatus === 'return_completed' && record.orderId) {
+    try {
+      const { data: origOrder } = await db.collection('orders').doc(record.orderId).get()
+      if (origOrder && origOrder.salespersonId) {
+        const commissionAmount = origOrder.commission && origOrder.commission.amount || 0
+        if (commissionAmount > 0) {
+          // 查找该订单的提成记录
+          const { data: commissionRecords } = await db.collection('commission_records').where({
+            orderId: record.orderId,
+            salespersonId: origOrder.salespersonId,
+          }).get()
+          let deductedAmount = 0
+          for (const cr of (commissionRecords || [])) {
+            if (cr.status === 'pending' || cr.status === 'settled') {
+              // 未结算的直接标记扣回
+              await db.collection('commission_records').doc(cr._id).update({
+                data: { status: 'deducted', deductedAt: now, deductReason: `售后退款扣回：${record.afterNo || record._id}` },
+              })
+              deductedAmount += cr.amount || 0
+            } else if (cr.status === 'withdrawn') {
+              // 已提现的，在代理商余额中扣回（标记为待扣回）
+              deductedAmount += cr.amount || 0
+            }
+          }
+          // 更新售后记录的提成调整信息
+          await db.collection('returns').doc(record._id).update({
+            data: {
+              'commissionAdjust.amount': deductedAmount,
+              'commissionAdjust.reason': deductedAmount > 0 ? `扣回提成 ¥${deductedAmount}` : '无提成需扣回',
+            },
+          })
+          // 同步扣减代理商余额
+          if (deductedAmount > 0) {
+            try {
+              const { data: salesperson } = await db.collection('users').doc(origOrder.salespersonId).get()
+              const available = (salesperson && salesperson.commission && salesperson.commission.available) || 0
+              if (available >= deductedAmount) {
+                // 余额充足，直接扣减
+                await db.collection('users').doc(origOrder.salespersonId).update({
+                  data: {
+                    'commission.available': db.command.inc(-deductedAmount),
+                    'commission.total': db.command.inc(-deductedAmount),
+                    updatedAt: now,
+                  },
+                })
+              } else {
+                // 余额不足，扣完 available，剩余记入 pendingDeduction
+                const remaining = deductedAmount - available
+                await db.collection('users').doc(origOrder.salespersonId).update({
+                  data: {
+                    'commission.available': 0,
+                    'commission.total': db.command.inc(-deductedAmount),
+                    'commission.pendingDeduction': db.command.inc(remaining),
+                    updatedAt: now,
+                  },
+                })
+              }
+            } catch (_e2) { /* non-critical */ }
+          }
+          await db.collection('logs').add({
+            data: {
+              operatorId: user._id, operatorName, operatorRole: user.role,
+              action: '提成扣回',
+              target: record.orderId,
+              detail: `售后退款完成，扣回代理商 ${origOrder.salespersonId} 提成 ¥${deductedAmount}`,
+              result: 'success',
+              createdAt: now,
+            },
+          })
+        }
+      }
+    } catch (_e) { /* non-critical */ }
+  }
+
+  // 换货发货：验货通过后创建换货发货订单进入制单员待办
+  if (targetStatus === 'exchange_shipping' && record.orderId) {
+    try {
+      const { data: origOrder } = await db.collection('orders').doc(record.orderId).get()
+      if (origOrder) {
+        const exchangeOrder = {
+          orderNo: `EX${Date.now()}`,
+          type: 'exchange',
+          status: 'pending_shipment',
+          returnId: record._id,
+          originalOrderId: record.orderId,
+          customerId: origOrder.customerId || '',
+          customerName: origOrder.customerName || '',
+          customerOpenid: origOrder.customerOpenid || '',
+          salespersonId: origOrder.salespersonId || '',
+          clerkId: origOrder.clerkId || null,
+          items: record.items || origOrder.items || [],
+          pricing: { originalAmount: 0, actualAmount: 0, shippingFee: 0, urgentFee: 0, pointsDeduction: 0, refundedAmount: 0 },
+          payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
+          shipping: {
+            address: origOrder.shipping?.address || origOrder.shippingAddress || {},
+            trackingNo: null,
+            company: null,
+            logistics: [],
+          },
+          commission: { status: 'none', amount: 0, settledAt: null },
+          remark: `换货发货，售后单 ${record.afterNo || record._id}`,
+          createdAt: now,
+          updatedAt: now,
+        }
+        const { _id: exchangeOrderId } = await db.collection('orders').add({ data: exchangeOrder })
+        // 在 returns 记录中关联换货订单
+        await db.collection('returns').doc(record._id).update({
+          data: { exchangeOrderId, updatedAt: now },
+        })
+        await db.collection('logs').add({
+          data: {
+            operatorId: user._id,
+            operatorName,
+            operatorRole: user.role,
+            action: '创建换货发货订单',
+            target: exchangeOrderId,
+            detail: `售后单 ${record.afterNo || record._id} 验货通过，创建换货发货订单 ${exchangeOrderId}，指派制单员 ${origOrder.clerkId || '待指派'}`,
+            result: 'success',
+            createdAt: now,
+          },
+        })
+      }
+    } catch (_e) { /* non-critical */ }
+  }
 
   await db.collection('logs').add({
     data: {

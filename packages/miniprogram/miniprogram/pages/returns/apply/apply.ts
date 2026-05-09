@@ -11,6 +11,9 @@ Page({
     refundAmount: '0.00',
     productImageUrl: '',
     vouchers: [] as string[],
+    isBloodOrder: false,
+    bloodPackCode: '',
+    reasonType: 'other' as string,
   },
 
   onLoad(options: any) {
@@ -26,10 +29,17 @@ Page({
       return
     }
     const firstItem = order.items?.[0] || {}
+    const isBloodOrder = (order.items || []).some((item: any) => /血/.test(item.productName || ''))
+    const bloodPackCode = isBloodOrder
+      ? (firstItem.batchNo || firstItem.code || firstItem.testReportCode || '')
+      : ''
     this.setData({
       orderId,
       order,
       firstItem,
+      isBloodOrder,
+      bloodPackCode,
+      reasonType: isBloodOrder ? 'quality' : 'other',
       refundAmount: formatMoney(order.pricing?.actualAmount || firstItem.totalPrice || 0),
       productImageUrl: firstItem.productImage || getProductVisualImage(firstItem.productName),
     })
@@ -37,6 +47,10 @@ Page({
 
   onTypeTap(e: any) {
     this.setData({ serviceType: e.currentTarget.dataset.type })
+  },
+
+  onReasonTypeTap(e: any) {
+    this.setData({ reasonType: e.currentTarget.dataset.type })
   },
 
   onReasonInput(e: any) {
@@ -74,6 +88,8 @@ Page({
         orderId: order.id,
         customerId: order.customerId,
         type: this.data.serviceType,
+        reasonType: this.data.reasonType,
+        bloodPackCode: this.data.bloodPackCode || '',
         reason: reason.trim(),
         description: description.trim(),
         vouchers: this.data.vouchers,

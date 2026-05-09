@@ -5,7 +5,7 @@
 
 ## 一句话总结
 
-P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，制单员冷链发货增强（包装/冷链/温度/修改物流），代理商申请流程优化。下一步继续 **P1：上线前安全收口 + 业务补齐**。
+P0 阶段已完成。P1 安全与业务收口已全部完成：11 个集合安全规则已发布，登录页清理、密码安全、审计日志增强、会话安全均已落地。加急血包规则、血包检测追溯、后台提成管理独立模块已完成。下一步 **P2：卡券流程 / 微信通知 / 制单员补齐**。
 
 ---
 
@@ -24,7 +24,7 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 | 发票申请 | 已完成 | `createInvoice`/`processInvoice` 已云函数化 |
 | 收货地址 | 已完成 | 写回 `users.addresses` |
 | 物流跟踪 | 已完成 | 读 `orders.shipping` |
-| 检测查询/报告 | 部分完成 | 可查 `test_reports`，缺后台维护报告能力 |
+| 检测查询/报告 | 已完成 | 结构化指标展示、五入口贯通、后台维护 |
 | 医院认证 | 已完成 | `reviewVerification` 已云函数化 |
 | 我的 | 已完成 | 已接订单计数和角色菜单分支 |
 
@@ -67,6 +67,8 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 | 角色管理 | CloudBase `users` 权限 | 已完成（按角色更新 permissions） |
 | 系统配置 | CloudBase `config/system` | 已完成 |
 | 操作日志 | CloudBase `logs` | 已完成（详情弹窗+筛选） |
+| 检测报告 | CloudBase `test_reports` | 已完成（列表/搜索/创建/编辑/删除/状态管理） |
+| 提成管理 | CloudBase `commission_records` | 已完成（列表/搜索/筛选/汇总） |
 
 **后台安全**：
 - HTTP-only `admin_session` cookie 鉴权，禁用账号旧 session 立即失效
@@ -78,7 +80,7 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 
 ## 2. 云端资源清单
 
-### 2.1 已部署云函数（16 个）
+### 2.1 已部署云函数（18 个）
 
 | 云函数 | 用途 |
 |--------|------|
@@ -99,6 +101,7 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 | `requestWithdrawal` | 提现申请 |
 | `reviewWithdrawal` | 提现审核/驳回/打款 |
 | `reviewVerification` | 医院认证审核 |
+| `manageTestReport` | 检测报告 CRUD |
 
 ### 2.2 数据库集合（12 个）
 
@@ -136,22 +139,76 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 - DevTools Console 有 `Error: timeout`、`returns` 全表扫描告警、`orders(customerId, createdAt)` 组合索引建议。
 - 登录页仍有 `DX` 文本 logo 和外露预置账号区，需在上线前弱化/隐藏。
 
-### P1-1：上线前安全与运维收口（建议最先做）
+### P1-1：P0 交易闭环收口（已完成 2026-05-08）
 
-- 分阶段发布 CloudBase 核心集合安全规则
-- 后台真实密码初始化/重置流程
-- 审计日志增强（失败日志、操作者筛选、对象跳转）
-- 商品页 `<img>` warning 处理
+改动 1：**商品模型扩展** — ProductType 枚举（physical/blood_pack/test_service/card_voucher）替代 isBloodPack 布尔值；后台商品表单扩展 bookingConfig、purchaseLimit、agreementRequired 等字段。
 
-### P1-2：行业能力增强
+改动 2：**canPurchase 统一预检** — services/index.ts 新增 canPurchase(product, user, options?)，统一校验商品状态、登录、可见性、血包权限、库存、购买限额。接入 product-detail、cart、orders/create 页面。
 
-- 血包检测追溯、一包一码、检测报告后台维护
-- 加急血包规则
-- 血包卡券完整流程
-- 微信服务号通知和后台待办
-- 后台提成管理、卡券管理独立模块
+改动 3：**订单金额模型** — OrderPricing 扩展 shippingFee/urgentFee/pointsDeduction/refundedAmount；createOrder 和 adjustOrderPrice 佣金率改为从 config.system 读取；reviewReturn 审批退款时 _.inc(refundAmount) 累计 pricing.refundedAmount。
 
-### P1-3：制单员履约补齐（已完成）
+改动 4：**优惠券系统** — coupon_templates + user_coupons 双集合；manageCoupon 云函数（创建/发放/领取/作废）；createOrder 原子核销；小程序"我的优惠券"页面；后台优惠券管理模块。
+
+改动 5：**制单员异常发货** — clerkShipOrder 支持 abnormalFlag/abnormalType/abnormalReason 参数；制单员物流详情页添加异常发货开关和表单；admin 订单详情展示异常 Badge。
+
+**P1 售后规则增强（2026-05-08）**：
+
+- 售后期限校验：createReturn 从 config.system 读取 returnDeadlineDays（默认 7 天），按订单 completedAt 判断
+- 血包售后规则：血包商品仅允许 reasonType=quality（质量问题），不支持换货和无理由退换；售后申请页血包自动锁定质量问题
+- reasonType 字段：新增 quality/change_of_mind/other 三种原因类型，写入 returns 记录
+- ReturnType 统一：admin types 改为 refund_return/refund_only/exchange；后台列表正确显示三种类型
+- 换货选项解锁：售后申请页非血包订单显示换货选项卡
+- 订单列表修复："申请售后"按钮补全 catchtap 事件绑定
+- 客户寄回物流：售后详情页审核通过后显示寄回物流填写表单；reviewReturn 接受 sendLogistics 参数
+- 退货扣回提成：reviewReturn 退款完成时查 commission_records 扣回未结算提成，更新 commissionAdjust
+
+**P1 代理提成闭环（2026-05-09）**：
+
+- 提成记录生成：createOrder 向 commission_records 写入 pending 记录（含 salespersonId/orderId/amount/sourceType）
+- 提成锁定：payOrder 支付成功后将 commission_records 改为 locked + orders.commission.status=locked
+- 提成结算入账：updateOrderStatus 订单完成时 settled + 代理商 commission.total/available 余额增加
+- 改价提成同步：adjustOrderPrice 同步更新 commission_records 金额 + 写 price_modification 调整记录
+- 退款扣回余额：reviewReturn 扣减代理商 commission.total/available，余额不足记入 pendingDeduction
+- 提现配置化：requestWithdrawal 从 config.system 读取 minWithdrawAmount 替代硬编码
+- 财务页优化：提现列表展示代理商姓名 + 待审核/待审金额/累计提现三卡片汇总
+
+- 手机号跨角色唯一校验：registerCustomer 全局查重（不区分 role）+ users 集合 phone 唯一索引
+- 医院资质编号唯一校验：reviewVerification 审核通过前检查 businessLicense 不被其他已认证机构占用
+- 代理绑定审计：新增 bindSalesperson 云函数（权限校验 + 防覆盖 + 旧绑定自动清理 + logs 审计）+ services 改调云函数
+- 后台发货弹窗补全：functions.ts 类型扩展 + 弹窗增加冷链信息（血包必填）、修改原因、异常发货标记
+- 换货发货待办：reviewReturn 在 exchange_shipping 时自动创建换货发货订单进入制单员待办 + 物流详情页换货标识
+
+### P1-2：上线前安全与运维收口（已完成 2026-05-09）
+
+- ~~数据库安全规则发布~~：11 个集合全部配 CUSTOM 安全规则（users/orders/returns/invoices/test_reports/products/categories/commission_records/withdrawals/logs/notifications），customerOpenid 回填完成
+- ~~登录页清理~~：移除生产环境测试凭据提示（仅 development 显示），密码最低 6 位校验
+- ~~密码安全~~：密码字段改为存 `***`（验证走 CloudBase Auth），创建/更新账号均校验密码长度
+- ~~审计日志增强~~：login/logout 日志记录，日志页增加日期范围筛选
+- ~~会话安全~~：admin layout 每 60 秒检查用户状态，被禁用自动登出
+
+### P1-3：行业能力增强
+
+- ~~血包检测追溯、一包一码、检测报告后台维护~~（已完成 2026-05-08）
+  - manageTestReport 云函数（createReport/updateReport/deleteReport）
+  - 后台检测报告管理页面（列表/搜索/创建/编辑/删除/状态管理）
+  - 后台路由权限 + 侧栏导航 + test_reports 新索引（status, productName）
+  - 小程序报告详情页结构化展示（指标值/单位/参考范围/结果判定）
+  - 五入口贯通：首页检测查询、商品详情检测报告、订单详情已有、售后关联血包编号、扫码查询
+  - 售后关联血包编号：createReturn 写入 bloodPackCode，售后申请页展示
+- ~~加急血包规则~~（已完成 2026-05-09）
+  - 后台商品页 urgentConfig 配置（启用/加急费/说明）
+  - 小程序下单页加急开关 + 金额实时计算
+  - createOrder 云函数读取商品 urgentConfig，写入 pricing.urgentFee 和 shipping.urgent
+  - 后台订单详情加急 Badge 展示
+- ~~后台提成管理独立模块~~（已完成 2026-05-09）
+  - commissions/page.tsx 提成记录列表（按代理商/订单号搜索、按状态筛选）
+  - 四卡片汇总（待结算/已锁定/已结算/已扣回）
+  - database.ts 新增 fetchCommissionRecords
+  - 路由权限 + 侧栏导航
+- 血包卡券完整流程（待做，需产品定义）
+- 微信服务号通知和后台待办（待做，需服务号配置）
+
+### P1-4：制单员履约补齐（已完成）
 
 - ~~发货成功页~~
 - ~~独立物流详情/修改物流~~
@@ -167,11 +224,12 @@ P0 阶段已完成。P1 UI 重构进行中：全站 SVG 图标系统已落地，
 
 ## 4. 已知限制
 
-- `orders/users/returns` 安全规则尚未正式收紧，前端仍有直写路径
-- 后台默认账号使用占位密码，生产前需初始化
+- `orders/users/returns` 安全规则已发布，前端直写路径已受控
+- 后台密码字段存 `***`，实际认证走 CloudBase Auth
 - 支付为模拟支付，未接真实支付回调
 - 代理商路由仍用 `salesman` 前缀
 - `packages/shared` 已废弃并于 `acf4023` 提交中删除
+- 商品图片以 base64 data URL 存储在数据库，待迁移至 CloudBase Storage
 
 ---
 

@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import type { AdminUser } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { signIn, user } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,30 +19,34 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (!username.trim() || !password.trim()) {
+      setError('请输入账号和密码');
+      return;
+    }
+    if (password.length < 6) {
+      setError('密码长度至少 6 位');
+      return;
+    }
     setLoading(true);
     try {
-      const response = await fetch('/api/cloudbase/accounts/login', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const result = await response.json() as { success?: boolean; user?: AdminUser; error?: string };
-      if (!response.ok || !result.success || !result.user) throw new Error(result.error || '登录失败');
-      localStorage.setItem('admin_user', JSON.stringify(result.user));
-      const landingPath =
-        result.user.role === 'system_admin'
-          ? '/dashboard'
-          : result.user.role === 'product_manager'
-            ? '/products'
-            : '/orders';
-      router.push(landingPath);
+      await signIn(username, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');
-    } finally {
       setLoading(false);
     }
   }
+
+  // signIn 成功后 user 状态更新触发导航
+  useEffect(() => {
+    if (!user) return;
+    const landingPath =
+      user.role === 'system_admin'
+        ? '/dashboard'
+        : user.role === 'product_manager'
+          ? '/products'
+          : '/orders';
+    router.push(landingPath);
+  }, [router, user]);
 
   return (
     <Card className="w-full max-w-sm">
@@ -74,9 +79,11 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? '登录中...' : '登录'}
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            测试账号：service / product_manager / system_admin（密码任意）
-          </p>
+          {process.env.NODE_ENV === 'development' && (
+            <p className="text-xs text-muted-foreground text-center">
+              测试账号：service / product_manager / system_admin
+            </p>
+          )}
         </form>
       </CardContent>
     </Card>

@@ -1,4 +1,4 @@
-const { formatMoney, getProductVisualImage } = require('../../services/index')
+const { formatMoney, getProductVisualImage, canPurchase } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 
 const CART_KEY = 'cart_items'
@@ -99,6 +99,14 @@ Page({
     if (!user) {
       wx.navigateTo({ url: '/pages/login/login' })
       return
+    }
+    // 预检购物车内所有商品
+    for (const item of cartStore) {
+      const check = canPurchase(item, user, { quantity: item.quantity })
+      if (!check.allowed) {
+        wx.showToast({ title: `${item.name || '商品'}：${check.reason}`, icon: 'none', duration: 2500 })
+        return
+      }
     }
     wx.navigateTo({ url: '/pages/orders/create/create?fromCart=1' })
   },

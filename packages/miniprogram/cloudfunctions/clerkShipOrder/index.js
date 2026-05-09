@@ -88,6 +88,9 @@ exports.main = async (event) => {
   const packageWeight = String(event.packageWeight || '').trim()
   const boxTemperature = String(event.boxTemperature || '').trim()
   const modifyReason = String(event.modifyReason || '').trim()
+  const abnormalFlag = !!event.abnormalFlag
+  const abnormalType = abnormalFlag ? String(event.abnormalType || '').trim() : ''
+  const abnormalReason = abnormalFlag ? String(event.abnormalReason || '').trim() : ''
   if (!orderId) return error('订单参数缺失')
   if (!expressCompany) return error('请选择快递公司')
   if (!expressNo) return error('请填写快递单号')
@@ -109,6 +112,13 @@ exports.main = async (event) => {
     if (!coldChainMethod) return error('请选择冷链方式')
     if (!boxTemperature) return error('请填写箱内温度')
   }
+  if (abnormalFlag && (!abnormalType || !abnormalReason)) {
+    return error('请填写异常类型和原因')
+  }
+  const validAbnormalTypes = ['partial', 'damaged', 'address_changed', 'near_expiry', 'other']
+  if (abnormalFlag && !validAbnormalTypes.includes(abnormalType)) {
+    return error('异常类型无效')
+  }
 
   const shippedAt = formatDateTime(new Date())
   const updateData = {
@@ -122,6 +132,16 @@ exports.main = async (event) => {
     'shipping.coldChain.weight': packageWeight,
     'shipping.coldChain.boxTemperature': boxTemperature,
     'shipping.lastModifyReason': modifyReason,
+    ...(abnormalFlag ? {
+      'shipping.abnormal': {
+        flagged: true,
+        type: abnormalType,
+        reason: abnormalReason,
+        photos: Array.isArray(event.abnormalPhotos) ? event.abnormalPhotos : [],
+        flaggedAt: shippedAt,
+        flaggedBy: user._id,
+      },
+    } : {}),
     'shipping.logistics': _.push({
       time: shippedAt,
       title: isModify ? '物流信息已修改' : '商家已发货',

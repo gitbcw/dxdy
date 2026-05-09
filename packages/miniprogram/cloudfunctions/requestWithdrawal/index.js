@@ -57,8 +57,17 @@ exports.main = async (event) => {
   const amount = Math.round(Number(event.amount) * 100) / 100
   const bankCardId = String(event.bankCardId || '').trim()
   if (!Number.isFinite(amount) || amount <= 0) return error('请输入有效提现金额')
-  if (amount < 100) return error('提现金额需满100元')
   if (!bankCardId) return error('请选择提现银行卡')
+
+  // 读取最低提现金额配置
+  let minWithdrawAmount = 100
+  try {
+    const { data: configDoc } = await db.collection('config').doc('system').get()
+    if (configDoc && typeof configDoc.minWithdrawAmount === 'number') {
+      minWithdrawAmount = configDoc.minWithdrawAmount
+    }
+  } catch (_e) { /* use default */ }
+  if (amount < minWithdrawAmount) return error(`提现金额需满${minWithdrawAmount}元`)
 
   const available = user.commission && typeof user.commission.available === 'number'
     ? user.commission.available

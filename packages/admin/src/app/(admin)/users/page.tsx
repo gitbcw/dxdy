@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchUsers } from '@/lib/services/database';
+import { reviewVerification, reviewAgentApplication } from '@/lib/services/functions';
+import { writeAdminLog } from '@/lib/admin-log';
 import { maskPhone, formatDate } from '@/lib/format';
 import type { Customer, Salesperson, Clerk } from '@/lib/types';
 
@@ -30,6 +33,7 @@ type AgentApplicationUser = Customer & {
 };
 
 export default function UsersPage() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salespersons, setSalespersons] = useState<Salesperson[]>([]);
   const [agentApplications, setAgentApplications] = useState<AgentApplicationUser[]>([]);
@@ -47,13 +51,11 @@ export default function UsersPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await cloudbaseFetch('/api/cloudbase/users', { cache: 'no-store' });
-      if (!res.ok) throw new Error((await res.json()).error || 'CloudBase 用户读取失败');
-      const data = await res.json();
-      setCustomers(data.customers || []);
-      setSalespersons(data.salespersons || []);
-      setAgentApplications(data.agentApplications || []);
-      setClerks(data.clerks || []);
+      const data = await fetchUsers();
+      setCustomers(data.customers);
+      setSalespersons(data.salespersons);
+      setAgentApplications(data.agentApplications as AgentApplicationUser[]);
+      setClerks(data.clerks);
     } catch (err) {
       setError(err instanceof Error ? err.message : '用户数据加载失败');
     } finally {
@@ -77,18 +79,22 @@ export default function UsersPage() {
   async function handleReview(approved: boolean) {
     if (!reviewTarget) return;
     setError('');
+    const op = {
+      operatorId: user?.id || 'admin_001',
+      operatorName: user?.realName || user?.username || '后台管理员',
+    };
     try {
-      const stored = window.localStorage.getItem('admin_user');
-      const adminUser = stored ? JSON.parse(stored) : null;
-      const res = await cloudbaseJsonFetch('/api/cloudbase/users/review', {
-          type: reviewTarget.type,
-          userId: reviewTarget.user.id,
-          approved,
-          rejectReason: approved ? '' : rejectReason,
-          operatorId: adminUser?.id,
-          operatorName: adminUser?.realName || adminUser?.username,
-        });
-      if (!res.ok) throw new Error((await res.json()).error || '审核失败');
+      const params = {
+        userId: reviewTarget.user.id,
+        approved,
+        rejectReason: approved ? '' : rejectReason,
+        ...op,
+      };
+      const result = reviewTarget.type === 'verification'
+        ? await reviewVerification(params)
+        : await reviewAgentApplication(params);
+      if (!result.success) throw new Error(result.error || '审核失败');
+      await writeAdminLog({ operator: user, action: `${reviewTarget.type}_${approved ? 'approve' : 'reject'}`, target: reviewTarget.user.id, detail: `${reviewTarget.type === 'verification' ? '认证' : '代理商'}审核: ${approved ? '通过' : '拒绝'}` });
       await loadUsers();
       setReviewTarget(null);
       setRejectReason('');

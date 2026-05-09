@@ -75,14 +75,27 @@ function getOperatorName(user, fallback) {
   return fallback || user.realName || user.nickname || user.name || user.username || '客服'
 }
 
-function calcCommission(order, newPrice) {
+async function getCommissionRate() {
+  try {
+    const { data: configDoc } = await db.collection('config').doc('system').get()
+    if (configDoc && typeof configDoc.commissionRate === 'number') return configDoc.commissionRate
+  } catch (_e) { /* use default */ }
+  return 0.2
+}
+
+async function calcCommission(order, newPrice) {
   const currentAmount = order.commission && typeof order.commission.amount === 'number'
     ? order.commission.amount
     : 0
   const currentActual = order.pricing && typeof order.pricing.actualAmount === 'number'
     ? order.pricing.actualAmount
     : 0
-  const rate = currentActual > 0 && currentAmount > 0 ? currentAmount / currentActual : 0.2
+  // 优先从已有数据推算历史佣金率，否则读系统配置
+  if (currentActual > 0 && currentAmount > 0) {
+    const rate = currentAmount / currentActual
+    return Math.round(newPrice * rate * 100) / 100
+  }
+  const rate = await getCommissionRate()
   return Math.round(newPrice * rate * 100) / 100
 }
 
@@ -120,15 +133,50 @@ exports.main = async (event) => {
     operatedAt: now,
   }
 
+  const newCommission = await calcCommission(order, priceLogEntry.modifiedPrice)
+
   await db.collection('orders').doc(order._id).update({
     data: {
       'pricing.actualAmount': priceLogEntry.modifiedPrice,
       'pricing.priceLog': _.push(priceLogEntry),
-      'commission.amount': calcCommission(order, priceLogEntry.modifiedPrice),
+      'commission.amount': newCommission,
       'payment.adjustedAt': now,
       updatedAt: now,
     },
   })
+
+  // 同步提成记录金额
+  try {
+    const { data: records } = await db.collection('commission_records').where({
+      orderId: order._id,
+      sourceType: 'order',
+    }).get()
+    for (const rec of (records || [])) {
+      await db.collection('commission_records').doc(rec._id).update({
+        data: { amount: newCommission, updatedAt: now },
+      })
+    }
+    // 写一条改价调整记录
+    if (records && records.length > 0 && order.salespersonId) {
+      const diff = newCommission - (order.commission && order.commission.amount || 0)
+      if (diff !== 0) {
+        await db.collection('commission_records').add({
+          data: {
+            salespersonId: order.salespersonId,
+            customerId: order.customerId || '',
+            orderId: order._id,
+            orderNo: order.orderNo || '',
+            amount: Math.abs(diff),
+            status: diff > 0 ? 'pending' : 'deducted',
+            sourceType: 'price_modification',
+            description: `改价调整：佣金 ${diff > 0 ? '+' : '-'}¥${Math.abs(diff).toFixed(2)}（¥${currentPrice}→¥${priceLogEntry.modifiedPrice}）`,
+            createdAt: now,
+            updatedAt: now,
+          },
+        })
+      }
+    }
+  } catch (_e) { /* non-critical */ }
 
   await db.collection('logs').add({
     data: {

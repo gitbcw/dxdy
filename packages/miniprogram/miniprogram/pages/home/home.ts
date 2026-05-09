@@ -28,6 +28,7 @@ type HomeAction =
   | 'clerkPending'
   | 'clerkOrders'
   | 'verify'
+  | 'testQuery'
 
 function withIcon(items: any[]) {
   return items.map((item) => ({
@@ -228,6 +229,7 @@ Page({
           { icon: '购', title: '商品采购', action: 'catalog' },
           { icon: '血', title: '预约用血', action: 'blood' },
           { icon: '单', title: '我的订单', action: 'orders' },
+          { icon: '检', title: '检测查询', action: 'testQuery' },
         ],
         boardTitle: '常购商品',
         boardMoreText: '进入采购',
@@ -359,6 +361,7 @@ Page({
 
   handleAction(action: HomeAction) {
     const routes: Record<string, string> = {
+      testQuery: '/pages/tests/query/query',
       blood: '/pages/blood/booking/booking',
       promote: '/pages/salesman/promote/promote',
       commission: '/pages/salesman/commission/commission',

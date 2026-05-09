@@ -12,6 +12,9 @@
   <view class="status-card">
     <image class="status-bg" src="{{coldChainImage}}" mode="aspectFill" />
     <view class="status-main">
+      <view wx:if="{{orderType === 'exchange'}}" class="exchange-tag">
+        <text>换货发货</text>
+      </view>
       <text class="status-text">{{status}}</text>
       <text class="status-desc">{{company}} {{trackingNo}}</text>
     </view>
@@ -63,6 +66,10 @@
       <text class="info-label">订单号</text>
       <text class="info-value">{{orderNo}}</text>
     </view>
+    <view wx:if="{{orderType === 'exchange' && originalOrderId}}" class="info-row">
+      <text class="info-label">原订单</text>
+      <text class="info-value">{{originalOrderId}}</text>
+    </view>
     <view class="info-row">
       <text class="info-label">包装类型</text>
       <text class="info-value">{{packageType || '-'}}</text>
@@ -78,6 +85,11 @@
     <view class="info-row">
       <text class="info-label">箱内温度</text>
       <text class="info-value">{{boxTemperature || '-'}}</text>
+    </view>
+    <!-- 异常发货标记 -->
+    <view wx:if="{{abnormalFlag}}" class="abnormal-badge">
+      <text class="abnormal-tag">异常发货</text>
+      <text class="abnormal-reason">{{abnormalReason}}</text>
     </view>
   </view>
 
@@ -157,6 +169,33 @@
         <view class="cold-input-wrap">
           <text>箱内温度</text>
           <input placeholder="如 3.2" value="{{boxTemperature}}" data-field="boxTemperature" bindinput="onColdFieldInput" />
+        </view>
+      </view>
+      <!-- 异常发货开关 -->
+      <view class="abnormal-toggle-wrap">
+        <view class="abnormal-toggle" bindtap="onAbnormalToggle">
+          <view class="toggle-switch {{abnormalFlag ? 'toggle-on' : ''}}">
+            <view class="toggle-dot"></view>
+          </view>
+          <text>标记为异常发货</text>
+        </view>
+      </view>
+      <view wx:if="{{abnormalFlag}}" class="abnormal-form">
+        <view class="panel-section-title">异常类型</view>
+        <view class="company-grid compact">
+          <view
+            wx:for="{{abnormalTypes}}"
+            wx:key="value"
+            class="company-item {{abnormalType === item.value ? 'company-selected' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="onAbnormalTypeTap"
+          >
+            <text>{{item.label}}</text>
+          </view>
+        </view>
+        <view class="reason-wrap">
+          <text>异常原因 *</text>
+          <textarea maxlength="200" placeholder="请描述异常情况" value="{{abnormalReason}}" bindinput="onAbnormalReasonInput" />
         </view>
       </view>
       <view class="reason-wrap">

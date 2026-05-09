@@ -15,7 +15,18 @@
     <view class="type-row">
       <view class="type {{serviceType === 'refund_return' ? 'active' : ''}}" data-type="refund_return" bindtap="onTypeTap">退货退款</view>
       <view class="type {{serviceType === 'refund_only' ? 'active' : ''}}" data-type="refund_only" bindtap="onTypeTap">仅退款</view>
+      <view wx:if="{{!isBloodOrder}}" class="type {{serviceType === 'exchange' ? 'active' : ''}}" data-type="exchange" bindtap="onTypeTap">换货</view>
     </view>
+    <view class="reason-type-row">
+      <text class="reason-type-label">原因类型</text>
+      <view class="reason-type-options">
+        <view class="reason-type {{reasonType === 'quality' ? 'active' : ''}}" data-type="quality" bindtap="onReasonTypeTap">质量问题</view>
+        <view wx:if="{{!isBloodOrder}}" class="reason-type {{reasonType === 'change_of_mind' ? 'active' : ''}}" data-type="change_of_mind" bindtap="onReasonTypeTap">无理由退换</view>
+        <view class="reason-type {{reasonType === 'other' ? 'active' : ''}}" data-type="other" bindtap="onReasonTypeTap">其他</view>
+      </view>
+    </view>
+    <view wx:if="{{isBloodOrder}}" class="blood-hint">血包商品仅支持质量问题售后</view>
+    <view wx:if="{{bloodPackCode}}" class="row"><text>血包编号</text><text class="blood-code">{{bloodPackCode}}</text></view>
     <view class="row"><text>售后原因</text><input value="{{reason}}" bindinput="onReasonInput" /></view>
     <view class="textarea-row">
       <text>问题描述</text>

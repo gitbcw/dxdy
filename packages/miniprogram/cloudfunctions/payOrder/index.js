@@ -64,9 +64,23 @@ exports.main = async (event) => {
         transactionId,
         amount: actualAmount,
       },
+      'commission.status': 'locked',
       updatedAt: paidAt,
     },
   })
+
+  // 锁定对应的提成记录
+  try {
+    const { data: pendingRecords } = await db.collection('commission_records').where({
+      orderId: order._id,
+      status: 'pending',
+    }).get()
+    for (const rec of (pendingRecords || [])) {
+      await db.collection('commission_records').doc(rec._id).update({
+        data: { status: 'locked', lockedAt: paidAt, updatedAt: paidAt },
+      })
+    }
+  } catch (_e) { /* non-critical */ }
 
   const updated = await getOrder(order._id)
   return { success: true, order: { ...updated, id: updated._id } }

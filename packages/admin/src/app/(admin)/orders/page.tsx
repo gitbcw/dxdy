@@ -17,9 +17,11 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchOrders, fetchClerks } from '@/lib/services/database';
+import { adjustOrderPrice, assignOrderToClerk, clerkShipOrder, updateOrderStatus } from '@/lib/services/functions';
 import { formatMoney, formatDateTime } from '@/lib/format';
-import type { AdminUser, Clerk, Order, OrderStatus } from '@/lib/types';
+import type { Clerk, Order, OrderStatus } from '@/lib/types';
 
 const statusLabel: Record<string, string> = {
   pending_payment: '待付款',
@@ -78,6 +80,7 @@ const doneStatuses: OrderStatus[] = [
 ];
 
 export default function OrdersPage() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<OrderTab>('todo');
@@ -88,20 +91,18 @@ export default function OrdersPage() {
   const [shipOrder, setShipOrder] = useState<Order | null>(null);
   const [shipCompany, setShipCompany] = useState('');
   const [shipTrackingNo, setShipTrackingNo] = useState('');
+  const [shipPackageType, setShipPackageType] = useState('');
+  const [shipColdChain, setShipColdChain] = useState('');
+  const [shipWeight, setShipWeight] = useState('');
+  const [shipTemp, setShipTemp] = useState('');
+  const [shipModifyReason, setShipModifyReason] = useState('');
+  const [shipAbnormal, setShipAbnormal] = useState(false);
+  const [shipAbnormalType, setShipAbnormalType] = useState('');
+  const [shipAbnormalReason, setShipAbnormalReason] = useState('');
   const [assignOrder, setAssignOrder] = useState<Order | null>(null);
   const [clerks, setClerks] = useState<Clerk[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState('');
-  const [adminUser] = useState<AdminUser | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const stored = window.localStorage.getItem('admin_user');
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored) as AdminUser;
-    } catch {
-      return null;
-    }
-  });
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
@@ -112,11 +113,9 @@ export default function OrdersPage() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const response = await cloudbaseFetch('/api/cloudbase/orders', { cache: 'no-store' });
-      const data = await response.json() as { orders?: Order[]; clerks?: Clerk[]; error?: string };
-      if (!response.ok) throw new Error(data.error || '读取订单数据失败');
-      setOrders(data.orders || []);
-      setClerks(data.clerks || []);
+      const [orderData, clerkData] = await Promise.all([fetchOrders(), fetchClerks()]);
+      setOrders(orderData);
+      setClerks(clerkData);
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '读取订单数据失败');
     } finally {
@@ -126,14 +125,9 @@ export default function OrdersPage() {
 
   function getOperator() {
     return {
-      operatorId: adminUser?.id || 'admin_001',
-      operatorName: adminUser?.realName || adminUser?.username || '后台管理员',
+      operatorId: user?.id || 'admin_001',
+      operatorName: user?.realName || user?.username || '后台管理员',
     };
-  }
-
-  function updateRecord(updated?: Order) {
-    if (!updated) return;
-    setOrders(prev => prev.map(order => (order.id === updated.id ? updated : order)));
   }
 
   async function submitOrderAction(params: {
@@ -144,14 +138,43 @@ export default function OrdersPage() {
     clerkId?: string;
     company?: string;
     trackingNo?: string;
+    packageType?: string;
+    coldChainMethod?: string;
+    packageWeight?: string;
+    boxTemperature?: string;
+    modifyReason?: string;
+    abnormalFlag?: boolean;
+    abnormalType?: string;
+    abnormalReason?: string;
   }) {
     setSubmittingId(params.orderId);
     setErrorMsg('');
+    const op = getOperator();
     try {
-      const response = await cloudbaseJsonFetch('/api/cloudbase/orders', { ...params, ...getOperator() });
-      const data = await response.json() as { order?: Order; error?: string };
-      if (!response.ok) throw new Error(data.error || '订单处理失败');
-      updateRecord(data.order);
+      let result: { success?: boolean; error?: string; order?: Order };
+      if (params.action === 'adjust_price' && params.newPrice !== undefined) {
+        result = await adjustOrderPrice({ orderId: params.orderId, newPrice: params.newPrice, ...op });
+      } else if (params.action === 'assign' && params.clerkId) {
+        result = await assignOrderToClerk({ orderId: params.orderId, clerkId: params.clerkId, ...op });
+      } else if (params.action === 'ship' && params.company && params.trackingNo) {
+        result = await clerkShipOrder({
+          orderId: params.orderId, company: params.company, trackingNo: params.trackingNo,
+          ...(params.packageType ? { packageType: params.packageType } : {}),
+          ...(params.coldChainMethod ? { coldChainMethod: params.coldChainMethod } : {}),
+          ...(params.packageWeight ? { packageWeight: params.packageWeight } : {}),
+          ...(params.boxTemperature ? { boxTemperature: params.boxTemperature } : {}),
+          ...(params.modifyReason ? { modifyReason: params.modifyReason } : {}),
+          ...(params.abnormalFlag ? { abnormalFlag: true, abnormalType: params.abnormalType, abnormalReason: params.abnormalReason } : {}),
+          ...op,
+        });
+      } else if (params.action === 'status' && params.status) {
+        result = await updateOrderStatus({ orderId: params.orderId, status: params.status, ...op });
+      } else {
+        throw new Error('无效的操作参数');
+      }
+      if (!result.success) throw new Error(result.error || '订单处理失败');
+      // Reload to get fresh data after mutation
+      await loadOrders();
       return true;
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '订单处理失败');
@@ -181,7 +204,7 @@ export default function OrdersPage() {
   const doneCount = orders.filter(order => doneStatuses.includes(order.status)).length;
 
   async function handleAdjustPrice() {
-    if (!adjustOrder || !newPrice || !adminUser) return;
+    if (!adjustOrder || !newPrice || !user) return;
     const price = parseFloat(newPrice);
     if (Number.isNaN(price) || price <= 0) return;
     if (price > adjustOrder.pricing.actualAmount) {
@@ -217,16 +240,44 @@ export default function OrdersPage() {
       setErrorMsg('请填写物流公司和物流单号');
       return;
     }
+    const hasBlood = (shipOrder.items || []).some(item => /血/.test(item.productName || ''));
+    if (hasBlood && (!shipPackageType || !shipColdChain || !shipTemp)) {
+      setErrorMsg('血包订单请补全冷链信息（包装类型、冷链方式、箱内温度）');
+      return;
+    }
+    const alreadyShipped = shipOrder.status === 'pending_receipt' || !!(shipOrder.shipping?.trackingNo);
+    if (alreadyShipped && !shipModifyReason.trim()) {
+      setErrorMsg('修改已发货订单物流请填写修改原因');
+      return;
+    }
+    if (shipAbnormal && (!shipAbnormalType || !shipAbnormalReason.trim())) {
+      setErrorMsg('请选择异常类型并填写异常原因');
+      return;
+    }
     const ok = await submitOrderAction({
       orderId: shipOrder.id,
       action: 'ship',
       company: shipCompany,
       trackingNo: shipTrackingNo,
+      packageType: shipPackageType,
+      coldChainMethod: shipColdChain,
+      packageWeight: shipWeight,
+      boxTemperature: shipTemp,
+      modifyReason: shipModifyReason.trim(),
+      ...(shipAbnormal ? { abnormalFlag: true, abnormalType: shipAbnormalType, abnormalReason: shipAbnormalReason.trim() } : {}),
     });
     if (ok) {
       setShipOrder(null);
       setShipCompany('');
       setShipTrackingNo('');
+      setShipPackageType('');
+      setShipColdChain('');
+      setShipWeight('');
+      setShipTemp('');
+      setShipModifyReason('');
+      setShipAbnormal(false);
+      setShipAbnormalType('');
+      setShipAbnormalReason('');
     }
   }
 
@@ -348,7 +399,7 @@ export default function OrdersPage() {
                       <Link href={`/orders/${order.id}`}>
                         <Button variant="outline" size="sm">详情</Button>
                       </Link>
-                      {order.status === 'pending_payment' && adminUser?.permissions?.order_price_adjust && (
+                      {order.status === 'pending_payment' && user?.permissions?.order_price_adjust && (
                         <>
                           <Button
                             variant="outline"
@@ -367,7 +418,7 @@ export default function OrdersPage() {
                           </Button>
                         </>
                       )}
-                      {order.status === 'pending_payment' && !adminUser?.permissions?.order_price_adjust && (
+                      {order.status === 'pending_payment' && !user?.permissions?.order_price_adjust && (
                         <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)} disabled={submittingId === order.id}>
                           取消
                         </Button>
@@ -517,7 +568,7 @@ export default function OrdersPage() {
       </Dialog>
 
       <Dialog open={!!shipOrder} onOpenChange={() => setShipOrder(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>录入物流发货</DialogTitle>
           </DialogHeader>
@@ -533,6 +584,76 @@ export default function OrdersPage() {
             <div className="space-y-2">
               <Label htmlFor="shipTrackingNo">物流单号</Label>
               <Input id="shipTrackingNo" value={shipTrackingNo} onChange={event => setShipTrackingNo(event.target.value)} placeholder="请输入物流单号" />
+            </div>
+
+            {/* 冷链信息 — 血包订单必填 */}
+            {(shipOrder?.items || []).some(item => /血/.test(item.productName || '')) && (
+              <div className="space-y-3 rounded-lg border p-3">
+                <p className="text-sm font-semibold">冷链信息（血包订单必填）</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">包装类型</Label>
+                    <select className="w-full rounded-md border px-2 py-1.5 text-sm" value={shipPackageType} onChange={e => setShipPackageType(e.target.value)}>
+                      <option value="">选择...</option>
+                      <option value="冷藏箱">冷藏箱</option>
+                      <option value="保温箱">保温箱</option>
+                      <option value="普通箱">普通箱</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">冷链方式</Label>
+                    <select className="w-full rounded-md border px-2 py-1.5 text-sm" value={shipColdChain} onChange={e => setShipColdChain(e.target.value)}>
+                      <option value="">选择...</option>
+                      <option value="冰袋（2-6°C）">冰袋（2-6°C）</option>
+                      <option value="干冰">干冰</option>
+                      <option value="常温">常温</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">包裹重量</Label>
+                    <Input placeholder="如 5.80kg" value={shipWeight} onChange={e => setShipWeight(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">箱内温度</Label>
+                    <Input placeholder="如 3.2" value={shipTemp} onChange={e => setShipTemp(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 修改原因 — 重新发货时显示 */}
+            {(shipOrder?.status === 'pending_receipt' || shipOrder?.shipping?.trackingNo) && (
+              <div className="space-y-2">
+                <Label htmlFor="shipModifyReason">修改原因 *</Label>
+                <textarea id="shipModifyReason" className="w-full rounded-md border px-3 py-2 text-sm" rows={2} placeholder="请输入修改物流的原因" value={shipModifyReason} onChange={e => setShipModifyReason(e.target.value)} />
+              </div>
+            )}
+
+            {/* 异常发货 */}
+            <div className="space-y-3 rounded-lg border p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input type="checkbox" checked={shipAbnormal} onChange={e => setShipAbnormal(e.target.checked)} />
+                标记为异常发货
+              </label>
+              {shipAbnormal && (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">异常类型 *</Label>
+                    <select className="w-full rounded-md border px-2 py-1.5 text-sm" value={shipAbnormalType} onChange={e => setShipAbnormalType(e.target.value)}>
+                      <option value="">选择...</option>
+                      <option value="partial">部分发货</option>
+                      <option value="damaged">商品破损</option>
+                      <option value="address_changed">地址变更</option>
+                      <option value="near_expiry">临期商品</option>
+                      <option value="other">其他</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">异常原因 *</Label>
+                    <textarea className="w-full rounded-md border px-3 py-2 text-sm" rows={2} placeholder="请描述异常情况" value={shipAbnormalReason} onChange={e => setShipAbnormalReason(e.target.value)} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchOrders } from '@/lib/services/database';
+import { adjustOrderPrice, updateOrderStatus } from '@/lib/services/functions';
 import { formatDateTime, formatMoney } from '@/lib/format';
-import type { AdminUser, Order, OrderStatus } from '@/lib/types';
+import type { Order, OrderStatus } from '@/lib/types';
 
 const statusLabel: Record<string, string> = {
   pending_payment: '待付款',
@@ -39,49 +41,40 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
 };
 
 export default function OrderDetailPage() {
-  const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('id') || '';
   const router = useRouter();
+  const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [newPrice, setNewPrice] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!params?.id) return;
-    async function loadOrder(id: string) {
-      setLoading(true);
-      setErrorMsg('');
-      try {
-        const response = await cloudbaseFetch(`/api/cloudbase/orders?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
-        const data = await response.json() as { order?: Order; error?: string };
-        if (!response.ok) throw new Error(data.error || '读取订单详情失败');
-        setOrder(data.order || null);
-      } catch (error) {
-        setErrorMsg(error instanceof Error ? error.message : '读取订单详情失败');
-        setOrder(null);
-      } finally {
-        setLoading(false);
-      }
+  async function loadOrder(id: string) {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const docs = await fetchOrders(id);
+      setOrder(docs[0] || null);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '读取订单详情失败');
+      setOrder(null);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    loadOrder(params.id);
-    const stored = localStorage.getItem('admin_user');
-    if (stored) {
-      try {
-        setAdminUser(JSON.parse(stored) as AdminUser);
-      } catch {
-        // ignore parse failure
-      }
-    }
-  }, [params?.id]);
+  useEffect(() => {
+    if (!orderId) return;
+    loadOrder(orderId);
+  }, [orderId]);
 
   function getOperator() {
     return {
-      operatorId: adminUser?.id || 'admin_001',
-      operatorName: adminUser?.realName || adminUser?.username || '后台管理员',
+      operatorId: user?.id || 'admin_001',
+      operatorName: user?.realName || user?.username || '后台管理员',
     };
   }
 
@@ -93,11 +86,19 @@ export default function OrderDetailPage() {
     if (!order) return false;
     setSubmitting(true);
     setErrorMsg('');
+    const op = getOperator();
     try {
-      const response = await cloudbaseJsonFetch('/api/cloudbase/orders', { orderId: order.id, ...params, ...getOperator() });
-      const data = await response.json() as { order?: Order; error?: string };
-      if (!response.ok) throw new Error(data.error || '订单处理失败');
-      if (data.order) setOrder(data.order);
+      let result: { success?: boolean; error?: string };
+      if (params.action === 'adjust_price' && params.newPrice !== undefined) {
+        result = await adjustOrderPrice({ orderId: order.id, newPrice: params.newPrice, ...op });
+      } else if (params.action === 'status' && params.status) {
+        result = await updateOrderStatus({ orderId: order.id, status: params.status, ...op });
+      } else {
+        throw new Error('无效的操作参数');
+      }
+      if (!result.success) throw new Error(result.error || '订单处理失败');
+      // Reload to get fresh data
+      await loadOrder(order.id);
       return true;
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '订单处理失败');
@@ -108,7 +109,7 @@ export default function OrderDetailPage() {
   }
 
   async function handleAdjustPrice() {
-    if (!order || !newPrice || !adminUser) return;
+    if (!order || !newPrice || !user) return;
     const price = parseFloat(newPrice);
     if (isNaN(price) || price <= 0) return;
     if (price > order.pricing.actualAmount) {
@@ -126,7 +127,7 @@ export default function OrderDetailPage() {
   }
 
   async function handleStatusChange(nextStatus: OrderStatus) {
-    if (!order || !adminUser) return;
+    if (!order || !user) return;
     await submitOrderAction({ action: 'status', status: nextStatus });
   }
 
@@ -138,7 +139,7 @@ export default function OrderDetailPage() {
     return <div className="text-sm text-muted-foreground">订单不存在或已删除。</div>;
   }
 
-  const canAdjust = order.status === 'pending_payment' && adminUser?.permissions?.order_price_adjust;
+  const canAdjust = order.status === 'pending_payment' && user?.permissions?.order_price_adjust;
 
   return (
     <div className="space-y-6">
@@ -223,6 +224,12 @@ export default function OrderDetailPage() {
               <span className="text-muted-foreground">原价</span>
               <span>¥{formatMoney(order.pricing.originalAmount)}</span>
             </div>
+            {(order.pricing as any).coupon && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">优惠券</span>
+                <span className="text-green-600">-¥{formatMoney((order.pricing as any).coupon.discountAmount)} ({(order.pricing as any).coupon.couponName})</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">成交价</span>
               <span className="font-medium">¥{formatMoney(order.pricing.actualAmount)}</span>
@@ -261,6 +268,25 @@ export default function OrderDetailPage() {
               <p className="text-muted-foreground">物流</p>
               <p>{order.shipping.company && order.shipping.trackingNo ? `${order.shipping.company} ${order.shipping.trackingNo}` : '未发货'}</p>
             </div>
+            {order.shipping.abnormal?.flagged && (
+              <div>
+                <p className="text-muted-foreground">异常标记</p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                    异常发货
+                  </span>
+                  <span className="text-sm text-muted-foreground">{order.shipping.abnormal.reason}</span>
+                </div>
+              </div>
+            )}
+            {order.shipping.urgent && (
+              <div>
+                <p className="text-muted-foreground">配送类型</p>
+                <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                  加急配送
+                </span>
+              </div>
+            )}
             {order.booking && (
               <>
                 <div>

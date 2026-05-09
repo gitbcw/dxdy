@@ -101,6 +101,10 @@
   margin-top: 18rpx;
 }
 
+.card.full-width {
+  grid-column: 1 / -1;
+}
+
 .card {
   padding: 22rpx;
 }
@@ -127,6 +131,60 @@
 .check-row {
   display: flex;
   justify-content: space-between;
+}
+
+.check-item {
+  margin-top: 14rpx;
+  padding: 14rpx;
+  border-radius: 10rpx;
+  background: #f5faf6;
+}
+
+.check-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.check-name {
+  color: #17201b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.check-result {
+  font-size: 22rpx;
+  font-weight: 800;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+}
+
+.check-result.pass {
+  color: #18a44a;
+  background: #eaf8ee;
+}
+
+.check-result.warn {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.check-detail {
+  margin-top: 8rpx;
+}
+
+.check-detail text {
+  display: block;
+  color: #69736e;
+  font-size: 20rpx;
+  line-height: 1.6;
+}
+
+.check-empty {
+  padding: 20rpx;
+  color: #9ca8a2;
+  font-size: 22rpx;
+  text-align: center;
 }
 
 .conclusion {

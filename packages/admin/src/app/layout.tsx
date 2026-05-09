@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import "./globals.css";
+'use client';
 
-export const metadata: Metadata = {
-  title: "大熊动医华南医学检验实验室管理后台",
-  description: "大熊动医华南医学检验实验室管理后台",
-};
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/use-auth";
+import "./globals.css";
 
 export default function RootLayout({
   children,
@@ -14,8 +11,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className="h-full antialiased">
+      <head>
+        <title>大熊动医华南医学检验实验室管理后台</title>
+        <meta name="description" content="大熊动医华南医学检验实验室管理后台" />
+      </head>
       <body className="min-h-full flex flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </AuthProvider>
       </body>
     </html>
   );

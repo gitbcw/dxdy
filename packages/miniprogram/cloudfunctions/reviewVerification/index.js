@@ -101,6 +101,19 @@ exports.main = async (event) => {
   if (!info.businessLicense) return error('认证材料缺失')
   if (event.approved !== true && !String(event.rejectReason || event.note || '').trim()) return error('请填写驳回原因')
 
+  // 审核通过前检查资质编号唯一性
+  if (event.approved && info.businessLicense) {
+    const _ = db.command
+    const { data: dupes } = await db.collection('users').where({
+      'verificationInfo.businessLicense': info.businessLicense,
+      verificationStatus: 'approved',
+      _id: _.neq(target._id),
+    }).limit(1).get()
+    if (dupes && dupes.length > 0) {
+      return error('该资质编号已被其他机构认证，请核实后重试')
+    }
+  }
+
   const now = formatDateTime(new Date())
   const rejectReason = event.approved ? '' : String(event.rejectReason || event.note || '').trim()
   const operatorName = getOperatorName(operator, String(event.operatorName || '').trim())

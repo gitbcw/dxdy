@@ -3,9 +3,12 @@ const icons = require('../../../services/icons')
 
 function mapItems(items: any[]) {
   return (items || []).map((item: any) => {
-    if (typeof item === 'string') return { name: item, result: '合格' }
+    if (typeof item === 'string') return { name: item, value: '', unit: '', referenceRange: '', result: '合格' }
     return {
       name: item.name || item.title || item.item || '检测项目',
+      value: item.value || '',
+      unit: item.unit || '',
+      referenceRange: item.referenceRange || '',
       result: item.result || item.status || '合格',
     }
   })
@@ -25,6 +28,8 @@ Page({
     transport: '',
     conclusion: '',
     reportFileID: '',
+    orderId: '',
+    reportNo: '',
     isEmpty: false,
     testIcon: icons.test,
     traceabilityImage: GENERATED_ASSETS.testTraceability,
@@ -58,6 +63,8 @@ Page({
       transport: report.transport || '冷链运输',
       conclusion: report.conclusion || '检测结论待后台维护',
       reportFileID: report.reportFileID || '',
+      orderId: report.orderId || '',
+      reportNo: report.reportNo || '',
       isEmpty: false,
     })
   },

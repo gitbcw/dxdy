@@ -76,11 +76,33 @@ export interface AdminUser {
 export interface ProductSpec { name: string; value: string; }
 export type ProductVisibility = 'all' | 'institution_only' | 'personal_only';
 export type ProductStatus = 'on_sale' | 'off_sale';
+export type ProductType = 'physical' | 'blood_pack' | 'test_service' | 'card_voucher';
 
 export interface ReturnPolicy {
   enabled: boolean;
   deadlineDays: number;
   note: string;
+}
+
+export interface BookingConfig {
+  enabled: boolean; leadDays: number; locations: string[]
+  requireInstitution: boolean; requireVerification: boolean
+}
+
+export interface PurchaseLimit {
+  minQuantity: number; maxQuantityPerOrder: number; maxQuantityPerUser: number
+}
+
+export interface AgreementRequired {
+  enabled: boolean; title: string; content: string
+}
+
+export interface UrgentConfig {
+  enabled: boolean; extraFee: number; description: string
+}
+
+export interface DeliveryConfig {
+  regions: string[]; coldChainRequired: boolean
 }
 
 export interface Product {
@@ -101,6 +123,13 @@ export interface Product {
   isPrescription?: boolean;
   isBloodPack?: boolean;
   testInfoUrl?: string;
+  productType?: ProductType;
+  bookingConfig?: BookingConfig;
+  urgentConfig?: UrgentConfig;
+  purchaseLimit?: PurchaseLimit;
+  agreementRequired?: AgreementRequired;
+  salesCountEnabled?: boolean;
+  deliveryConfig?: DeliveryConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -134,8 +163,17 @@ export interface OrderItem {
 export interface PriceLog { originalPrice: number; modifiedPrice: number; operatorId: string; operatorName: string; operatedAt: string; }
 export interface LogisticsInfo { time: string; description: string; location?: string; }
 export interface BookingInfo { date: string; location: string; contactName: string; contactPhone: string; }
-export interface OrderPricing { originalAmount: number; actualAmount: number; priceLog: PriceLog[]; }
-export interface OrderShipping { address: OrderAddress; trackingNo: string | null; company: string | null; logistics: LogisticsInfo[]; }
+export interface OrderPricing {
+  originalAmount: number; actualAmount: number; priceLog: PriceLog[]
+  coupon?: { userCouponId: string; couponName: string; couponType: CouponType; discountAmount: number }
+  shippingFee?: number; urgentFee?: number; pointsDeduction?: number; refundedAmount?: number
+  breakdown?: { goodsAmount: number; couponDiscount: number; pointsDeduction: number; shippingFee: number; urgentFee: number; actualAmount: number }
+}
+export interface OrderShipping {
+  address: OrderAddress; trackingNo: string | null; company: string | null; logistics: LogisticsInfo[]
+  abnormal?: { flagged: boolean; type: string; reason: string; photos: string[]; flaggedAt: string; flaggedBy: string }
+  urgent?: boolean
+}
 
 export type CommissionStatus = 'pending' | 'locked' | 'settled' | 'adjusted' | 'deducted';
 export interface OrderCommission { status: CommissionStatus; amount: number; settledAt: string | null; }
@@ -191,9 +229,38 @@ export interface OperationLog {
   createdAt: string;
 }
 
+// --- 优惠券 ---
+
+export type CouponType = 'fixed' | 'discount' | 'full_reduction';
+export type CouponScope = 'all' | 'products' | 'categories';
+export type CouponDistributeMethod = 'admin' | 'user_claim' | 'auto_new_user';
+export type CouponTemplateStatus = 'active' | 'disabled' | 'expired';
+export type UserCouponStatus = 'available' | 'used' | 'expired' | 'disabled';
+export type UserCouponSource = 'admin_grant' | 'user_claim' | 'auto_new_user';
+
+export interface CouponTemplate {
+  id: string; name: string; description: string
+  type: CouponType; value: number; minAmount: number
+  scope: CouponScope; scopeIds: string[]
+  distributeMethod: CouponDistributeMethod
+  totalQuota: number; claimedCount: number; perUserLimit: number
+  validDaysAfterClaim: number; validFrom: string; validTo: string
+  status: CouponTemplateStatus; createdAt: string; updatedAt: string
+}
+
+export interface UserCoupon {
+  id: string; templateId: string; userId: string; userOpenid: string
+  couponName: string; couponType: CouponType; couponValue: number
+  minAmount: number; scope: CouponScope; scopeIds: string[]
+  validFrom: string; validTo: string
+  status: UserCouponStatus; usedAt: string; usedOrderId: string
+  source: UserCouponSource; grantedBy: string
+  createdAt: string; updatedAt: string
+}
+
 // --- 售后 ---
 
-export type ReturnType = 'return' | 'exchange';
+export type ReturnType = 'refund_return' | 'refund_only' | 'exchange';
 export type ReturnStatus =
   | 'pending_review' | 'approved' | 'rejected'
   | 'pending_return_ship' | 'returned' | 'verifying'

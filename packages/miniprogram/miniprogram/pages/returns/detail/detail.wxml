@@ -19,4 +19,21 @@
     <text class="note-desc">{{note}}</text>
     <text class="note-desc">预计退款金额：¥{{refundAmount}}</text>
   </view>
+
+  <!-- 寄回物流填写 -->
+  <view wx:if="{{showLogisticsForm}}" class="note-card">
+    <text class="note-title">填写寄回物流</text>
+    <text class="note-desc">请将商品寄回并填写物流信息</text>
+    <view class="logistics-form">
+      <input class="logistics-input" placeholder="快递公司（如 顺丰速运）" value="{{sendCompany}}" bindinput="onSendCompanyInput" />
+      <input class="logistics-input" placeholder="快递单号" value="{{sendTrackingNo}}" bindinput="onSendTrackingNoInput" />
+      <view class="logistics-submit dx-orange-btn" bindtap="onSubmitLogistics">提交物流信息</view>
+    </view>
+  </view>
+
+  <!-- 已提交的寄回物流展示 -->
+  <view wx:if="{{record.sendLogistics && record.sendLogistics.trackingNo}}" class="note-card">
+    <text class="note-title">寄回物流</text>
+    <text class="note-desc">{{record.sendLogistics.company}} {{record.sendLogistics.trackingNo}}</text>
+  </view>
 </view>

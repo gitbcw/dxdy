@@ -13,7 +13,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchFinanceData, fetchUsers } from '@/lib/services/database';
+import { reviewWithdrawal, processInvoice } from '@/lib/services/functions';
+import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
 
 type WithdrawalRecord = {
@@ -60,8 +63,10 @@ const invoiceStatusText: Record<string, string> = {
 };
 
 export default function FinancePage() {
+  const { user } = useAuth();
   const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [salespersonMap, setSalespersonMap] = useState<Record<string, string>>({});
   const [target, setTarget] = useState<ReviewTarget | null>(null);
   const [note, setNote] = useState('');
   const [invoiceFileID, setInvoiceFileID] = useState('');
@@ -79,11 +84,14 @@ export default function FinancePage() {
     setLoading(true);
     setError('');
     try {
-      const res = await cloudbaseFetch('/api/cloudbase/finance', { cache: 'no-store' });
-      if (!res.ok) throw new Error((await res.json()).error || '财务数据读取失败');
-      const data = await res.json() as { withdrawals?: WithdrawalRecord[]; invoices?: InvoiceRecord[] };
+      const [data, usersData] = await Promise.all([fetchFinanceData(), fetchUsers()]);
       setWithdrawals(data.withdrawals || []);
       setInvoices(data.invoices || []);
+      const map: Record<string, string> = {};
+      for (const u of usersData.salespersons || []) {
+        map[u.id] = u.realName || u.nickname || u.name || u.phone || u.id;
+      }
+      setSalespersonMap(map);
     } catch (err) {
       setError(err instanceof Error ? err.message : '财务数据读取失败');
     } finally {
@@ -102,33 +110,37 @@ export default function FinancePage() {
 
   async function submitTarget() {
     if (!target) return;
+    const op = {
+      operatorId: user?.id || 'admin_001',
+      operatorName: user?.realName || user?.username || '后台管理员',
+    };
     try {
-      const stored = window.localStorage.getItem('admin_user');
-      const adminUser = stored ? JSON.parse(stored) as { id?: string; realName?: string; username?: string } : null;
-      const payload = target.type === 'withdrawal'
-        ? {
-            type: 'withdrawal',
-            id: target.record.id,
-            status: target.action === 'paid' ? 'paid' : undefined,
-            approved: target.action === 'approved' ? true : target.action === 'rejected' ? false : undefined,
-            note,
-          }
-        : {
-            type: 'invoice',
-            id: target.record.id,
-            status: target.action,
-            note,
-            invoiceFileID,
-            invoiceNo,
-            company,
-            trackingNo,
-          };
-      const res = await cloudbaseJsonFetch('/api/cloudbase/finance', {
-          ...payload,
-          operatorId: adminUser?.id,
-          operatorName: adminUser?.realName || adminUser?.username,
+      if (target.type === 'withdrawal') {
+        const params: { id: string; status?: string; approved?: boolean; note: string; operatorId: string; operatorName: string } = {
+          id: target.record.id,
+          note,
+          ...op,
+        };
+        if (target.action === 'paid') params.status = 'paid';
+        else if (target.action === 'approved') params.approved = true;
+        else if (target.action === 'rejected') params.approved = false;
+        const result = await reviewWithdrawal(params);
+        if (!result.success) throw new Error(result.error || '处理失败');
+        await writeAdminLog({ operator: user, action: `withdrawal_${target.action}`, target: target.record.id, detail: `提现处理: ${target.action}` });
+      } else {
+        const result = await processInvoice({
+          id: target.record.id,
+          status: target.action,
+          note,
+          invoiceFileID,
+          invoiceNo,
+          company,
+          trackingNo,
+          ...op,
         });
-      if (!res.ok) throw new Error((await res.json()).error || '处理失败');
+        if (!result.success) throw new Error(result.error || '处理失败');
+        await writeAdminLog({ operator: user, action: `invoice_${target.action}`, target: target.record.id, detail: `发票处理: ${target.action}` });
+      }
       setTarget(null);
       await loadFinance();
     } catch (err) {
@@ -156,6 +168,11 @@ export default function FinancePage() {
         </TabsList>
 
         <TabsContent value="withdrawals">
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">待审核</p><p className="text-2xl font-bold">{withdrawals.filter(w => w.status === 'pending_review').length} 笔</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">待审核金额</p><p className="text-2xl font-bold">¥{formatMoney(withdrawals.filter(w => w.status === 'pending_review').reduce((s, w) => s + (w.amount || 0), 0))}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计提现</p><p className="text-2xl font-bold">¥{formatMoney(withdrawals.filter(w => w.status === 'paid' || w.status === 'completed').reduce((s, w) => s + (w.amount || 0), 0))}</p></CardContent></Card>
+          </div>
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -179,7 +196,7 @@ export default function FinancePage() {
                   {!loading && withdrawals.map(record => (
                     <TableRow key={record.id}>
                       <TableCell className="font-mono text-sm">{record.id}</TableCell>
-                      <TableCell className="font-mono text-sm">{record.salespersonId || '-'}</TableCell>
+                      <TableCell className="text-sm">{salespersonMap[record.salespersonId || ''] || record.salespersonId || '-'}</TableCell>
                       <TableCell>¥{formatMoney(record.amount || 0)}</TableCell>
                       <TableCell>{record.bankName || '-'} {record.cardNo ? `(${String(record.cardNo).slice(-4)})` : ''}</TableCell>
                       <TableCell><Badge variant={record.status === 'rejected' ? 'destructive' : 'outline'}>{withdrawalStatusText[record.status || ''] || record.status}</Badge></TableCell>

@@ -15,9 +15,11 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchProductsAndCategories, createProduct, updateProduct } from '@/lib/services/database';
+import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
-import type { AdminUser, Product, ProductCategory, ProductVisibility } from '@/lib/types';
+import type { Product, ProductCategory, ProductVisibility, ProductType } from '@/lib/types';
 
 type ProductFormState = {
   name: string;
@@ -29,6 +31,22 @@ type ProductFormState = {
   stock: string;
   specs: string;
   images: string[];
+  productType: ProductType;
+  bookingEnabled: boolean;
+  bookingLeadDays: string;
+  bookingLocations: string;
+  bookingRequireInstitution: boolean;
+  bookingRequireVerification: boolean;
+  purchaseMinQuantity: string;
+  purchaseMaxPerOrder: string;
+  purchaseMaxPerUser: string;
+  agreementEnabled: boolean;
+  agreementTitle: string;
+  agreementContent: string;
+  salesCountEnabled: boolean;
+  urgentEnabled: boolean;
+  urgentFee: string;
+  urgentDescription: string;
 };
 
 const visibilityLabel: Record<string, string> = {
@@ -64,6 +82,22 @@ const emptyProductForm = (): ProductFormState => ({
   stock: '',
   specs: '',
   images: [],
+  productType: 'physical',
+  bookingEnabled: false,
+  bookingLeadDays: '2',
+  bookingLocations: '',
+  bookingRequireInstitution: false,
+  bookingRequireVerification: false,
+  purchaseMinQuantity: '1',
+  purchaseMaxPerOrder: '0',
+  purchaseMaxPerUser: '0',
+  agreementEnabled: false,
+  agreementTitle: '',
+  agreementContent: '',
+  salesCountEnabled: false,
+  urgentEnabled: false,
+  urgentFee: '0',
+  urgentDescription: '',
 });
 
 function productSpecsToText(specs: Product['specs']) {
@@ -137,6 +171,7 @@ function RichTextEditor({
 }
 
 export default function ProductsPage() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [search, setSearch] = useState('');
@@ -158,30 +193,13 @@ export default function ProductsPage() {
     loadProducts();
   }, []);
 
-  function getOperator() {
-    if (typeof window === 'undefined') return { operatorId: 'admin_001', operatorName: '后台管理员', operatorRole: 'admin' };
-    try {
-      const stored = window.localStorage.getItem('admin_user');
-      const user = stored ? JSON.parse(stored) as AdminUser : null;
-      return {
-        operatorId: user?.id || 'admin_001',
-        operatorName: user?.realName || user?.username || '后台管理员',
-        operatorRole: user?.role || 'admin',
-      };
-    } catch {
-      return { operatorId: 'admin_001', operatorName: '后台管理员', operatorRole: 'admin' };
-    }
-  }
-
   async function loadProducts() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const response = await cloudbaseFetch('/api/cloudbase/products', { cache: 'no-store' });
-      const data = await response.json() as { products?: Product[]; categories?: ProductCategory[]; error?: string };
-      if (!response.ok) throw new Error(data.error || '读取商品数据失败');
-      setProducts(data.products || []);
-      setCategories(data.categories || []);
+      const data = await fetchProductsAndCategories();
+      setProducts(data.products);
+      setCategories(data.categories);
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '读取商品数据失败');
     } finally {
@@ -190,17 +208,15 @@ export default function ProductsPage() {
   }
 
   async function updateProductRemote(id: string, updates: Partial<Product>) {
-    const response = await cloudbaseJsonFetch('/api/cloudbase/products', { id, updates, ...getOperator() }, { method: 'PATCH' });
-    const data = await response.json() as { product?: Product; error?: string };
-    if (!response.ok) throw new Error(data.error || '更新商品失败');
-    return data.product || null;
+    const updated = await updateProduct(id, updates);
+    await writeAdminLog({ operator: user, action: 'update_product', target: id, detail: `更新商品 ${id}` });
+    return updated;
   }
 
   async function createProductRemote(product: Product) {
-    const response = await cloudbaseJsonFetch('/api/cloudbase/products', { product, ...getOperator() });
-    const data = await response.json() as { product?: Product; error?: string };
-    if (!response.ok) throw new Error(data.error || '创建商品失败');
-    return data.product;
+    const created = await createProduct(product);
+    await writeAdminLog({ operator: user, action: 'create_product', target: product.id, detail: `创建商品 ${product.name}` });
+    return created;
   }
 
   const catMap = Object.fromEntries(categories.map(category => [category.id, category.name]));
@@ -238,6 +254,9 @@ export default function ProductsPage() {
 
   function startEdit(product: Product) {
     setEditProduct(product);
+    const bc = product.bookingConfig;
+    const pl = product.purchaseLimit;
+    const ar = product.agreementRequired;
     setEditForm({
       name: product.name,
       description: product.description,
@@ -248,7 +267,53 @@ export default function ProductsPage() {
       stock: String(product.stock),
       specs: productSpecsToText(product.specs),
       images: product.images ?? [],
+      productType: product.productType || (product.isBloodPack ? 'blood_pack' : 'physical'),
+      bookingEnabled: bc?.enabled || false,
+      bookingLeadDays: String(bc?.leadDays || 2),
+      bookingLocations: (bc?.locations || []).join(','),
+      bookingRequireInstitution: bc?.requireInstitution || false,
+      bookingRequireVerification: bc?.requireVerification || false,
+      purchaseMinQuantity: String(pl?.minQuantity || 1),
+      purchaseMaxPerOrder: String(pl?.maxQuantityPerOrder || 0),
+      purchaseMaxPerUser: String(pl?.maxQuantityPerUser || 0),
+      agreementEnabled: ar?.enabled || false,
+      agreementTitle: ar?.title || '',
+      agreementContent: ar?.content || '',
+      salesCountEnabled: product.salesCountEnabled || false,
+      urgentEnabled: product.urgentConfig?.enabled || false,
+      urgentFee: String(product.urgentConfig?.extraFee || 0),
+      urgentDescription: product.urgentConfig?.description || '',
     });
+  }
+
+  function buildExtendedFields(form: ProductFormState) {
+    const productType = form.productType;
+    const isBloodPack = productType === 'blood_pack';
+    return {
+      productType,
+      isBloodPack,
+      bookingConfig: (isBloodPack || form.bookingEnabled) ? {
+        enabled: form.bookingEnabled,
+        leadDays: parseInt(form.bookingLeadDays, 10) || 2,
+        locations: form.bookingLocations ? form.bookingLocations.split(',').map(s => s.trim()).filter(Boolean) : [],
+        requireInstitution: form.bookingRequireInstitution,
+        requireVerification: form.bookingRequireVerification,
+      } : undefined,
+      purchaseLimit: {
+        minQuantity: parseInt(form.purchaseMinQuantity, 10) || 1,
+        maxQuantityPerOrder: parseInt(form.purchaseMaxPerOrder, 10) || 0,
+        maxQuantityPerUser: parseInt(form.purchaseMaxPerUser, 10) || 0,
+      },
+      agreementRequired: form.agreementEnabled ? {
+        enabled: true, title: form.agreementTitle, content: form.agreementContent,
+      } : undefined,
+      salesCountEnabled: form.salesCountEnabled,
+      urgentConfig: (isBloodPack && form.urgentEnabled) ? {
+        enabled: true,
+        extraFee: parseFloat(form.urgentFee) || 0,
+        description: form.urgentDescription,
+      } : undefined,
+    };
   }
 
   async function handleSave() {
@@ -268,9 +333,10 @@ export default function ProductsPage() {
         stock: parseInt(editForm.stock, 10) || 0,
         specs,
         images: editForm.images,
+        ...buildExtendedFields(editForm),
       });
       if (updated) {
-        setProducts(prev => prev.map(product => (product.id === updated.id ? updated : product)));
+        setProducts(prev => prev.map(product => (product.id === updated.id ? { ...product, ...updated } as Product : product)));
       }
       setEditProduct(null);
     } catch (error) {
@@ -283,7 +349,7 @@ export default function ProductsPage() {
     try {
       const updated = await updateProductRemote(product.id, { status: newStatus });
       if (updated) {
-        setProducts(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+        setProducts(prev => prev.map(item => (item.id === updated.id ? { ...item, ...updated } as Product : item)));
       }
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '更新商品状态失败');
@@ -336,6 +402,7 @@ export default function ProductsPage() {
       isPrescription: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      ...buildExtendedFields(createForm),
     });
 
     if (newProd) {
@@ -546,6 +613,8 @@ export default function ProductsPage() {
                         <img
                           src={product.images[0]}
                           alt={product.name}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 rounded-md border object-cover"
                         />
                         <span className="text-xs text-muted-foreground">{product.images.length} 张</span>
@@ -687,6 +756,58 @@ export default function ProductsPage() {
                 </Select>
               </div>
             </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>商品类型</Label>
+                <Select value={editForm.productType} onValueChange={value => setEditForm(form => ({ ...form, productType: value as ProductType }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="physical">实体商品</SelectItem>
+                    <SelectItem value="blood_pack">血包商品</SelectItem>
+                    <SelectItem value="test_service">检测服务</SelectItem>
+                    <SelectItem value="card_voucher">卡券</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">购买限额（最少 / 单笔上限）</Label>
+                <div className="flex gap-2">
+                  <Input type="number" value={editForm.purchaseMinQuantity} onChange={e => setEditForm(form => ({ ...form, purchaseMinQuantity: e.target.value }))} />
+                  <Input type="number" value={editForm.purchaseMaxPerOrder} onChange={e => setEditForm(form => ({ ...form, purchaseMaxPerOrder: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            {(editForm.productType === 'blood_pack' || editForm.bookingEnabled) && (
+              <div className="rounded-lg border p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium">预约设置</Label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={editForm.bookingEnabled} onChange={e => setEditForm(form => ({ ...form, bookingEnabled: e.target.checked }))} />
+                    启用预约
+                  </label>
+                </div>
+                {editForm.bookingEnabled && (
+                  <div className="grid gap-3 grid-cols-2">
+                    <div className="space-y-1"><Label className="text-xs">提前天数</Label><Input type="number" value={editForm.bookingLeadDays} onChange={e => setEditForm(form => ({ ...form, bookingLeadDays: e.target.value }))} /></div>
+                    <div className="space-y-1"><Label className="text-xs">预约地点</Label><Input value={editForm.bookingLocations} onChange={e => setEditForm(form => ({ ...form, bookingLocations: e.target.value }))} /></div>
+                    <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={editForm.bookingRequireInstitution} onChange={e => setEditForm(form => ({ ...form, bookingRequireInstitution: e.target.checked }))} /> 仅限机构</label>
+                    <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={editForm.bookingRequireVerification} onChange={e => setEditForm(form => ({ ...form, bookingRequireVerification: e.target.checked }))} /> 需医院认证</label>
+                  </div>
+                )}
+              </div>
+            )}
+            {editForm.productType === 'blood_pack' && (
+              <div className="space-y-3 rounded-md border p-3">
+                <Label className="text-sm font-semibold">加急配送配置</Label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editForm.urgentEnabled} onChange={e => setEditForm(form => ({ ...form, urgentEnabled: e.target.checked }))} /> 启用加急配送</label>
+                {editForm.urgentEnabled && (
+                  <div className="grid gap-3 grid-cols-2">
+                    <div className="space-y-1"><Label className="text-xs">加急费用（元）</Label><Input type="number" value={editForm.urgentFee} onChange={e => setEditForm(form => ({ ...form, urgentFee: e.target.value }))} placeholder="0" /></div>
+                    <div className="space-y-1"><Label className="text-xs">加急说明</Label><Input value={editForm.urgentDescription} onChange={e => setEditForm(form => ({ ...form, urgentDescription: e.target.value }))} placeholder="如：最快 1 小时送达" /></div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="editInst">医院价</Label>

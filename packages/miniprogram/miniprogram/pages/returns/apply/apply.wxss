@@ -164,3 +164,49 @@ textarea {
   right: 24rpx;
   bottom: calc(24rpx + env(safe-area-inset-bottom));
 }
+
+.reason-type-row {
+  margin: 16rpx 0;
+}
+
+.reason-type-label {
+  display: block;
+  font-size: 24rpx;
+  color: #56605b;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.reason-type-options {
+  display: flex;
+  gap: 14rpx;
+}
+
+.reason-type {
+  padding: 12rpx 24rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #dfe7e2;
+  font-size: 24rpx;
+  color: #56605b;
+  font-weight: 600;
+}
+
+.reason-type.active {
+  color: #18a44a;
+  border-color: #18a44a;
+  background: #ecf8ef;
+}
+
+.blood-hint {
+  margin: 8rpx 0 16rpx;
+  padding: 10rpx 16rpx;
+  background: #FFF3F0;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  color: #FF3B30;
+}
+
+.blood-code {
+  font-family: monospace;
+  font-weight: 700;
+}

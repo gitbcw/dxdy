@@ -43,5 +43,59 @@
       "update": "false",
       "delete": "false"
     }
+  },
+  "products": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null",
+      "create": "false",
+      "update": "false",
+      "delete": "false"
+    }
+  },
+  "categories": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null",
+      "create": "false",
+      "update": "false",
+      "delete": "false"
+    }
+  },
+  "commission_records": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.salespersonId == auth.uid)",
+      "create": "false",
+      "update": "false",
+      "delete": "false"
+    }
+  },
+  "withdrawals": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.salespersonId == auth.uid)",
+      "create": "auth.openid != null",
+      "update": "false",
+      "delete": "false"
+    }
+  },
+  "logs": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null",
+      "create": "auth.openid != null",
+      "update": "false",
+      "delete": "false"
+    }
+  },
+  "notifications": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "auth.openid != null && doc._openid == auth.openid",
+      "create": "false",
+      "update": "auth.openid != null && doc._openid == auth.openid",
+      "delete": "false"
+    }
   }
 }

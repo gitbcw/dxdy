@@ -5,10 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { cloudbaseFetch, cloudbaseJsonFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchSystemConfig, saveSystemConfig } from '@/lib/services/database';
+import { writeAdminLog } from '@/lib/admin-log';
 import type { SystemConfig } from '@/lib/types';
 
 export default function SystemPage() {
+  const { user } = useAuth();
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -18,10 +21,8 @@ export default function SystemPage() {
     async function loadConfig() {
       setError('');
       try {
-        const response = await cloudbaseFetch('/api/cloudbase/system', { cache: 'no-store' });
-        const data = await response.json() as { config?: SystemConfig; error?: string };
-        if (!response.ok) throw new Error(data.error || '读取系统配置失败');
-        setConfig(data.config || null);
+        const data = await fetchSystemConfig();
+        setConfig(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : '读取系统配置失败');
       }
@@ -36,10 +37,9 @@ export default function SystemPage() {
     setMessage('');
     setError('');
     try {
-      const response = await cloudbaseJsonFetch('/api/cloudbase/system', config);
-      const data = await response.json() as { config?: SystemConfig; error?: string };
-      if (!response.ok) throw new Error(data.error || '保存系统配置失败');
-      if (data.config) setConfig(data.config);
+      const saved = await saveSystemConfig(config);
+      await writeAdminLog({ operator: user, action: 'save_system_config', target: 'system', detail: '保存系统配置' });
+      setConfig(saved);
       setMessage('配置已保存');
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存系统配置失败');

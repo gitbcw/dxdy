@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cloudbaseFetch } from '@/lib/admin-api-client';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchDashboardData } from '@/lib/services/database';
 import { formatMoney } from '@/lib/format';
-import type { AdminRole, AdminUser, Customer, Order, Product, ReturnRecord, SystemConfig } from '@/lib/types';
+import type { AdminRole, Customer, Order, Product, ReturnRecord, SystemConfig } from '@/lib/types';
 
 type DashboardState = {
   orders: Order[];
@@ -71,6 +72,7 @@ function ratio(value: number, total: number): number {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user: currentUser } = useAuth();
   const [state, setState] = useState<DashboardState>({
     orders: [],
     products: [],
@@ -79,16 +81,6 @@ export default function DashboardPage() {
     config: null,
   });
   const [error, setError] = useState('');
-  const [currentUser] = useState<AdminUser | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const stored = window.localStorage.getItem('admin_user');
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored) as AdminUser;
-    } catch {
-      return null;
-    }
-  });
 
   const fallbackPath =
     currentUser?.role === 'product_manager'
@@ -107,9 +99,7 @@ export default function DashboardPage() {
     async function load() {
       setError('');
       try {
-        const response = await cloudbaseFetch('/api/cloudbase/dashboard', { cache: 'no-store' });
-        const data = await response.json() as DashboardState & { error?: string };
-        if (!response.ok) throw new Error(data.error || '读取仪表盘数据失败');
+        const data = await fetchDashboardData();
         setState({
           orders: data.orders || [],
           returns: data.returns || [],

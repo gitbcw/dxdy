@@ -62,12 +62,12 @@
           <text class="row-label">预约时间</text>
           <input class="row-input" data-field="bookingLocation" value="{{bookingLocation}}" bindinput="onBookingInput" />
         </view>
-        <view class="urgent-row">
+        <view wx:if="{{canUrgent}}" class="urgent-row">
           <view>
             <text class="urgent-title">加急配送</text>
-            <text class="urgent-desc">优先调配与配送，最快 1 小时送达</text>
+            <text class="urgent-desc">{{urgentDescription}}，加急费 ¥{{urgentFee}}</text>
           </view>
-          <view class="switch-on"></view>
+          <switch checked="{{isUrgent}}" bindchange="onUrgentToggle" color="#ea580c" />
         </view>
       </view>
     </view>
@@ -77,9 +77,9 @@
         <text class="row-label">发票</text>
         <text class="row-value">不开发票 ></text>
       </view>
-      <view class="row">
+      <view class="row" bindtap="onCouponTap">
         <text class="row-label">优惠券</text>
-        <text class="row-value">已选 1 张，优惠 ¥20.00 ></text>
+        <text class="row-value">{{couponText}} ></text>
       </view>
       <view class="row">
         <text class="row-label">运费</text>
@@ -112,6 +112,7 @@
   <view class="footer" wx:if="{{product || isFromCart}}">
     <view>
       <text class="footer-label">应付金额</text>
+      <view wx:if="{{isUrgent}}" class="fee-detail">含加急费 ¥{{urgentFee}}</view>
       <text class="total">¥{{total}}</text>
     </view>
     <view class="submit-btn" bindtap="onSubmit">{{primaryButtonText}}</view>

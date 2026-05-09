@@ -165,6 +165,7 @@ Page({
         { id: 'booking', icon: '约', title: '我的预约', tap: 'onOrdersTap', desc: '查看血包与服务预约记录' },
         { id: 'agentApply', icon: '代', title: '代理商申请', value: user.agentStatus === 'pending_review' ? '审核中' : user.agentStatus === 'rejected' ? '被驳回' : '', tap: user.agentStatus ? 'onAgentStatusTap' : 'onAgentApplyTap', desc: '申请成为代理商，开通推广和提成能力' },
         { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
+        { id: 'coupons', icon: '券', title: '我的优惠券', tap: 'onCouponsTap', desc: '查看可用优惠券和使用记录' },
         { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
         { id: 'test', icon: '检', title: '检测查询', tap: 'onTestQueryTap', desc: '扫码或输入血包编号查询报告' },
         { id: 'returns', icon: '售', title: '售后记录', tap: 'onReturnDetailTap', desc: '退货退款与售后进度' },
@@ -229,6 +230,10 @@ Page({
 
   onAddressTap() {
     wx.navigateTo({ url: '/pages/mine/address/address' })
+  },
+
+  onCouponsTap() {
+    wx.navigateTo({ url: '/pages/coupons/coupons' })
   },
 
   onVerifyTap() {

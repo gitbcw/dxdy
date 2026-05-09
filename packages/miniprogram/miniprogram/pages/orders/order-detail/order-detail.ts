@@ -274,6 +274,12 @@ Page({
     wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${order.id}` })
   },
 
+  onReturnFromList(e: any) {
+    const orderId = e.currentTarget.dataset.id
+    if (!orderId) return
+    wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${orderId}` })
+  },
+
   async onActionTap(e: any) {
     const key = e.currentTarget.dataset.key
     const order = this.data.selectedOrder

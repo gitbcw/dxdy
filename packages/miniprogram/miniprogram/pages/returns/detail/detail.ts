@@ -1,4 +1,4 @@
-const { getReturns, getReturnById, getOrderById, formatMoney } = require('../../../services/index')
+const { getReturns, getReturnById, getOrderById, formatMoney, updateReturnLogistics } = require('../../../services/index')
 
 const stepDefs = [
   { key: 'submitted', title: '提交申请' },
@@ -20,6 +20,9 @@ Page({
     refundAmount: '0.00',
     steps: [] as any[],
     note: '已收到您的凭证，正在核实，请保持电话畅通。',
+    showLogisticsForm: false,
+    sendCompany: '',
+    sendTrackingNo: '',
   },
 
   onLoad(options: any) {
@@ -61,6 +64,7 @@ Page({
       refundAmount: formatMoney(record.refundAmount || 0),
       steps: this.buildSteps(record),
       note: record.reviewNote || this.data.note,
+      showLogisticsForm: record.status === 'customer_shipping' && !record.sendLogistics,
     })
   },
 
@@ -103,6 +107,38 @@ Page({
 
   onCopy() {
     wx.setClipboardData({ data: this.data.afterNo })
+  },
+
+  onSendCompanyInput(e: any) {
+    this.setData({ sendCompany: e.detail.value })
+  },
+
+  onSendTrackingNoInput(e: any) {
+    this.setData({ sendTrackingNo: e.detail.value })
+  },
+
+  async onSubmitLogistics() {
+    const { record, sendCompany, sendTrackingNo } = this.data
+    if (!record) return
+    if (!sendCompany.trim() || !sendTrackingNo.trim()) {
+      wx.showToast({ title: '请填写快递公司和单号', icon: 'none' })
+      return
+    }
+    wx.showLoading({ title: '提交中...' })
+    try {
+      await updateReturnLogistics(record.id, {
+        company: sendCompany.trim(),
+        trackingNo: sendTrackingNo.trim(),
+      })
+      wx.hideLoading()
+      wx.showToast({ title: '提交成功' })
+      // 重新加载记录
+      if (record.id) this.loadReturn(record.id)
+      else if (record.orderId) this.loadByOrder(record.orderId)
+    } catch (err: any) {
+      wx.hideLoading()
+      wx.showToast({ title: err?.message || '提交失败', icon: 'none' })
+    }
   },
 })
 

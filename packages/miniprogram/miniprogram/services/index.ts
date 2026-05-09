@@ -193,7 +193,7 @@ export function logout() {
 
 export async function registerCustomer(phone: string, nickname: string, customerType: string = 'personal') {
   try {
-    const { data: existing } = await db.collection('users').where({ phone, role: 'customer' }).get()
+    const { data: existing } = await db.collection('users').where({ phone }).get()
     if (existing.length > 0) {
       return { success: false, error: '该手机号已注册' }
     }
@@ -274,7 +274,7 @@ export async function getOrderByNo(orderNo: string) {
 
 export async function createOrder(params: {
   customerId: string; items: any[]; type: string
-  booking?: any; shippingAddress?: any; remark?: string
+  booking?: any; shippingAddress?: any; remark?: string; couponId?: string
 }) {
   const { result } = await wx.cloud.callFunction({
     name: 'createOrder',
@@ -479,6 +479,24 @@ export async function updateReturnStatus(id: string, status: string, operator?: 
   }) as any
   if (!result?.success) {
     throw new Error(result?.error || '售后状态更新失败')
+  }
+  return result.record
+}
+
+export async function updateReturnLogistics(returnId: string, logistics: { company: string; trackingNo: string }) {
+  const user = getCurrentUser()
+  const { result } = await wx.cloud.callFunction({
+    name: 'reviewReturn',
+    data: {
+      id: returnId,
+      status: 'customer_shipping',
+      sendLogistics: logistics,
+      operatorId: user?.id,
+      operatorName: user?.nickname || user?.realName || user?.phone || '',
+    },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '物流信息提交失败')
   }
   return result.record
 }
@@ -815,13 +833,13 @@ export async function getSalespersonById(id: string) {
 }
 
 export async function bindSalesperson(customerId: string, salespersonId: string) {
-  await db.collection('users').doc(customerId).update({
-    data: { boundSalespersonId: salespersonId },
+  const { result } = await wx.cloud.callFunction({
+    name: 'bindSalesperson',
+    data: { customerId, salespersonId },
   })
-  await db.collection('users').doc(salespersonId).update({
-    data: { customers: _.addToSet(customerId) },
-  })
-  return getCustomerById(customerId)
+  const res = result as any
+  if (!res?.success) throw new Error(res?.error || '绑定失败')
+  return res.user
 }
 
 export async function submitVerification(userId: string, info: any) {
@@ -949,6 +967,40 @@ export async function getUnreadCount(userId: string) {
   return total
 }
 
+// ===== 购买权限预检 =====
+
+interface CanPurchaseResult {
+  allowed: boolean; reason: string
+  code?: 'not_logged_in' | 'off_sale' | 'visibility' | 'blood_pack_auth' | 'stock_insufficient' | 'purchase_limit'
+}
+
+export function canPurchase(product: any, user: any | null, options?: { quantity?: number }): CanPurchaseResult {
+  const quantity = options?.quantity || 1
+  if (product.status !== 'on_sale') return { allowed: false, reason: '商品已下架', code: 'off_sale' }
+  if (!user) return { allowed: false, reason: '请先登录', code: 'not_logged_in' }
+
+  const customerType = user.customerType || 'personal'
+  const visibility = product.visibility || 'all'
+  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限个人客户', code: 'visibility' }
+  if (visibility === 'institution_only' && customerType !== 'institution') return { allowed: false, reason: '该商品仅限医院客户', code: 'visibility' }
+
+  const isBloodPack = product.productType === 'blood_pack' || product.isBloodPack
+  if (isBloodPack) {
+    if (customerType !== 'institution') return { allowed: false, reason: '血包商品仅限医院客户', code: 'blood_pack_auth' }
+    if (user.verificationStatus !== 'approved') return { allowed: false, reason: '请先完成医院认证', code: 'blood_pack_auth' }
+  }
+
+  if (typeof product.stock === 'number' && product.stock < quantity) return { allowed: false, reason: '库存不足', code: 'stock_insufficient' }
+
+  const limit = product.purchaseLimit
+  if (limit) {
+    if (limit.minQuantity > 0 && quantity < limit.minQuantity) return { allowed: false, reason: `最少购买 ${limit.minQuantity} 件`, code: 'purchase_limit' }
+    if (limit.maxQuantityPerOrder > 0 && quantity > limit.maxQuantityPerOrder) return { allowed: false, reason: `单笔最多 ${limit.maxQuantityPerOrder} 件`, code: 'purchase_limit' }
+  }
+
+  return { allowed: true, reason: '' }
+}
+
 // ===== 购物车（本地存储，不走云数据库） =====
 
 const CART_KEY = 'cart_items'
@@ -974,4 +1026,76 @@ export function getCartItems(): any[] {
 
 export function clearCart() {
   wx.removeStorageSync(CART_KEY)
+}
+
+// ===== 优惠券服务 =====
+
+export async function getAvailableCoupons(options?: { productId?: string; categoryId?: string }) {
+  const user = getCurrentUser()
+  if (!user) return []
+  const now = formatDateTime(new Date())
+  const cond: any = { userId: user.id, status: 'available' }
+  const { data } = await db.collection('user_coupons').where(cond).orderBy('createdAt', 'desc').limit(100).get()
+  const coupons = normalizeList(data)
+  // 过滤有效期
+  return coupons.filter((c: any) => {
+    if (c.validFrom && now < c.validFrom) return false
+    if (c.validTo && now > c.validTo) return false
+    if (options?.productId && c.scope === 'products' && !c.scopeIds.includes(options.productId)) return false
+    if (options?.categoryId && c.scope === 'categories' && !c.scopeIds.includes(options.categoryId)) return false
+    return true
+  })
+}
+
+export async function getUserCoupons(status?: string) {
+  const user = getCurrentUser()
+  if (!user) return []
+  const cond: any = { userId: user.id }
+  if (status && status !== 'all') cond.status = status
+  const { data } = await db.collection('user_coupons').where(cond).orderBy('createdAt', 'desc').limit(100).get()
+  return normalizeList(data)
+}
+
+export function calculateCouponDiscount(coupon: any, items: any[], totalAmount: number) {
+  if (!coupon) return { canUse: false, discountAmount: 0, reason: '未选择优惠券' }
+  if (coupon.status !== 'available') return { canUse: false, discountAmount: 0, reason: '优惠券不可用' }
+  if (coupon.minAmount > 0 && totalAmount < coupon.minAmount) {
+    return { canUse: false, discountAmount: 0, reason: `未满 ¥${coupon.minAmount}` }
+  }
+  // 适用范围检查
+  if (coupon.scope === 'products') {
+    const match = items.some((item: any) => coupon.scopeIds.includes(item.productId))
+    if (!match) return { canUse: false, discountAmount: 0, reason: '不适用于当前商品' }
+  }
+
+  let discount = 0
+  if (coupon.couponType === 'fixed') {
+    discount = Math.min(coupon.couponValue, totalAmount - 0.01)
+  } else if (coupon.couponType === 'discount') {
+    discount = Math.round(totalAmount * (1 - coupon.couponValue / 10) * 100) / 100
+  } else if (coupon.couponType === 'full_reduction') {
+    if (totalAmount >= coupon.minAmount) {
+      discount = Math.min(coupon.couponValue, totalAmount - 0.01)
+    }
+  }
+  return { canUse: true, discountAmount: Math.max(0, discount), reason: '' }
+}
+
+export async function claimCoupon(templateId: string) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageCoupon',
+    data: { action: 'claimCoupon', templateId },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '领取失败')
+  }
+  return result.coupon
+}
+
+export async function getClaimableCoupons() {
+  const now = formatDateTime(new Date())
+  const { data } = await db.collection('coupon_templates')
+    .where({ status: 'active', distributeMethod: 'user_claim' })
+    .orderBy('createdAt', 'desc').limit(50).get()
+  return normalizeList(data).filter((t: any) => !t.validTo || t.validTo > now)
 }
