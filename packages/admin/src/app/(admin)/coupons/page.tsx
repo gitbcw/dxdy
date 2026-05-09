@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchCouponTemplates, fetchUserCoupons, fetchUsers } from '@/lib/services/database';
 import { manageCoupon } from '@/lib/services/functions';
-import { formatMoney } from '@/lib/format';
 import type { CouponTemplate, UserCoupon, CouponType } from '@/lib/types';
 
 const typeLabel: Record<CouponType, string> = { fixed: '固定金额', discount: '折扣', full_reduction: '满减' };

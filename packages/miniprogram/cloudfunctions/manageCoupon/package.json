@@ -1,0 +1,9 @@
+{
+  "name": "manageCoupon",
+  "version": "1.0.0",
+  "description": "管理优惠券模板、发放、领取和作废",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

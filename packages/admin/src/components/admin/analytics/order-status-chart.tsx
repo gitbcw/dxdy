@@ -32,7 +32,6 @@ function getColor(status: string): string {
   return STATUS_COLORS[status] || DEFAULT_COLOR
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   if (percent < 0.05) return null
   const RADIAN = Math.PI / 180

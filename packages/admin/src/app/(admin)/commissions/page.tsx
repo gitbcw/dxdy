@@ -102,6 +102,7 @@ export default function CommissionsPage() {
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-muted-foreground">正在加载提成记录...</p>}
 
       <Card>
         <CardContent className="p-0">

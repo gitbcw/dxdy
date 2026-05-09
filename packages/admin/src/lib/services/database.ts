@@ -1,7 +1,7 @@
 import { getDb } from '@/lib/cloudbase'
 import type {
-  AdminRole, AdminUser, Product, ProductCategory, Order,
-  ReturnRecord, OperationLog, SystemConfig, User, Customer, Salesperson, Clerk,
+  AdminRole, AdminUser, Product,
+  SystemConfig, ProductCategory,
   CouponTemplate, UserCoupon,
 } from '@/lib/types'
 import { defaultSystemConfig } from '@/lib/format'
@@ -26,8 +26,13 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
 // ===== Helpers =====
 
 function normalizeDoc<T extends CloudDoc>(doc: T): T & { id: string } {
-  const { _id, _openid, boundOpenid, ...rest } = doc as any
-  return { id: String(_id || ''), ...rest }
+  const copy = { ...doc } as Record<string, unknown>
+  const id = copy._id
+  delete copy._id
+  delete copy._openid
+  delete copy.boundOpenid
+  const rest = copy
+  return { id: String(id || ''), ...rest } as T & { id: string }
 }
 
 function sortByRecent<T extends CloudDoc>(a: T, b: T) {
@@ -226,7 +231,6 @@ export async function fetchRoles() {
 }
 
 export async function updateRolePermissions(role: AdminRole, perms: Record<string, boolean>) {
-  const _ = db().command
   await db().collection('users').where({ role }).update({ permissions: perms, updatedAt: new Date().toISOString() })
 }
 

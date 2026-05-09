@@ -1,0 +1,9 @@
+{
+  "name": "bindSalesperson",
+  "version": "1.0.0",
+  "description": "绑定客户与代理商关系并记录审计日志",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

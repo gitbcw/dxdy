@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -107,7 +107,7 @@ export default function ReviewsPage() {
         {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
           <Button key={s} variant={statusFilter === s ? 'default' : 'outline'} size="sm"
             onClick={() => setStatusFilter(s)}>
-            {s === 'all' ? '全部' : statusLabels[s]}
+            {s === 'all' ? '全部' : statusLabels[s]} ({counts[s]})
           </Button>
         ))}
       </div>

@@ -1,8 +1,87 @@
 <view class="page">
   <view class="hero-card">
-    <text class="hero-tag">机构预约</text>
-    <text class="hero-title">预约用血</text>
-    <text class="hero-desc">选择可预约血制品后，填写预约日期、地点和联系人信息即可提交预约。</text>
+    <view class="hero-brand">
+      <image class="hero-logo" src="{{brandLogo}}" mode="aspectFill" />
+      <text class="hero-tag">机构预约</text>
+    </view>
+    <text class="hero-title">预约用血与血型匹配</text>
+    <text class="hero-desc">结合犬猫输血血型规则，在预约前完成受血/供血匹配预判、临床风险确认和安全清单核对。</text>
+  </view>
+
+  <view class="content">
+    <view class="matcher-card">
+      <view class="section-head">
+        <view>
+          <text class="section-kicker">血型匹配助手</text>
+          <text class="section-title">先确认风险，再预约血制品</text>
+        </view>
+      </view>
+
+      <view class="species-tabs">
+        <view
+          wx:for="{{speciesTabs}}"
+          wx:key="key"
+          class="species-tab {{selectedSpecies === item.key ? 'active' : ''}}"
+          data-species="{{item.key}}"
+          bindtap="onSpeciesTap"
+        >
+          {{item.label}}
+        </view>
+      </view>
+
+      <view class="picker-grid">
+        <picker mode="selector" range="{{bloodTypeOptions}}" bindchange="onRecipientChange">
+          <view class="picker-box">
+            <text class="picker-label">受血方血型</text>
+            <text class="picker-value">{{recipientType}}</text>
+          </view>
+        </picker>
+        <picker mode="selector" range="{{bloodTypeOptions}}" bindchange="onDonorChange">
+          <view class="picker-box">
+            <text class="picker-label">供血方血型</text>
+            <text class="picker-value">{{donorType}}</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="result-box {{compatibility.status}}">
+        <text class="result-title">{{compatibility.title}}</text>
+        <text class="result-desc">{{compatibility.desc}}</text>
+      </view>
+
+      <view class="guide-summary">
+        <text class="guide-title">{{guide.label}}输血核心规则</text>
+        <text class="guide-desc">{{guide.subtitle}}</text>
+        <text class="guide-rule">{{guide.primaryRule}}</text>
+        <text class="guide-note">{{guide.universalNote}}</text>
+      </view>
+    </view>
+
+    <view class="rules-card">
+      <view class="section-head compact">
+        <text class="section-title">血型临床注意事项</text>
+      </view>
+      <view wx:for="{{guide.rules}}" wx:key="type" class="rule-item">
+        <view class="rule-head">
+          <text class="rule-type">{{item.type}}</text>
+          <text class="rule-tag">{{item.tag}}</text>
+        </view>
+        <text class="rule-text">{{item.matching}}</text>
+        <text class="rule-risk">{{item.risk}}</text>
+        <text class="rule-note">{{item.attention}}</text>
+      </view>
+    </view>
+
+    <view class="tips-card">
+      <view class="tip-item" wx:for="{{guide.mustDo}}" wx:key="*this">
+        <text class="tip-label">{{index + 1}}</text>
+        <text class="tip-text">{{item}}</text>
+      </view>
+      <view class="safety-line" wx:for="{{commonSafety}}" wx:key="*this">
+        <text class="safety-dot"></text>
+        <text class="safety-text">{{item}}</text>
+      </view>
+    </view>
   </view>
 
   <view wx:if="{{!isInstitution}}" class="empty-card">
@@ -23,22 +102,12 @@
     <view class="ghost-btn" bindtap="onGoCatalog">查看商品分类</view>
   </view>
 
-  <view wx:else class="content">
-    <view class="tips-card">
-      <view class="tip-item">
-        <text class="tip-label">1</text>
-        <text class="tip-text">选择血制品并提交预约</text>
-      </view>
-      <view class="tip-item">
-        <text class="tip-label">2</text>
-        <text class="tip-text">填写预约日期、地点和联系人</text>
-      </view>
-      <view class="tip-item">
-        <text class="tip-label">3</text>
-        <text class="tip-text">预约提交后等待客服确认</text>
-      </view>
+  <view wx:else class="content booking-products">
+    <view class="product-section-head">
+      <text class="section-title">可预约血制品</text>
+      <text class="product-section-desc">提交预约后由客服结合血型、库存和冷链时效确认。</text>
+      <text class="recommend-summary">{{recommendationSummary}}</text>
     </view>
-
     <view class="list">
       <view wx:for="{{products}}" wx:key="id" class="product-card">
         <view class="product-head">
@@ -48,6 +117,11 @@
           </view>
           <text class="product-price">¥{{item.priceText}}</text>
         </view>
+        <view class="match-chip-row">
+          <text class="blood-chip">血型 {{item.productBloodType}}</text>
+          <text class="match-chip {{item.matchStatus}}">{{item.matchTitle}}</text>
+        </view>
+        <text class="match-desc">{{item.matchDesc}}</text>
         <text class="product-desc">{{item.description}}</text>
         <view class="product-foot">
           <text class="product-stock">{{item.stockText}}</text>

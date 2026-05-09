@@ -25,7 +25,7 @@ import { ConversionFunnel } from '@/components/admin/analytics/conversion-funnel
 import { AgentContributionChart } from '@/components/admin/analytics/agent-contribution-chart';
 import { RepeatPurchaseMetrics } from '@/components/admin/analytics/repeat-purchase-metrics';
 import type { AdminRole, Customer, Order, Product, ReturnRecord, SystemConfig } from '@/lib/types';
-import type { AnalyticsDaily, FunnelStep, TopProduct, AgentContribution, OrderStatusDistribution } from '@/lib/types-analytics';
+import type { AnalyticsDaily, OrderStatusDistribution } from '@/lib/types-analytics';
 
 type DashboardState = {
   orders: Order[];
