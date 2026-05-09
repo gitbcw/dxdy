@@ -321,7 +321,7 @@ export default function ProductsPage() {
       urgentDescription: product.urgentConfig?.description || '',
       redeemableCategory: product.redeemableCategory || '',
       validDays: String(product.validDays || 365),
-      promotionEnabled: !!(product.promotionPrice > 0 && product.promotionStart),
+      promotionEnabled: !!((product.promotionPrice ?? 0) > 0 && product.promotionStart),
       promotionPrice: String(product.promotionPrice || ''),
       promotionStart: product.promotionStart || '',
       promotionEnd: product.promotionEnd || '',

@@ -85,7 +85,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<OrderTab>('todo');
   const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'booking'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'normal' | 'booking' | 'recharge'>('all');
   const [adjustOrder, setAdjustOrder] = useState<Order | null>(null);
   const [newPrice, setNewPrice] = useState('');
   const [shipOrder, setShipOrder] = useState<Order | null>(null);
@@ -318,7 +318,7 @@ export default function OrdersPage() {
           <Select
             items={typeLabel}
             value={typeFilter}
-            onValueChange={value => setTypeFilter((value ?? 'all') as 'all' | 'normal' | 'booking')}
+            onValueChange={value => setTypeFilter((value ?? 'all') as 'all' | 'normal' | 'booking' | 'recharge')}
           >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="订单类型" />
@@ -327,6 +327,7 @@ export default function OrdersPage() {
               <SelectItem value="all">全部类型</SelectItem>
               <SelectItem value="normal">普通订单</SelectItem>
               <SelectItem value="booking">预约订单</SelectItem>
+              <SelectItem value="recharge">充值订单</SelectItem>
             </SelectContent>
           </Select>
           <Select

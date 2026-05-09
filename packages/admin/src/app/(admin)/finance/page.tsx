@@ -14,10 +14,21 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
-import { fetchFinanceData, fetchUsers } from '@/lib/services/database';
+import { fetchFinanceData, fetchUsers, fetchOrders } from '@/lib/services/database';
 import { reviewWithdrawal, processInvoice } from '@/lib/services/functions';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
+
+type RechargeOrder = {
+  id: string;
+  orderNo?: string;
+  customerId?: string;
+  amount?: number;
+  rechargeTier?: { amount: number; bonus: number; label?: string };
+  status?: string;
+  createdAt?: string;
+  paidAt?: string;
+};
 
 type WithdrawalRecord = {
   id: string;
@@ -66,6 +77,7 @@ export default function FinancePage() {
   const { user } = useAuth();
   const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [recharges, setRecharges] = useState<RechargeOrder[]>([]);
   const [salespersonMap, setSalespersonMap] = useState<Record<string, string>>({});
   const [target, setTarget] = useState<ReviewTarget | null>(null);
   const [note, setNote] = useState('');
@@ -84,12 +96,16 @@ export default function FinancePage() {
     setLoading(true);
     setError('');
     try {
-      const [data, usersData] = await Promise.all([fetchFinanceData(), fetchUsers()]);
+      const [data, usersData, allOrders] = await Promise.all([fetchFinanceData(), fetchUsers(), fetchOrders()]);
       setWithdrawals(data.withdrawals || []);
       setInvoices(data.invoices || []);
+      setRecharges((allOrders || []).filter((o: any) => o.type === 'recharge'));
       const map: Record<string, string> = {};
       for (const u of usersData.salespersons || []) {
         map[u.id] = u.realName || u.nickname || u.name || u.phone || u.id;
+      }
+      for (const u of usersData.customers || []) {
+        map[u.id] = u.nickname || u.phone || u.id;
       }
       setSalespersonMap(map);
     } catch (err) {
@@ -156,7 +172,7 @@ export default function FinancePage() {
       <div>
         <h1 className="text-2xl font-bold">财务处理</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          待审核提现 {pendingWithdrawals} 笔，待处理发票 {pendingInvoices} 张
+          待审核提现 {pendingWithdrawals} 笔，待处理发票 {pendingInvoices} 张，充值记录 {recharges.length} 笔
         </p>
       </div>
       {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -165,6 +181,7 @@ export default function FinancePage() {
         <TabsList>
           <TabsTrigger value="withdrawals">提现审核 ({withdrawals.length})</TabsTrigger>
           <TabsTrigger value="invoices">开票处理 ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="recharges">充值记录 ({recharges.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="withdrawals">
@@ -261,6 +278,47 @@ export default function FinancePage() {
                           </div>
                         )}
                       </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="recharges">
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计充值</p><p className="text-2xl font-bold">¥{formatMoney(recharges.reduce((s, r) => s + (r.amount || 0), 0))}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计赠送</p><p className="text-2xl font-bold">¥{formatMoney(recharges.reduce((s, r) => s + (r.rechargeTier?.bonus || 0), 0))}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">充值笔数</p><p className="text-2xl font-bold">{recharges.length}</p></CardContent></Card>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>订单号</TableHead>
+                    <TableHead>客户</TableHead>
+                    <TableHead>充值金额</TableHead>
+                    <TableHead>赠送</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>时间</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">正在读取充值记录...</TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && recharges.map(r => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-mono text-sm">{r.orderNo || r.id}</TableCell>
+                      <TableCell>{salespersonMap[r.customerId || ''] || r.customerId || '-'}</TableCell>
+                      <TableCell>¥{formatMoney(r.amount || 0)}</TableCell>
+                      <TableCell>{((r.rechargeTier as any)?.bonus || 0) > 0 ? `¥${formatMoney((r.rechargeTier as any).bonus)}` : '-'}</TableCell>
+                      <TableCell><Badge variant="outline">{r.status === 'completed' ? '已完成' : r.status}</Badge></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{r.paidAt || r.createdAt || '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

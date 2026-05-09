@@ -128,6 +128,8 @@ export default function UsersPage() {
                     <TableHead>类型</TableHead>
                     <TableHead>认证</TableHead>
                     <TableHead>余额</TableHead>
+                    <TableHead>推荐码</TableHead>
+                    <TableHead>推荐人</TableHead>
                     <TableHead>注册时间</TableHead>
                     <TableHead>操作</TableHead>
                   </TableRow>
@@ -135,7 +137,7 @@ export default function UsersPage() {
                 <TableBody>
                   {loading && (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 用户...</TableCell>
+                      <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 用户...</TableCell>
                     </TableRow>
                   )}
                   {!loading && customers.map(c => (
@@ -148,6 +150,8 @@ export default function UsersPage() {
                         <Badge variant={verifyVariant[c.verificationStatus]}>{verifyLabel[c.verificationStatus]}</Badge>
                       </TableCell>
                       <TableCell>¥{(c.wallet?.balance || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-mono text-xs">{c.referralCode || '-'}</TableCell>
+                      <TableCell className="text-xs">{c.referredBy || '-'}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{c.createdAt ? formatDate(c.createdAt) : '-'}</TableCell>
                       <TableCell>
                         {c.verificationStatus === 'pending' && (

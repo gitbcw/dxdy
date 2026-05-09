@@ -9,6 +9,7 @@ const app = cloudbase.init({
   auth: { detectSessionInUrl: true },
 })
 
+export { app }
 export const auth = app.auth
 export const db = app.database()
 
