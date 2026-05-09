@@ -235,7 +235,7 @@ export async function registerCustomer(phone: string, nickname: string, customer
     if (referralCode) {
       const { data: referrers } = await db.collection('users').where({ referralCode }).limit(1).get()
       if (referrers && referrers.length) {
-        referredBy = referrers[0]._id
+        referredBy = String(referrers[0]._id || '')
       }
     }
 
@@ -252,7 +252,7 @@ export async function registerCustomer(phone: string, nickname: string, customer
     const { _id } = await db.collection('users').add({ data: user })
 
     // 生成推荐码
-    const code = `R${_id.slice(-6).toUpperCase()}`
+    const code = `R${String(_id).slice(-6).toUpperCase()}`
     await db.collection('users').doc(_id).update({ data: { referralCode: code } })
 
     const result = { ...user, id: _id, referralCode: code }

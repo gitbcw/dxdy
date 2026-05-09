@@ -16,7 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
-import cloudbaseApp from '@/lib/cloudbase';
+import getApp from '@/lib/cloudbase';
 import { fetchProductsAndCategories, createProduct, updateProduct } from '@/lib/services/database';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
@@ -131,7 +131,7 @@ async function uploadFileToStorage(file: File): Promise<string> {
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const cloudPath = `products/${timestamp}-${safeName}`;
-  const result = await cloudbaseApp.uploadFile({
+  const result = await getApp().uploadFile({
     cloudPath,
     filePath: new File([arrayBuffer], file.name, { type: file.type }) as any,
   });

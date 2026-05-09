@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { app, db } from '@/lib/cloudbase';
+import getApp, { getDb } from '@/lib/cloudbase';
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
@@ -41,7 +41,7 @@ export default function ReviewsPage() {
   async function loadReviews() {
     setLoading(true);
     try {
-      let query: any = db.collection('product_reviews');
+      let query: any = getDb().collection('product_reviews');
       if (statusFilter !== 'all') query = query.where({ status: statusFilter });
       const { data } = await query.orderBy('createdAt', 'desc').limit(100).get();
       setReviews((data || []).map((d: any) => ({ ...d, id: d._id })));
@@ -54,7 +54,7 @@ export default function ReviewsPage() {
 
   async function handleAction(reviewId: string, action: 'approveReview' | 'rejectReview') {
     try {
-      const { result } = await app.callFunction({ name: 'manageReview', data: { action, reviewId } }) as any;
+      const { result } = await getApp().callFunction({ name: 'manageReview', data: { action, reviewId } }) as any;
       if (result?.success) {
         loadReviews();
       }
@@ -66,7 +66,7 @@ export default function ReviewsPage() {
   async function handleReply() {
     if (!replyReview || !replyText.trim()) return;
     try {
-      const { result } = await app.callFunction({
+      const { result } = await getApp().callFunction({
         name: 'manageReview',
         data: { action: 'replyReview', reviewId: replyReview.id, reply: replyText },
       }) as any;

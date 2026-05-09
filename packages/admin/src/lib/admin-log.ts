@@ -1,4 +1,4 @@
-import { db } from '@/lib/cloudbase'
+import { getDb } from '@/lib/cloudbase'
 import type { AdminProfile } from '@/hooks/use-auth'
 
 export type AdminLogInput = {
@@ -10,7 +10,7 @@ export type AdminLogInput = {
 }
 
 export async function writeAdminLog(input: AdminLogInput) {
-  await db.collection('logs').add({
+  await getDb().collection('logs').add({
     operatorId: input.operator?.id || 'unknown',
     operatorName: input.operator?.realName || '未知操作人',
     operatorRole: input.operator?.role || 'unknown',

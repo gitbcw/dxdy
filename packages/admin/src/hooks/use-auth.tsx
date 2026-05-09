@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
-import { auth, db } from '@/lib/cloudbase'
+import { getAuth, getDb } from '@/lib/cloudbase'
 import type { AdminRole } from '@/lib/types'
 import { writeAdminLog } from '@/lib/admin-log'
 
@@ -24,7 +24,7 @@ type CloudUser = Record<string, unknown> & {
 }
 
 async function loadProfile(uid: string): Promise<AdminProfile | null> {
-  const res = await db.collection('users').doc(uid).get()
+  const res = await getDb().collection('users').doc(uid).get()
   const docs = res.data as CloudUser[]
   const doc = docs?.[0]
   if (!doc || !ADMIN_ROLES.includes(doc.role as AdminRole) || doc.status === 'disabled') return null
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const { data } = auth.onAuthStateChange(async (event: string, session: any) => {
+    const { data } = getAuth().onAuthStateChange(async (event: string, session: any) => {
       if (event === 'SIGNED_IN' && session?.user?.id) {
         const profile = await loadProfile(session.user.id)
         setUser(profile)
@@ -72,12 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (username: string, password: string) => {
-    const { data, error }: any = await auth.signInWithPassword({ username, password })
+    const { data, error }: any = await getAuth().signInWithPassword({ username, password })
     if (error) throw new Error(error.message || '登录失败')
     if (data?.user?.id) {
       const profile = await loadProfile(data.user.id)
       if (!profile) {
-        await auth.signOut()
+        await getAuth().signOut()
         throw new Error('非管理后台账号')
       }
       setUser(profile)
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       writeAdminLog({ operator: user, action: 'logout', target: user.id, detail: `管理员 ${user.realName} 登出` }).catch(() => {})
     }
-    await auth.signOut()
+    await getAuth().signOut()
     setUser(null)
   }, [user])
 

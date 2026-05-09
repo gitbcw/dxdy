@@ -1,7 +1,4 @@
-'use client';
-
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/use-auth";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export default function RootLayout({
@@ -16,9 +13,7 @@ export default function RootLayout({
         <meta name="description" content="大熊动医华南医学检验实验室管理后台" />
       </head>
       <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-        </AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

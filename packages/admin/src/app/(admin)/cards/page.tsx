@@ -14,7 +14,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
-import { db } from '@/lib/cloudbase';
+import { getDb } from '@/lib/cloudbase';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatDateTime } from '@/lib/format';
 import type { CardVoucher, CardVoucherStatus } from '@/lib/types';
@@ -74,7 +74,7 @@ export default function CardsPage() {
   async function loadCards() {
     setLoading(true);
     try {
-      const res = await db.collection('card_vouchers')
+      const res = await getDb().collection('card_vouchers')
         .orderBy('createdAt', 'desc')
         .limit(500)
         .get();
@@ -125,7 +125,7 @@ export default function CardsPage() {
     setVoiding(true);
     try {
       const now = new Date().toISOString();
-      await db.collection('card_vouchers').doc(voidTarget.id).update({
+      await getDb().collection('card_vouchers').doc(voidTarget.id).update({
         status: 'voided',
         voidedAt: now,
         voidedBy: user?.id || '',

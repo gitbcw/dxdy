@@ -6,7 +6,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/admin/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth, type AdminProfile } from '@/hooks/use-auth';
-import { db } from '@/lib/cloudbase';
+import { getDb } from '@/lib/cloudbase';
 
 type AdminRole = AdminProfile['role'];
 
@@ -62,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!user) return;
     intervalRef.current = setInterval(async () => {
       try {
-        const res = await db.collection('users').doc(user.id).get()
+        const res = await getDb().collection('users').doc(user.id).get()
         const doc = (res.data as any[])?.[0]
         if (!doc || doc.status === 'disabled') {
           router.replace('/login')

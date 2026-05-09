@@ -1,4 +1,4 @@
-import { db } from '@/lib/cloudbase'
+import { getDb } from '@/lib/cloudbase'
 import type {
   AdminRole, AdminUser, Product, ProductCategory, Order,
   ReturnRecord, OperationLog, SystemConfig, User, Customer, Salesperson, Clerk,
@@ -7,6 +7,9 @@ import type {
 import { defaultSystemConfig } from '@/lib/format'
 
 type CloudDoc = Record<string, unknown>
+
+/** Lazy-access database — avoids top-level CloudBase init during SSR/build */
+function db() { return getDb() }
 
 const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin']
 
@@ -32,7 +35,7 @@ function sortByRecent<T extends CloudDoc>(a: T, b: T) {
 }
 
 async function readCollection<T extends CloudDoc>(name: string, query?: Record<string, unknown>): Promise<(T & { id: string })[]> {
-  let q = db.collection(name) as any
+  let q = db().collection(name) as any
   if (query && Object.keys(query).length > 0) q = q.where(query)
   const res = await q.orderBy('createdAt', 'desc').limit(500).get()
   const docs: T[] = res.data || []
@@ -85,13 +88,13 @@ export async function fetchProductsAndCategories() {
 export async function createProduct(product: Product & { id: string }) {
   const now = new Date().toISOString()
   const doc = { ...product, createdAt: product.createdAt || now, updatedAt: now }
-  await db.collection('products').doc(product.id).set(doc)
+  await db().collection('products').doc(product.id).set(doc)
   return doc
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Partial<Product> & { updatedAt: string }> {
   const update = { ...updates, updatedAt: new Date().toISOString() }
-  await db.collection('products').doc(id).update(update)
+  await db().collection('products').doc(id).update(update)
   return update as any
 }
 
@@ -166,7 +169,7 @@ export async function createAdminAccount(input: { username: string; password: st
     createdAt: now,
     updatedAt: now,
   }
-  await db.collection('users').add(doc)
+  await db().collection('users').add(doc)
   return normalizeAdminUser(doc)
 }
 
@@ -183,12 +186,12 @@ export async function updateAdminAccount(id: string, updates: Partial<AdminUser>
     updateData.role = updates.role
     updateData.permissions = defaultPermissions[updates.role]
   }
-  await db.collection('users').doc(id).update(updateData)
+  await db().collection('users').doc(id).update(updateData)
   return updateData
 }
 
 export async function deleteAdminAccount(id: string) {
-  await db.collection('users').doc(id).remove()
+  await db().collection('users').doc(id).remove()
 }
 
 // ===== Roles =====
@@ -209,8 +212,8 @@ export async function fetchRoles() {
 }
 
 export async function updateRolePermissions(role: AdminRole, perms: Record<string, boolean>) {
-  const _ = db.command
-  await db.collection('users').where({ role }).update({ permissions: perms, updatedAt: new Date().toISOString() })
+  const _ = db().command
+  await db().collection('users').where({ role }).update({ permissions: perms, updatedAt: new Date().toISOString() })
 }
 
 // ===== System =====
@@ -223,9 +226,9 @@ export async function fetchSystemConfig(): Promise<SystemConfig> {
 export async function saveSystemConfig(config: SystemConfig) {
   const existing = await readCollection('config', { _id: 'system' })
   if (existing.length > 0) {
-    await db.collection('config').doc('system').update({ ...config, updatedAt: new Date().toISOString() })
+    await db().collection('config').doc('system').update({ ...config, updatedAt: new Date().toISOString() })
   } else {
-    await db.collection('config').add({ _id: 'system', ...config, updatedAt: new Date().toISOString() })
+    await db().collection('config').add({ _id: 'system', ...config, updatedAt: new Date().toISOString() })
   }
   return config
 }
