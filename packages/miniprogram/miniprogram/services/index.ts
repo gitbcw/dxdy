@@ -274,7 +274,7 @@ export async function getOrderByNo(orderNo: string) {
 
 export async function createOrder(params: {
   customerId: string; items: any[]; type: string
-  booking?: any; shippingAddress?: any; remark?: string; couponId?: string
+  booking?: any; shippingAddress?: any; remark?: string; couponId?: string; isUrgent?: boolean
 }) {
   const { result } = await wx.cloud.callFunction({
     name: 'createOrder',
@@ -996,6 +996,9 @@ export function canPurchase(product: any, user: any | null, options?: { quantity
     if (user.verificationStatus !== 'approved') return { allowed: false, reason: '请先完成医院认证', code: 'blood_pack_auth' }
   }
 
+  const isCardVoucher = product.productType === 'card_voucher'
+  if (isCardVoucher && user.role !== 'salesperson') return { allowed: false, reason: '卡券仅限代理商购买', code: 'visibility' }
+
   if (typeof product.stock === 'number' && product.stock < quantity) return { allowed: false, reason: '库存不足', code: 'stock_insufficient' }
 
   const limit = product.purchaseLimit
@@ -1104,4 +1107,87 @@ export async function getClaimableCoupons() {
     .where({ status: 'active', distributeMethod: 'user_claim' })
     .orderBy('createdAt', 'desc').limit(50).get()
   return normalizeList(data).filter((t: any) => !t.validTo || t.validTo > now)
+}
+
+// ===== 卡券服务 =====
+
+export async function getAgentCards() {
+  const user = getCurrentUser()
+  if (!user || user.role !== 'salesperson') return []
+  const { data } = await db.collection('card_vouchers')
+    .where({ purchaserId: user.id })
+    .orderBy('createdAt', 'desc').limit(100).get()
+  const cards = normalizeList(data)
+  // 惰性过期检查
+  const now = formatDateTime(new Date())
+  for (const card of cards) {
+    if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
+      await db.collection('card_vouchers').doc(card.id).update({ data: { status: 'expired', updatedAt: now } })
+      card.status = 'expired'
+    }
+  }
+  return cards
+}
+
+export async function getMyCards() {
+  const user = getCurrentUser()
+  if (!user) return []
+  const { data } = await db.collection('card_vouchers')
+    .where({ currentHolderId: user.id })
+    .orderBy('updatedAt', 'desc').limit(100).get()
+  const cards = normalizeList(data)
+  const now = formatDateTime(new Date())
+  for (const card of cards) {
+    if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
+      await db.collection('card_vouchers').doc(card.id).update({ data: { status: 'expired', updatedAt: now } })
+      card.status = 'expired'
+    }
+  }
+  return cards
+}
+
+export async function getGiftedCards() {
+  const user = getCurrentUser()
+  if (!user) return []
+  const { data } = await db.collection('card_vouchers')
+    .where({ currentHolderId: user.id, status: 'gifted' })
+    .orderBy('updatedAt', 'desc').limit(100).get()
+  return normalizeList(data)
+}
+
+export async function getCardById(id: string) {
+  try {
+    const { data } = await db.collection('card_vouchers').doc(id).get()
+    return normalize(data)
+  } catch { return null }
+}
+
+export async function getRedeemableProducts(categoryId: string) {
+  const cond: any = {
+    productType: 'blood_pack',
+    status: 'on_sale',
+  }
+  if (categoryId) cond.category = categoryId
+  const { data } = await db.collection('products')
+    .where(cond)
+    .orderBy('createdAt', 'desc').limit(100).get()
+  return normalizeList(data)
+}
+
+export async function manageCardVoucher(params: {
+  action: 'gift' | 'claim' | 'regift' | 'redeem' | 'void'
+  cardId: string
+  toUserId?: string
+  redeemProductId?: string
+  shippingAddress?: any
+  voidReason?: string
+}) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageCardVoucher',
+    data: params,
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '操作失败')
+  }
+  return result
 }

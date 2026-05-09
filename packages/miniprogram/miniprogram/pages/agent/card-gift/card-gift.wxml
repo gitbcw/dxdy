@@ -1,0 +1,51 @@
+<view class="page">
+  <!-- 卡券信息 -->
+  <view wx:if="{{card}}" class="card-info">
+    <text class="card-no">{{card.cardNo}}</text>
+    <text class="card-product">{{card.productName}}</text>
+    <text class="card-meta">有效期至 {{card.expiresAt}}</text>
+  </view>
+
+  <!-- 搜索 -->
+  <view class="search-bar">
+    <input
+      placeholder="搜索客户名称或手机号"
+      value="{{searchText}}"
+      bindinput="onSearchInput"
+    />
+  </view>
+
+  <!-- 客户列表 -->
+  <view class="customer-list">
+    <view
+      wx:for="{{filteredCustomers}}"
+      wx:key="id"
+      class="customer-item {{selectedId === item.id ? 'selected' : ''}}"
+      data-id="{{item.id}}"
+      data-name="{{item.name}}"
+      bindtap="onSelectCustomer"
+    >
+      <view class="customer-info">
+        <text class="customer-name">{{item.name}}</text>
+        <text class="customer-phone">{{item.phone}}</text>
+      </view>
+      <view class="customer-badges">
+        <text wx:if="{{item.verified}}" class="badge-verified">已认证</text>
+        <text wx:else class="badge-unverified">未认证</text>
+        <text wx:if="{{selectedId === item.id}}" class="check-mark">✓</text>
+      </view>
+    </view>
+
+    <view wx:if="{{filteredCustomers.length === 0}}" class="empty">
+      <text>暂无可赠送的机构客户</text>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="footer">
+    <view wx:if="{{selectedName}}" class="selected-info">已选择：{{selectedName}}</view>
+    <button class="btn-confirm" bindtap="onConfirmGift" disabled="{{!selectedId || loading}}" loading="{{loading}}">
+      确认赠送
+    </button>
+  </view>
+</view>

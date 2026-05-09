@@ -47,6 +47,8 @@ type ProductFormState = {
   urgentEnabled: boolean;
   urgentFee: string;
   urgentDescription: string;
+  redeemableCategory: string;
+  validDays: string;
 };
 
 const visibilityLabel: Record<string, string> = {
@@ -98,6 +100,8 @@ const emptyProductForm = (): ProductFormState => ({
   urgentEnabled: false,
   urgentFee: '0',
   urgentDescription: '',
+  redeemableCategory: '',
+  validDays: '365',
 });
 
 function productSpecsToText(specs: Product['specs']) {
@@ -283,6 +287,8 @@ export default function ProductsPage() {
       urgentEnabled: product.urgentConfig?.enabled || false,
       urgentFee: String(product.urgentConfig?.extraFee || 0),
       urgentDescription: product.urgentConfig?.description || '',
+      redeemableCategory: product.redeemableCategory || '',
+      validDays: String(product.validDays || 365),
     });
   }
 
@@ -313,6 +319,8 @@ export default function ProductsPage() {
         extraFee: parseFloat(form.urgentFee) || 0,
         description: form.urgentDescription,
       } : undefined,
+      redeemableCategory: productType === 'card_voucher' ? form.redeemableCategory : undefined,
+      validDays: productType === 'card_voucher' ? (parseInt(form.validDays, 10) || 365) : undefined,
     };
   }
 
@@ -806,6 +814,29 @@ export default function ProductsPage() {
                     <div className="space-y-1"><Label className="text-xs">加急说明</Label><Input value={editForm.urgentDescription} onChange={e => setEditForm(form => ({ ...form, urgentDescription: e.target.value }))} placeholder="如：最快 1 小时送达" /></div>
                   </div>
                 )}
+              </div>
+            )}
+            {editForm.productType === 'card_voucher' && (
+              <div className="space-y-3 rounded-md border p-3">
+                <Label className="text-sm font-semibold">卡券配置</Label>
+                <div className="grid gap-3 grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">可兑换分类</Label>
+                    <Select value={editForm.redeemableCategory} onValueChange={v => setEditForm(form => ({ ...form, redeemableCategory: v ?? '' }))}>
+                      <SelectTrigger><SelectValue placeholder="选择分类" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">不限制</SelectItem>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">有效天数</Label>
+                    <Input type="number" value={editForm.validDays} onChange={e => setEditForm(form => ({ ...form, validDays: e.target.value }))} placeholder="365" />
+                  </div>
+                </div>
               </div>
             )}
             <div className="grid gap-4 md:grid-cols-2">

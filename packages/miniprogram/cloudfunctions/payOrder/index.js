@@ -51,7 +51,9 @@ exports.main = async (event) => {
 
   const method = ['wechat', 'wallet', 'offline'].includes(event.method) ? event.method : 'wechat'
   const paidAt = formatDateTime(new Date())
-  const nextStatus = order.type === 'booking' ? 'pending_confirmation' : 'pending_shipment'
+  const nextStatus = order.type === 'booking' ? 'pending_confirmation'
+    : order.type === 'card_order' ? 'completed'
+    : 'pending_shipment'
   const transactionId = `PAY${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
 
   await db.collection('orders').doc(order._id).update({
@@ -81,6 +83,32 @@ exports.main = async (event) => {
       })
     }
   } catch (_e) { /* non-critical */ }
+
+  // 卡券订单：支付即完成，立即结算佣金
+  if (nextStatus === 'completed' && order.salespersonId) {
+    try {
+      const { data: commissionRecords } = await db.collection('commission_records').where({
+        orderId: order._id,
+        status: 'locked',
+      }).get()
+      for (const rec of (commissionRecords || [])) {
+        await db.collection('commission_records').doc(rec._id).update({
+          data: { status: 'settled', settledAt: paidAt, updatedAt: paidAt },
+        })
+      }
+      // 更新代理商余额
+      const commissionAmount = (commissionRecords || []).reduce((sum, r) => sum + (r.amount || 0), 0)
+      if (commissionAmount > 0) {
+        await db.collection('users').doc(order.salespersonId).update({
+          data: {
+            'commission.total': db.command.inc(commissionAmount),
+            'commission.available': db.command.inc(commissionAmount),
+            updatedAt: paidAt,
+          },
+        })
+      }
+    } catch (_e) { /* non-critical */ }
+  }
 
   const updated = await getOrder(order._id)
   return { success: true, order: { ...updated, id: updated._id } }

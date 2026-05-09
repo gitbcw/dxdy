@@ -31,6 +31,8 @@ type HomeAction =
   | 'clerkOrders'
   | 'verify'
   | 'testQuery'
+  | 'cards'
+  | 'cardWallet'
 
 function withIcon(items: any[]) {
   return items.map((item) => ({
@@ -231,6 +233,7 @@ Page({
           { icon: '购', title: '商品采购', action: 'catalog' },
           { icon: '血', title: '预约用血', action: 'blood' },
           { icon: '单', title: '我的订单', action: 'orders' },
+          { icon: '券', title: '我的卡券', action: 'cardWallet' },
           { icon: '检', title: '检测查询', action: 'testQuery' },
         ],
         boardTitle: '常购商品',
@@ -271,6 +274,7 @@ Page({
         quickActions: [
           { icon: '审', title: '代理状态', action: 'agentStatus' },
           { icon: '客', title: '客户管理', action: 'customers' },
+          { icon: '卡', title: '我的卡券', action: 'cards' },
           { icon: '单', title: '客户订单', action: 'agentOrders' },
           { icon: '佣', title: '提成中心', action: 'commission' },
           { icon: '提', title: '提现管理', action: 'withdraw' },
@@ -378,6 +382,8 @@ Page({
       clerkTodayShipped: '/pages/clerk/orders/orders?tab=today_shipped',
       clerkShipped: '/pages/clerk/orders/orders?tab=shipped',
       clerkOrders: '/pages/clerk/orders/orders',
+      cards: '/pages/agent/cards/cards',
+      cardWallet: '/pages/card-wallet/card-wallet',
       orders: '/pages/orders/order-detail/order-detail?list=1',
     }
 

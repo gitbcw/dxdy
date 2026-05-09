@@ -30,6 +30,7 @@ import {
   Ticket,
   ClipboardCheck,
   Receipt,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth, type AdminProfile } from '@/hooks/use-auth';
 
@@ -42,6 +43,7 @@ const navItems: { title: string; href: string; icon: typeof LayoutDashboard; rol
   { title: '退换货', href: '/returns', icon: RotateCcw, roles: ['service', 'system_admin'] },
   { title: '财务处理', href: '/finance', icon: WalletCards, roles: ['service', 'system_admin'] },
   { title: '提成管理', href: '/commissions', icon: Receipt, roles: ['system_admin'] },
+  { title: '卡券管理', href: '/cards', icon: CreditCard, roles: ['system_admin'] },
   { title: '用户管理', href: '/users', icon: Users, roles: ['system_admin'] },
   { title: '账号管理', href: '/accounts', icon: Shield, roles: ['system_admin'] },
   { title: '角色管理', href: '/roles', icon: Key, roles: ['system_admin'] },

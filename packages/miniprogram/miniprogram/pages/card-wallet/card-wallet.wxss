@@ -1,0 +1,55 @@
+.page { padding: 0 0 env(safe-area-inset-bottom); }
+
+.tab-bar {
+  display: flex;
+  background: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+}
+.tab.active { color: #1890ff; font-weight: 500; }
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 4rpx;
+  background: #1890ff;
+  border-radius: 2rpx;
+}
+
+.card-list { padding: 16rpx 24rpx; }
+
+.card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  margin-bottom: 12rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+
+.card-left { flex: 1; }
+.card-product { display: block; font-size: 30rpx; font-weight: 500; color: #333; }
+.card-meta { display: block; font-size: 24rpx; color: #999; margin-top: 4rpx; }
+
+.card-right { flex-shrink: 0; margin-left: 16rpx; }
+.card-status { font-size: 22rpx; padding: 6rpx 16rpx; border-radius: 8rpx; }
+.status-gifted { background: #e6f7ff; color: #0958d9; }
+.status-claimed { background: #f6ffed; color: #389e0d; }
+.status-redeemed { background: #f9f0ff; color: #531dab; }
+.status-verified { background: #f0f0f0; color: #999; }
+.status-expired { background: #fff1f0; color: #cf1322; }
+.status-voided { background: #f0f0f0; color: #999; }
+
+.empty { text-align: center; padding: 80rpx 0; color: #ccc; font-size: 28rpx; }

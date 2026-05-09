@@ -1,0 +1,66 @@
+.page { padding-bottom: 160rpx; }
+
+.card-info {
+  margin: 24rpx;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16rpx;
+  color: #fff;
+}
+.card-no { display: block; font-size: 22rpx; opacity: 0.8; font-family: monospace; }
+.card-product { display: block; font-size: 32rpx; font-weight: 500; margin: 8rpx 0; }
+.card-meta { display: block; font-size: 24rpx; opacity: 0.8; }
+
+.search-bar {
+  margin: 0 24rpx 16rpx;
+  padding: 12rpx 24rpx;
+  background: #f5f5f5;
+  border-radius: 12rpx;
+}
+.search-bar input { font-size: 28rpx; }
+
+.customer-list { padding: 0 24rpx; }
+.customer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  margin-bottom: 8rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+}
+.customer-item.selected { border-color: #1890ff; background: #f0f7ff; }
+
+.customer-info { flex: 1; }
+.customer-name { display: block; font-size: 30rpx; color: #333; }
+.customer-phone { display: block; font-size: 24rpx; color: #999; margin-top: 4rpx; }
+
+.customer-badges { display: flex; align-items: center; gap: 12rpx; }
+.badge-verified { font-size: 22rpx; color: #52c41a; background: #f6ffed; padding: 4rpx 12rpx; border-radius: 6rpx; }
+.badge-unverified { font-size: 22rpx; color: #faad14; background: #fffbe6; padding: 4rpx 12rpx; border-radius: 6rpx; }
+.check-mark { font-size: 32rpx; color: #1890ff; font-weight: bold; }
+
+.empty { text-align: center; padding: 60rpx 0; color: #ccc; font-size: 28rpx; }
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1rpx solid #f0f0f0;
+}
+.selected-info { text-align: center; font-size: 24rpx; color: #666; margin-bottom: 8rpx; }
+.btn-confirm {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: #1890ff;
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 12rpx;
+  border: none;
+}
+.btn-confirm[disabled] { background: #d9d9d9; }

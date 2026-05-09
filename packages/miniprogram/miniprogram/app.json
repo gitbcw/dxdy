@@ -34,7 +34,11 @@
     "pages/mine/favorites/favorites",
     "pages/mine/profile/profile",
     "pages/mine/help/help",
-    "pages/coupons/coupons"
+    "pages/coupons/coupons",
+    "pages/agent/cards/cards",
+    "pages/agent/card-gift/card-gift",
+    "pages/card-detail/card-detail",
+    "pages/card-wallet/card-wallet"
   ],
   "window": {
     "navigationBarTextStyle": "black",

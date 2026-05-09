@@ -48,7 +48,7 @@ async function getCustomer(customerId, openid) {
   if (!customerId) return null
   try {
     const { data } = await db.collection('users').doc(customerId).get()
-    if (!data || data.role !== 'customer' || data._openid !== openid) return null
+    if (!data || data._openid !== openid) return null
     return data
   } catch (e) {
     return null
@@ -76,6 +76,9 @@ async function buildOrderItems(rawItems, customer) {
     if (!isVisibleToCustomer(product, customer)) return { error: `当前客户类型不可购买：${product.name}` }
     if (product.isBloodPack && (customer.customerType !== 'institution' || customer.verificationStatus !== 'approved')) {
       return { error: `血包商品仅限已认证医院客户购买：${product.name}` }
+    }
+    if (product.productType === 'card_voucher' && customer.role !== 'salesperson') {
+      return { error: `卡券商品仅限代理商购买：${product.name}` }
     }
     if (typeof product.stock === 'number' && product.stock < quantity) {
       return { error: `库存不足：${product.name}` }
@@ -189,13 +192,14 @@ exports.main = async (event) => {
   const built = await buildOrderItems(rawItems, customer)
   if (built.error) return error(built.error)
 
-  const type = event.type === 'booking' ? 'booking' : 'normal'
+  const type = event.type === 'booking' ? 'booking' : event.type === 'card_voucher' ? 'card_order' : 'normal'
   if (type === 'booking' && (!event.booking || !event.booking.date || !event.booking.location)) {
     return error('请补全预约信息')
   }
 
+  // 卡券订单不需要收货地址
   const defaultAddress = Array.isArray(customer.addresses) ? customer.addresses.find((address) => address.isDefault) : null
-  const shippingAddress = event.shippingAddress || defaultAddress
+  const shippingAddress = type === 'card_order' ? { address: '卡券虚拟发货', name: '', phone: '' } : (event.shippingAddress || defaultAddress)
   if (!shippingAddress) return error('请选择收货地址')
 
   const totalAmount = built.items.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -238,7 +242,7 @@ exports.main = async (event) => {
     customerId: customer._id,
     customerName: customer.nickname || customer.name || customer.phone || '客户',
     customerOpenid: openid,
-    salespersonId: customer.boundSalespersonId || '',
+    salespersonId: type === 'card_order' ? customer._id : (customer.boundSalespersonId || ''),
     clerkId: null,
     items: built.items,
     pricing: {
@@ -269,6 +273,49 @@ exports.main = async (event) => {
   }
 
   const { _id } = await db.collection('orders').add({ data: order })
+
+  // --- 卡券生成 ---
+  if (type === 'card_order') {
+    for (const item of built.items) {
+      const product = await getProduct(item.productId)
+      const qty = item.quantity || 1
+      for (let i = 0; i < qty; i++) {
+        const cardNo = `CV${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + (product.validDays || 365))
+        await db.collection('card_vouchers').add({
+          data: {
+            cardNo,
+            status: 'ungifted',
+            purchaseOrderId: _id,
+            purchaseOrderNo: order.orderNo,
+            productId: product._id,
+            productName: product.name,
+            productImage: getFirstImage(product),
+            redeemableCategory: product.redeemableCategory || '',
+            validDays: product.validDays || 365,
+            expiresAt: formatDateTime(expiresAt),
+            purchaserId: customer._id,
+            purchaserName: customer.nickname || customer.phone || '',
+            purchaserOpenid: openid,
+            giftHistory: [],
+            currentHolderId: null,
+            currentHolderName: '',
+            redeemedOrderId: '',
+            redeemedProductId: '',
+            redeemedProductName: '',
+            redeemedAt: '',
+            verifiedAt: '',
+            voidedAt: '',
+            voidedBy: '',
+            voidReason: '',
+            createdAt: now,
+            updatedAt: now,
+          },
+        })
+      }
+    }
+  }
 
   // 生成提成记录
   if (order.salespersonId && order.commission.amount > 0) {

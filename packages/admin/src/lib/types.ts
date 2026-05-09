@@ -130,6 +130,8 @@ export interface Product {
   agreementRequired?: AgreementRequired;
   salesCountEnabled?: boolean;
   deliveryConfig?: DeliveryConfig;
+  redeemableCategory?: string;
+  validDays?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -285,6 +287,42 @@ export interface ReturnRecord {
   commissionAdjust: { amount: number; reason: string };
   reviewerId: string | null;
   reviewNote: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- 卡券 ---
+
+export type CardVoucherStatus =
+  | 'ungifted' | 'gifted' | 'claimed'
+  | 'redeemed' | 'verified' | 'expired' | 'voided';
+
+export interface CardVoucher {
+  id: string;
+  cardNo: string;
+  status: CardVoucherStatus;
+  purchaseOrderId: string;
+  purchaseOrderNo: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  redeemableCategory: string;
+  validDays: number;
+  expiresAt: string;
+  purchaserId: string;
+  purchaserName: string;
+  purchaserOpenid: string;
+  currentHolderId: string | null;
+  currentHolderName: string;
+  giftHistory: { fromUserId: string; fromUserName: string; toUserId: string; toUserName: string; at: string }[];
+  redeemedOrderId: string;
+  redeemedProductId: string;
+  redeemedProductName: string;
+  redeemedAt: string;
+  verifiedAt: string;
+  voidedAt: string;
+  voidedBy: string;
+  voidReason: string;
   createdAt: string;
   updatedAt: string;
 }

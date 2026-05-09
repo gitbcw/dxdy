@@ -154,6 +154,15 @@ exports.main = async (event) => {
     } catch (_e) { /* non-critical */ }
   }
 
+  // 卡券兑换订单完成 → 标记卡券已核销
+  if (status === 'completed' && order.type === 'card_redemption' && order.cardVoucherId) {
+    try {
+      await db.collection('card_vouchers').doc(order.cardVoucherId).update({
+        data: { status: 'verified', verifiedAt: now, updatedAt: now },
+      })
+    } catch (_e) { /* non-critical */ }
+  }
+
   const operatorName = String(event.operatorName || '').trim() || user.realName || user.nickname || user.name || user.username || '用户'
   await db.collection('logs').add({
     data: {
