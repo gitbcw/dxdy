@@ -56,4 +56,5 @@
       </view>
     </view>
   </view>
+  <floating-actions showCart="{{true}}" />
 </view>

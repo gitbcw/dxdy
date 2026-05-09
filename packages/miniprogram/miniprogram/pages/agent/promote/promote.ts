@@ -26,7 +26,7 @@ function buildPromoCode(userId: string) {
       <rect x="52" y="52" width="296" height="296" rx="24" fill="#FFFFFF"/>
       ${blocks}
       <text x="200" y="320" font-size="22" fill="#173236" text-anchor="middle" font-family="sans-serif">专属推广演示码</text>
-      <text x="200" y="350" font-size="18" fill="#5F7275" text-anchor="middle" font-family="sans-serif">业务员 ${userId}</text>
+      <text x="200" y="350" font-size="18" fill="#5F7275" text-anchor="middle" font-family="sans-serif">代理商 ${userId}</text>
     </svg>
   `
 

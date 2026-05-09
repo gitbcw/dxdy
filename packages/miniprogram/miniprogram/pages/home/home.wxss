@@ -80,6 +80,45 @@
   background: #f0f3f1;
 }
 
+.suggestion-panel {
+  margin: 8rpx 6rpx 0;
+  border: 1rpx solid #e5ebe7;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 12rpx 30rpx rgba(24, 45, 32, 0.08);
+  overflow: hidden;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 18rpx 22rpx;
+  border-bottom: 1rpx solid #edf1ee;
+}
+
+.suggestion-item:last-child {
+  border-bottom: 0;
+}
+
+.suggestion-title {
+  flex: 1;
+  min-width: 0;
+  color: #17231f;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.suggestion-desc {
+  max-width: 220rpx;
+  color: #7d8983;
+  font-size: 21rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .hero-card {
   position: relative;
   min-height: 214rpx;
@@ -422,4 +461,57 @@
   color: #139445;
   font-size: 22rpx;
   font-weight: 800;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.queue-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 22rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
+}
+
+.queue-title,
+.queue-desc,
+.queue-meta {
+  display: block;
+}
+
+.queue-title {
+  margin-top: 10rpx;
+  color: #17231f;
+  font-size: 27rpx;
+  line-height: 1.35;
+  font-weight: 900;
+}
+
+.queue-desc {
+  margin-top: 8rpx;
+  color: #4a5b52;
+  font-size: 23rpx;
+}
+
+.queue-meta {
+  margin-top: 6rpx;
+  color: #7d8983;
+  font-size: 21rpx;
+}
+
+.queue-action {
+  flex-shrink: 0;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 800;
+  background: #18a34a;
 }

@@ -47,7 +47,7 @@ Page({
     addressText: '',
     addressName: '请选择收货人',
     addressPhone: '',
-    customerTypeLabel: '个人客户',
+    customerTypeLabel: '普通客户',
     priceLabel: '零售价',
     canBooking: false,
     isBloodProduct: false,
@@ -94,7 +94,7 @@ Page({
       addressText,
       addressName: currentAddress?.name || '请选择收货人',
       addressPhone: currentAddress?.phone || '',
-      customerTypeLabel: isInstitution ? '宠物医院客户' : '个人宠物客户',
+      customerTypeLabel: isInstitution ? '宠物医院客户' : '普通客户',
       priceLabel: isInstitution ? '机构价' : '零售价',
     }
 
@@ -251,6 +251,11 @@ Page({
       addressName: address.name,
       addressPhone: address.phone,
     })
+  },
+
+  onAddressTap() {
+    if (this.data.addresses.length > 0) return
+    wx.navigateTo({ url: '/pages/mine/address/address' })
   },
 
   calcTotal() {

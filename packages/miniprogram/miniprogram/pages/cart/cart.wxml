@@ -24,6 +24,8 @@
       wx:for="{{items}}"
       wx:key="id"
       class="cart-item"
+      data-id="{{item.id}}"
+      bindtap="onCartItemTap"
     >
       <view class="item-image">
         <image wx:if="{{item.imageUrl}}" class="item-product-image" src="{{item.imageUrl}}" mode="aspectFit" />
@@ -52,7 +54,7 @@
           </view>
         </view>
       </view>
-      <view class="item-remove" data-index="{{index}}" bindtap="onRemove">
+      <view class="item-remove" data-index="{{index}}" catchtap="onRemove">
         <text class="remove-icon">×</text>
       </view>
     </view>

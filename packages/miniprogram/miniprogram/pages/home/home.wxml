@@ -1,8 +1,7 @@
 <view class="page">
   <view class="topbar">
     <view>
-      <text class="top-title">首页</text>
-      <text class="top-sub">{{displayName}} · {{identityTag}}</text>
+      <text class="top-title">{{displayName}}</text>
     </view>
     <view class="identity-tag {{identityTagClass}}">{{identityTag}}</view>
   </view>
@@ -19,8 +18,20 @@
     />
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
   </view>
+  <view wx:if="{{searchSuggestions.length > 0}}" class="suggestion-panel">
+    <view
+      wx:for="{{searchSuggestions}}"
+      wx:key="id"
+      class="suggestion-item"
+      data-id="{{item.id}}"
+      bindtap="onSearchSuggestionTap"
+    >
+      <text class="suggestion-title">{{item.title}}</text>
+      <text class="suggestion-desc">{{item.desc}}</text>
+    </view>
+  </view>
 
-  <view class="hero-card {{heroClass}}">
+  <view wx:if="{{heroTitlePrimary}}" class="hero-card {{heroClass}}">
     <image class="hero-bg-image" src="{{homeBannerImage}}" mode="aspectFill" />
     <view class="hero-copy">
       <text class="hero-title">{{heroTitlePrimary}}</text>
@@ -77,7 +88,7 @@
       <text class="section-title">{{boardTitle}}</text>
       <text class="section-more" bindtap="onBoardMoreTap">{{boardMoreText}} ></text>
     </view>
-    <scroll-view scroll-x class="product-scroll">
+    <scroll-view wx:if="{{boardLayout !== 'queue'}}" scroll-x class="product-scroll">
       <view
         wx:for="{{boardItems}}"
         wx:key="id"
@@ -98,6 +109,23 @@
         </view>
       </view>
     </scroll-view>
+    <view wx:else class="queue-list">
+      <view
+        wx:for="{{boardItems}}"
+        wx:key="id"
+        class="queue-card"
+        data-idx="{{index}}"
+        bindtap="onBoardItemTap"
+      >
+        <view>
+          <text class="task-badge">{{item.badge}}</text>
+          <text class="queue-title">{{item.title}}</text>
+          <text class="queue-desc">{{item.desc}}</text>
+          <text class="queue-meta">{{item.meta}}</text>
+        </view>
+        <text class="queue-action">{{item.actionText}}</text>
+      </view>
+    </view>
   </view>
 
   <product-action-sheet
@@ -109,4 +137,5 @@
     bind:addcart="onActionSheetAddCart"
     bind:buynow="onActionSheetBuyNow"
   />
+  <floating-actions showCart="{{currentRole !== 'salesperson' && currentRole !== 'clerk'}}" showService="{{true}}" />
 </view>

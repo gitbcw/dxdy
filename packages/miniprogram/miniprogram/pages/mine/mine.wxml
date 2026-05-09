@@ -14,7 +14,7 @@
           <text class="name">{{userInfo.nickname}}</text>
           <text class="type">{{userRoleLabel}}</text>
         </view>
-        <text class="verify-state">{{userInfo.verificationStatus === 'approved' ? '已认证' : '去认证'}}</text>
+        <text wx:if="{{showVerifyState}}" class="verify-state">{{userInfo.verificationStatus === 'approved' ? '已认证' : '去认证'}}</text>
       </view>
       <view class="profile-stats" wx:if="{{stats.length > 0}}">
         <view wx:for="{{stats}}" wx:key="label" class="profile-stat">

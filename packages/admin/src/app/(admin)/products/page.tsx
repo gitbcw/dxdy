@@ -17,7 +17,14 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import getApp from '@/lib/cloudbase';
-import { fetchProductsAndCategories, createProduct, updateProduct } from '@/lib/services/database';
+import {
+  fetchProductsAndCategories,
+  createProduct,
+  updateProduct,
+  createProductCategory,
+  updateProductCategory,
+  deleteProductCategory,
+} from '@/lib/services/database';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
 import type { Product, ProductCategory, ProductVisibility, ProductType } from '@/lib/types';
@@ -224,6 +231,7 @@ export default function ProductsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [categoryForm, setCategoryForm] = useState({ id: '', name: '', sort: '' });
 
   useEffect(() => {
     loadProducts();
@@ -497,6 +505,47 @@ export default function ProductsPage() {
     }
   }
 
+  async function handleSaveCategory() {
+    const name = categoryForm.name.trim();
+    if (!name) {
+      setErrorMsg('请填写分类名称');
+      return;
+    }
+    const id = (categoryForm.id.trim() || `cat_${Date.now().toString(36)}`).replace(/\s+/g, '_');
+    const sort = parseInt(categoryForm.sort, 10) || categories.length + 1;
+    try {
+      const exists = categories.some(category => category.id === id);
+      if (exists) {
+        const updated = await updateProductCategory(id, { name, sort });
+        setCategories(prev => prev.map(category => (category.id === id ? { ...category, ...updated } : category)).sort((a, b) => a.sort - b.sort));
+        await writeAdminLog({ operator: user, action: 'update_category', target: id, detail: `更新商品分类 ${name}` });
+      } else {
+        const created = await createProductCategory({ id, name, sort });
+        setCategories(prev => [...prev, created].sort((a, b) => a.sort - b.sort));
+        await writeAdminLog({ operator: user, action: 'create_category', target: id, detail: `创建商品分类 ${name}` });
+      }
+      setCategoryForm({ id: '', name: '', sort: '' });
+      setErrorMsg('');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '保存商品分类失败');
+    }
+  }
+
+  async function handleDeleteCategory(category: ProductCategory) {
+    const inUse = products.some(product => product.category === category.id);
+    if (inUse) {
+      setErrorMsg('该分类已有商品使用，无法删除');
+      return;
+    }
+    try {
+      await deleteProductCategory(category.id);
+      setCategories(prev => prev.filter(item => item.id !== category.id));
+      await writeAdminLog({ operator: user, action: 'delete_category', target: category.id, detail: `删除商品分类 ${category.name}` });
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '删除商品分类失败');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -526,6 +575,57 @@ export default function ProductsPage() {
           {errorMsg}
         </div>
       )}
+
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold">商品分类配置</h2>
+            <p className="text-sm text-muted-foreground">分类保存后会同步用于小程序商品分类页和商品编辑表单。</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[1fr_1fr_120px_auto]">
+            <Input
+              placeholder="分类 ID，留空自动生成"
+              value={categoryForm.id}
+              onChange={event => setCategoryForm(form => ({ ...form, id: event.target.value }))}
+            />
+            <Input
+              placeholder="分类名称"
+              value={categoryForm.name}
+              onChange={event => setCategoryForm(form => ({ ...form, name: event.target.value }))}
+            />
+            <Input
+              placeholder="排序"
+              type="number"
+              value={categoryForm.sort}
+              onChange={event => setCategoryForm(form => ({ ...form, sort: event.target.value }))}
+            />
+            <Button onClick={handleSaveCategory}>保存分类</Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[...categories].sort((a, b) => a.sort - b.sort).map(category => (
+              <div key={category.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <span className="font-medium">{category.name}</span>
+                <span className="text-xs text-muted-foreground">{category.id} · {category.sort}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCategoryForm({ id: category.id, name: category.name, sort: String(category.sort) })}
+                >
+                  编辑
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteCategory(category)}
+                  disabled={products.some(product => product.category === category.id)}
+                >
+                  删除
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-4">
@@ -954,7 +1054,7 @@ export default function ProductsPage() {
                   <SelectContent>
                     <SelectItem value="all">全部可见</SelectItem>
                     <SelectItem value="institution_only">仅宠物医院</SelectItem>
-                    <SelectItem value="personal_only">仅个人客户</SelectItem>
+                    <SelectItem value="personal_only">仅普通客户</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1089,7 +1189,7 @@ export default function ProductsPage() {
                   <SelectContent>
                     <SelectItem value="all">全部可见</SelectItem>
                     <SelectItem value="institution_only">仅宠物医院</SelectItem>
-                    <SelectItem value="personal_only">仅个人客户</SelectItem>
+                    <SelectItem value="personal_only">仅普通客户</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

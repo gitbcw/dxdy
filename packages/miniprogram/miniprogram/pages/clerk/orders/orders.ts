@@ -4,6 +4,7 @@ const { getClerkOrders } = require('../../../services/index')
 Page({
   data: {
     activeTab: 'pending',
+    searchKeyword: '',
     orders: [],
     isEmpty: false,
     iconClock: icons.clock,
@@ -22,6 +23,9 @@ Page({
     if (options?.tab) {
       this.setData({ activeTab: options.tab })
     }
+    if (options?.keyword) {
+      this.setData({ searchKeyword: decodeURIComponent(options.keyword) })
+    }
   },
 
   onShow() {
@@ -36,10 +40,27 @@ Page({
 
   async loadOrders() {
     const status = this.data.activeTab === 'all' ? undefined : this.data.activeTab
+    const keyword = (this.data.searchKeyword || '').trim().toLowerCase()
     const orders = await getClerkOrders({ status })
+    const filteredOrders = keyword
+      ? orders.filter((order: any) => {
+        const productText = (order.items || [])
+          .map((item: any) => `${item.name || item.productName || ''} ${item.specs || item.spec || ''}`)
+          .join(' ')
+          .toLowerCase()
+        return [
+          order.orderNo,
+          order.id,
+          order.customerName,
+          order.customerPhone,
+          order.address,
+          productText,
+        ].some((value) => String(value || '').toLowerCase().includes(keyword))
+      })
+      : orders
     this.setData({
-      orders,
-      isEmpty: orders.length === 0,
+      orders: filteredOrders,
+      isEmpty: filteredOrders.length === 0,
     })
   },
 

@@ -98,6 +98,20 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
   return update as any
 }
 
+export async function createProductCategory(category: ProductCategory) {
+  await db().collection('categories').doc(category.id).set(category)
+  return category
+}
+
+export async function updateProductCategory(id: string, updates: Partial<ProductCategory>) {
+  await db().collection('categories').doc(id).update(updates)
+  return { id, ...updates } as ProductCategory
+}
+
+export async function deleteProductCategory(id: string) {
+  await db().collection('categories').doc(id).remove()
+}
+
 // ===== Orders =====
 
 export async function fetchOrders(id?: string): Promise<any[]> {

@@ -62,13 +62,13 @@ const FAQS_BY_ROLE: Record<HelpRole, Array<{
     {
       id: 1,
       question: '推广工具怎么使用？',
-      answer: '业务员可直接使用专属推广二维码，邀请客户扫码注册小程序。',
+      answer: '代理商可直接使用专属推广二维码，邀请客户扫码注册小程序。',
       open: false,
     },
     {
       id: 2,
       question: '客户注册后会怎么归属？',
-      answer: '通过业务员推广进入并完成注册的客户，会沉淀到对应的客户管理列表中。',
+      answer: '通过代理商推广进入并完成注册的客户，会沉淀到对应的客户管理列表中。',
       open: false,
     },
     {
@@ -113,17 +113,17 @@ const FAQS_BY_ROLE: Record<HelpRole, Array<{
 }
 
 const ROLE_COPY: Record<HelpRole, { title: string; countLabel: string }> = {
-  customer_personal: { title: '个人客户常见问题', countLabel: '个人客户' },
+  customer_personal: { title: '普通客户常见问题', countLabel: '普通客户' },
   customer_institution: { title: '机构客户常见问题', countLabel: '机构客户' },
-  salesperson: { title: '业务员常见问题', countLabel: '业务员' },
+  salesperson: { title: '代理商常见问题', countLabel: '代理商' },
   clerk: { title: '制单员常见问题', countLabel: '制单员' },
 }
 
 Page({
   data: {
     currentRole: 'customer_personal' as HelpRole,
-    roleTitle: '个人客户常见问题',
-    roleCountLabel: '个人客户',
+    roleTitle: '普通客户常见问题',
+    roleCountLabel: '普通客户',
     faqs: [] as any[],
     contacts: [
       { type: '客服热线', value: '400-888-6688', icon: '电', action: 'call' },

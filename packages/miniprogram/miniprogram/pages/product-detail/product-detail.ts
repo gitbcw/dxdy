@@ -122,6 +122,10 @@ Page({
   onTestQuery() {
     wx.navigateTo({ url: '/pages/tests/query/query' })
   },
+
+  onServiceTap() {
+    wx.navigateTo({ url: '/pages/mine/help/help' })
+  },
 })
 
 export {}

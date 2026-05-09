@@ -23,7 +23,7 @@ export function AgentContributionChart({ data }: AgentContributionChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>业务员贡献</CardTitle>
+          <CardTitle>代理商贡献</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center" style={{ height: 300 }}>
@@ -43,7 +43,7 @@ export function AgentContributionChart({ data }: AgentContributionChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>业务员贡献</CardTitle>
+        <CardTitle>代理商贡献</CardTitle>
       </CardHeader>
       <CardContent>
         <div style={{ height: 300 }}>

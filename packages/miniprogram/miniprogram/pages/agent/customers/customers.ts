@@ -24,7 +24,7 @@ Page({
         avatarText: (customer.nickname || customer.phone || '客').charAt(0),
         amountText: formatMoney(customer.totalAmount || 0),
         monthAmountText: formatMoney(customer.monthAmount || 0),
-        priorityTag: customer.type === 'institution' ? '机构客户' : '个人客户',
+        priorityTag: customer.type === 'institution' ? '机构客户' : '普通客户',
         priorityText: customer.orderCount >= 3
           ? '高活跃'
           : customer.type === 'institution'

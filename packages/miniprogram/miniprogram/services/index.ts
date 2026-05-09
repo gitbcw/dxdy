@@ -7,18 +7,15 @@
 const db = wx.cloud.database()
 const _ = db.command
 
-const CLOUD_STORAGE_PREFIX = 'cloud://cloudbase-d4gwpsm7gcc59b6fc.636c-cloudbase-d4gwpsm7gcc59b6fc-1428922768/dxdy/generated-ui'
-const CLOUD_STORAGE_V2_PREFIX = `${CLOUD_STORAGE_PREFIX}/v2`
-
 export const GENERATED_ASSETS = {
-  loginHero: `${CLOUD_STORAGE_V2_PREFIX}/login-vet-hero-v2.jpg`,
-  homeBanner: `${CLOUD_STORAGE_V2_PREFIX}/home-vet-banner-v2.jpg`,
-  bloodBag: `${CLOUD_STORAGE_PREFIX}/product-blood-bag.webp`,
-  vaccineKit: `${CLOUD_STORAGE_PREFIX}/product-vaccine-kit.webp`,
-  testCard: `${CLOUD_STORAGE_PREFIX}/product-test-card.webp`,
-  coldChain: `${CLOUD_STORAGE_V2_PREFIX}/cold-chain-logistics-v2.jpg`,
-  testTraceability: `${CLOUD_STORAGE_V2_PREFIX}/test-traceability-v2.jpg`,
-  agentPromotion: `${CLOUD_STORAGE_V2_PREFIX}/agent-promotion-v2.jpg`,
+  loginHero: '/assets/generated/optimized/login-vet-hero.webp',
+  homeBanner: '/assets/generated/optimized/home-vet-banner.webp',
+  bloodBag: '/assets/generated/optimized/product-blood-bag.webp',
+  vaccineKit: '/assets/generated/optimized/product-vaccine-kit.webp',
+  testCard: '/assets/generated/optimized/product-test-card.webp',
+  coldChain: '/assets/generated/optimized/cold-chain-logistics.webp',
+  testTraceability: '/assets/generated/optimized/product-test-card.webp',
+  agentPromotion: '/assets/generated/optimized/home-vet-banner.webp',
 }
 
 // ===== Helpers =====
@@ -1037,7 +1034,7 @@ export function canPurchase(product: any, user: any | null, options?: { quantity
 
   const customerType = user.customerType || 'personal'
   const visibility = product.visibility || 'all'
-  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限个人客户', code: 'visibility' }
+  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限普通客户', code: 'visibility' }
   if (visibility === 'institution_only' && customerType !== 'institution') return { allowed: false, reason: '该商品仅限医院客户', code: 'visibility' }
 
   const isBloodPack = product.productType === 'blood_pack' || product.isBloodPack

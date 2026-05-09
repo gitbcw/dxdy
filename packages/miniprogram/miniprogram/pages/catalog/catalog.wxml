@@ -13,6 +13,18 @@
     />
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
   </view>
+  <view wx:if="{{searchSuggestions.length > 0}}" class="suggestion-panel">
+    <view
+      wx:for="{{searchSuggestions}}"
+      wx:key="id"
+      class="suggestion-item"
+      data-id="{{item.id}}"
+      bindtap="onSearchSuggestionTap"
+    >
+      <text class="suggestion-title">{{item.title}}</text>
+      <text class="suggestion-desc">{{item.desc}}</text>
+    </view>
+  </view>
 
   <scroll-view scroll-x class="category-tabs">
     <view
@@ -78,7 +90,7 @@
             <text class="price">¥{{item.priceText}}</text>
             <text wx:if="{{item.originalPriceText}}" class="original-price">¥{{item.originalPriceText}}</text>
           </view>
-          <text class="stock {{item.lowStock ? 'warn' : ''}}">{{item.stock <= 5 ? '库存紧张' : '可采购'}}</text>
+          <text wx:if="{{item.leadText}}" class="stock {{item.lowStock ? 'warn' : ''}}">{{item.leadText}}</text>
           <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
             <image class="cart-plus-icon" src="{{cartIcon}}" mode="aspectFit" />
           </view>
@@ -96,4 +108,5 @@
     bind:addcart="onActionSheetAddCart"
     bind:buynow="onActionSheetBuyNow"
   />
+  <floating-actions showCart="{{true}}" />
 </view>

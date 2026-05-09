@@ -23,11 +23,12 @@ Page({
   data: {
     userInfo: null as any,
     currentRole: 'customer_personal',
-    userRoleLabel: '个人客户',
+    userRoleLabel: '普通客户',
     avatarText: '客',
     stats: [] as any[],
     statNote: '',
     compactProfile: false,
+    showVerifyState: true,
     showOrderBar: false,
     orderCounts: { all: 0, pendingPayment: 0, pendingReceipt: 0, completed: 0 },
     focusTitle: '',
@@ -83,16 +84,13 @@ Page({
         ],
         statNote: `待抵扣 ¥${formatMoney(summary.pendingDeduction)}`,
         compactProfile: true,
+        showVerifyState: false,
         showOrderBar: false,
         orderCounts: { all: 0, pendingPayment: 0, pendingReceipt: 0, completed: 0 },
         focusTitle: '',
         focusItems: [],
         menuItems: [
           { id: 'agentStatus', title: '代理商状态', tap: 'onAgentStatusTap', accent: agentStatus !== 'approved', desc: agentStatus === 'approved' ? '合作资格已开通' : '查看申请审核进度' },
-          { id: 'promote', title: '推广工具', tap: 'onPromoteTap', accent: false, desc: '查看推广二维码' },
-          { id: 'customers', title: '客户管理', tap: 'onCustomersTap', desc: '查看绑定客户和成交贡献' },
-          { id: 'agentOrders', title: '客户订单', tap: 'onAgentOrdersTap', desc: '查看绑定客户订单与提成状态' },
-          { id: 'commission', title: '提成中心', tap: 'onCommissionTap', desc: '查看提成明细和提现' },
           { id: 'withdraw', title: '提现与银行卡', tap: 'onWithdrawTap', desc: '管理银行卡和提现记录' },
           { id: 'profile', title: '个人资料', tap: 'onProfileTap', desc: '修改头像、昵称等基本信息' },
           { id: 'help', title: '帮助中心', tap: 'onHelpTap', desc: '常见问题与在线客服' },
@@ -115,6 +113,7 @@ Page({
         ],
         statNote: exchangeCount > 0 ? `当前含换货单 ${exchangeCount} 单` : '当前暂无换货单待处理',
         compactProfile: true,
+        showVerifyState: false,
         showOrderBar: false,
         orderCounts: { all: 0, pendingPayment: 0, pendingReceipt: 0, completed: 0 },
         focusTitle: '当前待处理',
@@ -133,7 +132,6 @@ Page({
           },
         ],
         menuItems: [
-          { id: 'pending', title: '待处理订单', tap: 'onPendingOrdersTap', accent: true, desc: '查看当前需要发货和换货的订单' },
           { id: 'allorders', title: '全部订单', tap: 'onAllOrdersTap', desc: '查看所有订单记录' },
           { id: 'profile', title: '个人资料', tap: 'onProfileTap', desc: '修改头像、昵称等基本信息' },
           { id: 'help', title: '帮助中心', tap: 'onHelpTap', desc: '常见问题与在线客服' },
@@ -145,7 +143,7 @@ Page({
     const orders = user.role === 'customer' ? await getOrders({ customerId: user.id }) : []
     const isInstitution = role === 'customer_institution' || user.customerType === 'institution'
     return {
-      userRoleLabel: isInstitution ? '宠物医院客户' : '个人客户',
+      userRoleLabel: isInstitution ? '宠物医院客户' : '普通客户',
       avatarText: user.nickname?.[0] || '客',
       stats: [
         { label: '钱包余额', value: `¥${formatMoney(user.wallet?.balance ?? 0)}` },
@@ -153,6 +151,7 @@ Page({
       ],
       statNote: '',
       compactProfile: false,
+      showVerifyState: true,
       showOrderBar: true,
       orderCounts: {
         all: orders.length,
@@ -163,18 +162,11 @@ Page({
       focusTitle: '',
       focusItems: [],
       menuItems: [
-        { id: 'orders', icon: '单', title: '我的订单', tap: 'onOrdersTap', desc: '查看全部订单与售后进度' },
-        { id: 'booking', icon: '约', title: '我的预约', tap: 'onOrdersTap', desc: '查看血包与服务预约记录' },
         { id: 'agentApply', icon: '代', title: '代理商申请', value: user.agentStatus === 'pending_review' ? '审核中' : user.agentStatus === 'rejected' ? '被驳回' : '', tap: user.agentStatus ? 'onAgentStatusTap' : 'onAgentApplyTap', desc: '申请成为代理商，开通推广和提成能力' },
         { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
-        { id: 'coupons', icon: '券', title: '我的优惠券', tap: 'onCouponsTap', desc: '查看可用优惠券和使用记录' },
-        { id: 'points', icon: '分', title: '积分明细', tap: 'onPointsTap', desc: '查看积分获取和消费记录' },
-        { id: 'wallet', icon: '充', title: '钱包充值', tap: 'onWalletTap', desc: '充值余额享赠送优惠' },
-        { id: 'referral', icon: '荐', title: '推荐有礼', tap: 'onReferralTap', desc: '邀请好友注册获取积分奖励' },
+        { id: 'wallet', icon: '充', title: '钱包与积分', tap: 'onWalletTap', desc: '充值余额，查看积分和优惠' },
         { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
-        { id: 'test', icon: '检', title: '检测查询', tap: 'onTestQueryTap', desc: '扫码或输入血包编号查询报告' },
-        { id: 'returns', icon: '售', title: '售后记录', tap: 'onReturnDetailTap', desc: '退货退款与售后进度' },
-        { id: 'help', icon: '客', title: '联系客服', tap: 'onHelpTap', desc: '订单、物流、售后咨询' },
+        { id: 'service', icon: '客', title: '售后与客服', tap: 'onHelpTap', desc: '订单、物流、售后咨询' },
       ],
     }
   },

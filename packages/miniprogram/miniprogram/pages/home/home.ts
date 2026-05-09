@@ -82,6 +82,8 @@ Page({
     heroTitleSecondary: '守护动物健康',
     heroPill: '品质 · 专业 · 安心',
     heroClass: 'default',
+    boardLayout: 'scroll',
+    searchSuggestions: [] as any[],
   },
 
   _rawProducts: [] as any[],
@@ -130,9 +132,10 @@ Page({
       banner: null,
       homeBannerImage: GENERATED_ASSETS.homeBanner,
       heroTitlePrimary: '专业动医产品',
-      heroTitleSecondary: '守护动物健康',
-      heroPill: '品质 · 专业 · 安心',
-      heroClass: 'default',
+        heroTitleSecondary: '守护动物健康',
+        heroPill: '品质 · 专业 · 安心',
+        heroClass: 'default',
+        boardLayout: 'scroll',
       ...dashboard,
       quickActions: withIcon(dashboard.quickActions || []),
       searchIcon: icons.search,
@@ -175,8 +178,8 @@ Page({
           },
           taskCards: data.pendingOrders.length > 0 ? [{
             badge: '订单',
-            title: `订单号：${data.pendingOrders[0].id}`,
-            desc: `当前状态：${getOrderStatusText(data.pendingOrders[0].status)}`,
+            title: getDisplayOrderNo(data.pendingOrders[0]),
+            desc: `${data.pendingOrders[0].items?.[0]?.name || data.pendingOrders[0].items?.[0]?.productName || '订单商品'} · ${getOrderStatusText(data.pendingOrders[0].status)}`,
             meta: '',
             action: 'orders',
             actionText: '看订单',
@@ -284,6 +287,7 @@ Page({
         ],
         boardTitle: '',
         boardMoreText: '',
+        boardLayout: 'scroll',
         boardItems: [],
       }
     }
@@ -295,10 +299,10 @@ Page({
         displayName: name,
         identityTag: '制单员',
         identityTagClass: 'staff',
-        homeBannerImage: GENERATED_ASSETS.coldChain,
-        heroTitlePrimary: '履约制单中心',
-        heroTitleSecondary: '发货任务清晰处理',
-        heroPill: '待办 · 发货 · 物流',
+        homeBannerImage: '',
+        heroTitlePrimary: '',
+        heroTitleSecondary: '',
+        heroPill: '',
         heroClass: 'clerk',
         taskCards: [
           {
@@ -326,6 +330,7 @@ Page({
         ],
         boardTitle: '当前发货队列',
         boardMoreText: '全部订单',
+        boardLayout: 'queue',
         boardItems: urgentOrders.map((order: any) => ({
           id: order.id,
           type: 'action',
@@ -352,8 +357,8 @@ Page({
       },
       taskCards: data.pendingOrders.length > 0 ? [{
         badge: '订单',
-        title: `订单号：${data.pendingOrders[0].id}`,
-        desc: `当前状态：${getOrderStatusText(data.pendingOrders[0].status)}`,
+        title: getDisplayOrderNo(data.pendingOrders[0]),
+        desc: `${data.pendingOrders[0].items?.[0]?.name || data.pendingOrders[0].items?.[0]?.productName || '订单商品'} · ${getOrderStatusText(data.pendingOrders[0].status)}`,
         meta: '',
         action: 'orders',
         actionText: '看订单',
@@ -407,11 +412,15 @@ Page({
   },
 
   onSearchInput(e: any) {
-    this.setData({ searchKeyword: e.detail.value || '' })
+    const keyword = e.detail.value || ''
+    this.setData({
+      searchKeyword: keyword,
+      searchSuggestions: this.getSearchSuggestions(keyword),
+    })
   },
 
   onSearchClear() {
-    this.setData({ searchKeyword: '' })
+    this.setData({ searchKeyword: '', searchSuggestions: [] })
   },
 
   onSearchConfirm() {
@@ -420,6 +429,10 @@ Page({
 
   submitSearch() {
     const keyword = (this.data.searchKeyword || '').trim()
+    if (this.data.currentRole === 'clerk') {
+      wx.navigateTo({ url: `/pages/clerk/orders/orders${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}` })
+      return
+    }
     if (keyword) {
       const app = getApp()
       app.globalData.catalogSearchKeyword = keyword
@@ -428,6 +441,29 @@ Page({
       return
     }
     wx.switchTab({ url: '/pages/catalog/catalog' })
+  },
+
+  getSearchSuggestions(keyword: string) {
+    const kw = (keyword || '').trim().toLowerCase()
+    if (!kw || this.data.currentRole === 'clerk') return []
+    return this._rawProducts
+      .filter((product: any) => {
+        const text = `${product.name || ''} ${product.category || ''} ${product.specs?.[0]?.value || ''}`.toLowerCase()
+        return text.includes(kw)
+      })
+      .slice(0, 5)
+      .map((product: any) => ({
+        id: product.id,
+        title: product.name,
+        desc: product.specs?.[0]?.value || '商品详情',
+      }))
+  },
+
+  onSearchSuggestionTap(e: any) {
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+    this.setData({ searchSuggestions: [], searchKeyword: '' })
+    wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${id}` })
   },
 
   onBannerAction() {

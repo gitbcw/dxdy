@@ -18,7 +18,7 @@ Page({
         { key: 'nickname', label: '昵称', value: user.nickname || '', type: 'text' },
         { key: 'phone', label: '手机号', value: user.phone || '未绑定', type: 'text' },
         { key: 'email', label: '邮箱', value: user.email || '未绑定', type: 'text' },
-        { key: 'role', label: '角色', value: user.roleName || '个人客户', type: 'readonly' },
+        { key: 'role', label: '角色', value: user.roleName || '普通客户', type: 'readonly' },
         { key: 'company', label: '所属机构', value: user.company || '未关联', type: 'readonly' },
         { key: 'createdAt', label: '注册时间', value: user.createdAt || '2025-01-15', type: 'readonly' },
       ],

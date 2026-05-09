@@ -46,6 +46,45 @@
   background: #f0f3f1;
 }
 
+.suggestion-panel {
+  margin-top: 8rpx;
+  border: 1rpx solid #e5ebe7;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 12rpx 30rpx rgba(24, 45, 32, 0.08);
+  overflow: hidden;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 18rpx 22rpx;
+  border-bottom: 1rpx solid #edf1ee;
+}
+
+.suggestion-item:last-child {
+  border-bottom: 0;
+}
+
+.suggestion-title {
+  flex: 1;
+  min-width: 0;
+  color: #17231f;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.suggestion-desc {
+  max-width: 220rpx;
+  color: #7d8983;
+  font-size: 21rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .category-tabs,
 .quick-filters {
   margin-top: 18rpx;

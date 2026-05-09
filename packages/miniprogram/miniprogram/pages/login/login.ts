@@ -17,10 +17,8 @@ Page({
     showDemoAccounts: false,
     demoAccounts: [
       { label: '普通客户', phone: '13888002233' },
-      { label: '未认证机构', phone: '13822003456' },
       { label: '宠物医院', phone: '13821003456' },
-      { label: '个人客户', phone: '13877005678' },
-      { label: '业务员', phone: '13811001234' },
+      { label: '代理商', phone: '13811001234' },
       { label: '制单员', phone: '13833007890' },
     ],
   },
@@ -75,7 +73,7 @@ Page({
     return 'customer_personal'
   },
 
-  finishLogin(user: any, title: string, redirectHome = false) {
+  finishLogin(user: any, title: string, redirectHome = true) {
     const app = getApp()
     app.globalData.userInfo = user
     app.globalData.userRole = this.inferRole(user)
@@ -134,7 +132,7 @@ Page({
     wx.hideLoading()
 
     if (result.success) {
-      this.finishLogin(result.user, isRegister ? '注册成功' : '登录成功')
+      this.finishLogin(result.user, isRegister ? '注册成功' : '登录成功', true)
     } else {
       wx.showToast({ title: result.error || '操作失败', icon: 'none' })
     }

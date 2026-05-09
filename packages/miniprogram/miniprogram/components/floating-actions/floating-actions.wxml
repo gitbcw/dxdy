@@ -1,0 +1,9 @@
+<view class="floating-actions">
+  <view wx:if="{{showCart}}" class="float-btn" bindtap="onCartTap">
+    <image class="float-icon" src="{{cartIcon}}" mode="aspectFit" />
+    <view wx:if="{{cartCount > 0}}" class="float-badge">{{cartCount > 99 ? '99+' : cartCount}}</view>
+  </view>
+  <view wx:if="{{showService}}" class="float-btn service" bindtap="onServiceTap">
+    <image class="float-icon" src="{{serviceIcon}}" mode="aspectFit" />
+  </view>
+</view>

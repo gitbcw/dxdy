@@ -39,7 +39,7 @@
 
     <view class="card">
       <view class="section-title">{{orderType === 'booking' ? '预约与配送' : '收货信息'}}</view>
-      <view class="address-card">
+      <view class="address-card" bindtap="onAddressTap">
         <view class="address-head">
           <text class="address-name">{{addressName}}</text>
           <text class="address-phone">{{addressPhone}}</text>
@@ -48,7 +48,7 @@
         <picker wx:if="{{addressOptions.length}}" mode="selector" range="{{addressOptions}}" value="{{selectedAddressIndex}}" bindchange="onAddressChange">
           <view class="address-text">{{addressText}} ></view>
         </picker>
-        <view wx:else class="address-text">暂无可用地址，请先新增地址</view>
+        <view wx:else class="address-text">暂无可用地址，请先新增地址 ></view>
       </view>
 
       <view wx:if="{{orderType === 'booking'}}" class="booking-box">
@@ -121,4 +121,5 @@
     </view>
     <view class="submit-btn" bindtap="onSubmit">{{primaryButtonText}}</view>
   </view>
+  <floating-actions showCart="{{true}}" />
 </view>

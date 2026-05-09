@@ -66,12 +66,12 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
               <Tooltip
                 formatter={(value, name) => [
                   `¥${formatMoney(Number(value))}`,
-                  name === 'institution' ? '机构客户' : '个人客户',
+                  name === 'institution' ? '机构客户' : '普通客户',
                 ]}
               />
               <Legend
                 formatter={(value: string) =>
-                  value === 'institution' ? '机构客户' : '个人客户'
+                  value === 'institution' ? '机构客户' : '普通客户'
                 }
               />
               <Area

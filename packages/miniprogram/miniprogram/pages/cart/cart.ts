@@ -95,6 +95,12 @@ Page({
     this.refreshCart()
   },
 
+  onCartItemTap(e: any) {
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+    wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${id}` })
+  },
+
   onCheckout() {
     if (cartStore.length === 0) return
     const user = getApp().globalData.userInfo

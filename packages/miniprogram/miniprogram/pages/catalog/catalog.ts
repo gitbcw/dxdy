@@ -17,6 +17,7 @@ Page({
     actionSheetVisible: false,
     actionSheetProduct: {} as any,
     keywordMode: false,
+    searchSuggestions: [] as any[],
     searchIcon: icons.search,
     filterIcon: icons.filter,
     cartIcon: icons.cart,
@@ -90,7 +91,7 @@ Page({
         specText: product.specs?.[0]?.value || '标准规格',
         tagText: product.visibility === 'institution_only' ? '机构专属' : product.isBloodPack ? '预约服务' : '可采购',
         lowStock: product.stock <= 5,
-        leadText: product.isBloodPack ? '可预约' : product.stock <= 5 ? '库存紧张' : '可采购',
+        leadText: product.isBloodPack ? '可预约' : product.stock <= 5 ? '库存紧张' : '',
         imageUrl: getProductVisualImage(product),
       }
     })
@@ -164,6 +165,7 @@ Page({
     this.setData({
       searchKeyword: keyword,
       keywordMode: !!keyword.trim(),
+      searchSuggestions: this.getSearchSuggestions(keyword),
     })
   },
 
@@ -173,6 +175,7 @@ Page({
       activeCategory: keyword ? '' : (this.data.activeCategory || this.data.categories[0]?.id || ''),
       searchKeyword: keyword,
       keywordMode: !!keyword,
+      searchSuggestions: [],
     })
     this.loadProducts()
   },
@@ -182,6 +185,7 @@ Page({
       activeCategory: this.data.categories[0]?.id || '',
       searchKeyword: '',
       keywordMode: false,
+      searchSuggestions: [],
     })
     this.loadProducts()
   },
@@ -212,7 +216,30 @@ Page({
   },
 
   onProductTap(e: any) {
-    wx.navigateTo({ url: `/pages/orders/create/create?productId=${e.currentTarget.dataset.id}` })
+    wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${e.currentTarget.dataset.id}` })
+  },
+
+  getSearchSuggestions(keyword: string) {
+    const kw = (keyword || '').trim().toLowerCase()
+    if (!kw) return []
+    return this.data.allProducts
+      .filter((product: any) => {
+        const text = `${product.name || ''} ${product.category || ''} ${product.specText || ''}`.toLowerCase()
+        return text.includes(kw)
+      })
+      .slice(0, 6)
+      .map((product: any) => ({
+        id: product.id,
+        title: product.name,
+        desc: product.specText || '商品详情',
+      }))
+  },
+
+  onSearchSuggestionTap(e: any) {
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+    this.setData({ searchSuggestions: [], searchKeyword: '' })
+    wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${id}` })
   },
 
   onCartPlusTap(e: any) {
