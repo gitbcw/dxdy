@@ -11,9 +11,17 @@ Page({
     iconEmpty: icons.emptyOrder,
     tabs: [
       { key: 'pending', label: '待发货' },
-      { key: 'shipped', label: '已发货' },
+      { key: 'today_shipped', label: '今日发货' },
+      { key: 'shipped', label: '配送中' },
+      { key: 'signed', label: '已签收' },
       { key: 'all', label: '全部' },
     ],
+  },
+
+  onLoad(options: any) {
+    if (options?.tab) {
+      this.setData({ activeTab: options.tab })
+    }
   },
 
   onShow() {

@@ -26,6 +26,8 @@ type HomeAction =
   | 'promote'
   | 'commission'
   | 'clerkPending'
+  | 'clerkTodayShipped'
+  | 'clerkShipped'
   | 'clerkOrders'
   | 'verify'
   | 'testQuery'
@@ -312,7 +314,9 @@ Page({
         ],
         quickActions: [
           { icon: '发', title: '待处理', action: 'clerkPending' },
-          { icon: '运', title: '全部订单', action: 'clerkOrders' },
+          { icon: '今', title: '今日发货', action: 'clerkTodayShipped' },
+          { icon: '运', title: '配送中', action: 'clerkShipped' },
+          { icon: '单', title: '全部订单', action: 'clerkOrders' },
         ],
         boardTitle: '当前发货队列',
         boardMoreText: '全部订单',
@@ -371,6 +375,8 @@ Page({
       agentApply: '/pages/agent/apply/apply',
       agentStatus: '/pages/agent/verify-status/verify-status',
       clerkPending: '/pages/clerk/pending/pending',
+      clerkTodayShipped: '/pages/clerk/orders/orders?tab=today_shipped',
+      clerkShipped: '/pages/clerk/orders/orders?tab=shipped',
       clerkOrders: '/pages/clerk/orders/orders',
       orders: '/pages/orders/order-detail/order-detail?list=1',
     }

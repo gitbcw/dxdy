@@ -57,7 +57,7 @@ function mapClerkOrder(order: any) {
   return {
     ...order,
     rawStatus: order.status,
-    status: order.status === 'pending_receipt' ? 'shipped' : order.status === 'preparing' ? 'preparing' : 'pending',
+    status: order.status === 'pending_receipt' ? 'shipped' : order.status === 'preparing' ? 'preparing' : order.status === 'completed' ? 'signed' : 'pending',
     items,
     expressCompany: shipping.company || '',
     expressNo: shipping.trackingNo || '',
@@ -378,6 +378,12 @@ export async function getClerkOrders(options?: { status?: string }) {
     cond.status = _.in(['pending_shipment', 'confirmed', 'preparing'])
   } else if (options?.status === 'shipped') {
     cond.status = 'pending_receipt'
+  } else if (options?.status === 'signed') {
+    cond.status = 'completed'
+  } else if (options?.status === 'today_shipped') {
+    cond.status = 'pending_receipt'
+    const today = formatDate(new Date())
+    cond['shipping.shippedAt'] = _.gte(today)
   }
   const { data } = await db.collection('orders').where(cond).orderBy('createdAt', 'desc').limit(100).get()
   return normalizeList(data).map(mapClerkOrder)
