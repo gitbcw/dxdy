@@ -1,4 +1,5 @@
 const { loginByPhone, registerCustomer, GENERATED_ASSETS } = require('../../services/index')
+const tracking = require('../../services/tracking')
 const icons = require('../../services/icons')
 
 Page({
@@ -78,6 +79,7 @@ Page({
     const app = getApp()
     app.globalData.userInfo = user
     app.globalData.userRole = this.inferRole(user)
+    tracking.setUserId(user.id || user._id || '')
     wx.setStorageSync('current_user', JSON.stringify(user))
     wx.setStorageSync('user_role', app.globalData.userRole)
     wx.showToast({ title, icon: 'success' })

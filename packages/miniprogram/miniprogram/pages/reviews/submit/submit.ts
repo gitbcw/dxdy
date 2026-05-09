@@ -1,3 +1,5 @@
+const tracking = require('../../../services/tracking')
+
 Page({
   data: {
     orderId: '',
@@ -62,6 +64,7 @@ Page({
         return
       }
 
+      tracking.trackReviewSubmit(this.data.productId, this.data.orderId, this.data.rating)
       wx.showToast({ title: '评价成功', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 700)
     } catch (err: any) {

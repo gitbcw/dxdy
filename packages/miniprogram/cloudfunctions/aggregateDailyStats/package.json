@@ -1,0 +1,9 @@
+{
+  "name": "aggregateDailyStats",
+  "version": "1.0.0",
+  "description": "每日数据分析聚合：漏斗指标、收入、客户增长、商品/代理排名",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

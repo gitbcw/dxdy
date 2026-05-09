@@ -11,6 +11,7 @@ const {
 } = require('../../services/index')
 const { normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
+const tracking = require('../../services/tracking')
 
 type DemoRole = 'customer_personal' | 'customer_institution' | 'salesperson' | 'clerk'
 
@@ -87,6 +88,7 @@ Page({
 
   onShow() {
     this.syncTabBar()
+    tracking.trackPageView('home')
     this.loadDemoHome()
   },
 

@@ -5,7 +5,7 @@
 
 ## 一句话总结
 
-P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价（后台配置+前端展示+倒计时）、积分闭环（赚取+抵扣+过期+历史页）、钱包充值（档位配置+充值流程+钱包支付）、商品评论（提交+展示+Admin审核）、拉新奖励（推荐码+首单奖励+分享页）。下一步 **P3：数据化运营 / 微信支付接入**。
+P0-P2 已全部完成。P3 数据化运营核心功能已实施：埋点 SDK（10+ 页面采集，批量缓冲写入）、每日聚合云函数（漏斗/收入/客户/商品/代理五大维度）、后台数据分析看板（7 个 Recharts 图表组件：营收趋势、客户增长、订单分布、热销商品、转化漏斗、业务员贡献、复购指标）。下一步 **上线前收尾 / 微信支付接入**。
 
 ---
 
@@ -57,7 +57,7 @@ P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价�
 | 页面 | 数据源 | 状态 |
 |------|--------|------|
 | 登录 | CloudBase `users` | 已完成（HTTP-only session） |
-| 仪表盘 | CloudBase 聚合 | 已完成 |
+| 仪表盘 | CloudBase 聚合 | 已完成（KPI + 数据分析图表区） |
 | 商品管理 | CloudBase `products/categories` | 已完成（含创建/编辑/上下架） |
 | 订单管理 | CloudBase `orders` | 已完成（含改价/发货/指派/状态流转） |
 | 售后管理 | CloudBase `returns` | 已完成（含审核全流程） |
@@ -82,7 +82,7 @@ P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价�
 
 ## 2. 云端资源清单
 
-### 2.1 已部署云函数（21 个）
+### 2.1 已部署云函数（22 个）
 
 | 云函数 | 用途 |
 |--------|------|
@@ -107,8 +107,9 @@ P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价�
 | `manageCardVoucher` | 卡券赠送/认领/转赠/兑换/作废 |
 | `createRechargeOrder` | 创建充值订单 |
 | `manageReview` | 商品评论提交/审核/回复 |
+| `aggregateDailyStats` | 每日数据分析聚合（漏斗/收入/客户/商品/代理） |
 
-### 2.2 数据库集合（14 个）
+### 2.2 数据库集合（16 个）
 
 | 集合 | 状态 |
 |------|------|
@@ -126,6 +127,8 @@ P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价�
 | `test_reports` | 已创建，已配索引和安全规则 |
 | `card_vouchers` | 已创建，已配索引和安全规则（卡券 7 状态生命周期） |
 | `product_reviews` | 已创建，已配索引（商品评论，pending/approved/rejected 状态） |
+| `tracking_events_batch` | 已创建，已配索引（批量埋点事件，sessionId + createdAt） |
+| `analytics_daily` | 已创建，唯一索引 date（每日预聚合分析数据） |
 
 **环境**：`cloudbase-d4gwpsm7gcc59b6fc`（上海，个人版）
 **MCP 注意**：全局 MCP 可能指向测试环境，项目操作应使用项目 `.mcp.json` 绑定的环境。连接方式详见 `docs/CLOUDBASE_MCP.md`。
@@ -231,9 +234,18 @@ P0-P1 已全部完成。P2 运营增长核心闭环已实施：限时促销价�
 - **P2-4 商品评论**：新建 product_reviews 集合；新增 manageReview 云函数（提交/审核/驳回/回复）；新增 pages/reviews/submit 评论提交页；商品详情页展示评论+平均分；订单详情 completed 状态添加"评价订单"按钮；新增 Admin 评论管理页
 - **P2-5 拉新奖励**：Customer 新增 referralCode/referredBy 字段；registerCustomer 自动生成推荐码并支持推荐码参数；updateOrderStatus 首单完成奖励推荐人积分；新增 pages/referral/share 推荐分享页（推荐码+小程序分享）；Admin 系统配置添加 referralRewardPoints
 
-### P3：数据化运营
+### P3：数据化运营（已完成 2026-05-09）
 
-详见 `docs/superpowers/specs/2026-05-07-dxdy-new-prd-gap-analysis.md` 第 4 节。
+- **埋点 SDK**：`services/tracking.ts` 批量缓冲（10 条/30 秒）写入 `tracking_events_batch`；覆盖 10+ 页面（home/catalog/product-detail/cart/orders/create/pay-result/reviews/submit/referral/share/mine）
+- **每日聚合云函数**：`aggregateDailyStats` 聚合漏斗指标、收入/订单、客户增长、复购率、退款、热门商品 TOP20、代理贡献 TOP20，写入 `analytics_daily`
+- **后台数据看板**：7 个 Recharts 图表组件 + 服务层（analytics.ts），集成到仪表盘页面
+  - 营收趋势（30 天面积图，机构/个人双线）
+  - 客户增长（柱+线复合图）
+  - 订单状态分布（饼图）
+  - 热销商品 TOP10（水平柱状图）
+  - 转化漏斗（自定义 div，5 步：浏览→详情→加购→下单→支付）
+  - 业务员贡献（堆叠柱状图，营收+佣金）
+  - 复购与客单价（指标卡片）
 
 ---
 

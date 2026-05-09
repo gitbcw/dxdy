@@ -1,3 +1,5 @@
+const tracking = require('./services/tracking')
+
 App<IAppOption>({
   globalData: {
     userInfo: null,
@@ -10,6 +12,7 @@ App<IAppOption>({
   onLaunch() {
     if (!wx.cloud) return
     wx.cloud.init({ env: 'cloudbase-d4gwpsm7gcc59b6fc', traceUser: true })
+    tracking.init()
 
     // 获取 openid
     wx.cloud.callFunction({ name: 'getOpenId' }).then((res: any) => {
@@ -28,6 +31,14 @@ App<IAppOption>({
         this.globalData.userRole = this.resolveRole?.(this.globalData.userInfo) || ''
       } catch { /* ignore */ }
     }
+  },
+
+  onHide() {
+    tracking.pause()
+  },
+
+  onShow() {
+    tracking.resume()
   },
 
   /** 根据 openid 从云数据库查找用户 */

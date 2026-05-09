@@ -15,8 +15,17 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchDashboardData } from '@/lib/services/database';
+import { fetchAnalyticsDaily, fetchOrderStatusDistribution, computeFunnelData, getTopProducts, getAgentContribution } from '@/lib/services/analytics';
 import { formatMoney } from '@/lib/format';
+import { RevenueTrendChart } from '@/components/admin/analytics/revenue-trend-chart';
+import { CustomerGrowthChart } from '@/components/admin/analytics/customer-growth-chart';
+import { OrderStatusChart } from '@/components/admin/analytics/order-status-chart';
+import { TopProductsChart } from '@/components/admin/analytics/top-products-chart';
+import { ConversionFunnel } from '@/components/admin/analytics/conversion-funnel';
+import { AgentContributionChart } from '@/components/admin/analytics/agent-contribution-chart';
+import { RepeatPurchaseMetrics } from '@/components/admin/analytics/repeat-purchase-metrics';
 import type { AdminRole, Customer, Order, Product, ReturnRecord, SystemConfig } from '@/lib/types';
+import type { AnalyticsDaily, FunnelStep, TopProduct, AgentContribution, OrderStatusDistribution } from '@/lib/types-analytics';
 
 type DashboardState = {
   orders: Order[];
@@ -81,6 +90,8 @@ export default function DashboardPage() {
     config: null,
   });
   const [error, setError] = useState('');
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsDaily[]>([]);
+  const [orderStatusData, setOrderStatusData] = useState<OrderStatusDistribution[]>([]);
 
   const fallbackPath =
     currentUser?.role === 'product_manager'
@@ -113,6 +124,22 @@ export default function DashboardPage() {
     }
 
     load();
+  }, [currentUser]);
+
+  // 独立加载分析数据（不影响现有 KPI）
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'system_admin') return;
+    async function loadAnalytics() {
+      try {
+        const [daily, statusDist] = await Promise.all([
+          fetchAnalyticsDaily(30),
+          fetchOrderStatusDistribution(),
+        ]);
+        setAnalyticsData(daily);
+        setOrderStatusData(statusDist);
+      } catch { /* 分析数据加载失败不影响仪表盘 */ }
+    }
+    loadAnalytics();
   }, [currentUser]);
 
   if (currentUser && currentUser.role !== 'system_admin') {
@@ -400,6 +427,27 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* 数据分析 */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Badge className="bg-teal-700/10 text-teal-900">数据分析</Badge>
+          <span className="text-xs text-muted-foreground">30 天趋势 · 数据每日自动聚合</span>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RevenueTrendChart data={analyticsData} />
+          <CustomerGrowthChart data={analyticsData} />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <OrderStatusChart data={orderStatusData} />
+          <TopProductsChart data={getTopProducts(analyticsData)} />
+        </div>
+        <ConversionFunnel data={computeFunnelData(analyticsData)} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AgentContributionChart data={getAgentContribution(analyticsData)} />
+          <RepeatPurchaseMetrics data={analyticsData} />
+        </div>
       </div>
     </div>
   );

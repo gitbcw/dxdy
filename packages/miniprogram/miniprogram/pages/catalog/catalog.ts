@@ -1,6 +1,7 @@
 const { getCategories, getProducts, formatMoney, addToCart, getProductVisualImage, isOnPromotion, getEffectivePrice } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
+const tracking = require('../../services/tracking')
 
 Page({
   data: {
@@ -29,6 +30,7 @@ Page({
   onShow() {
     if (this.redirectStaffRole()) return
     this.syncTabBar()
+    tracking.trackPageView('catalog')
 
     const app = getApp()
     const keyword = (app.globalData.catalogSearchKeyword || wx.getStorageSync('catalog_search_keyword') || '').trim()
@@ -105,6 +107,10 @@ Page({
       products: this.filterWithSearch(mappedProducts, activeQuickFilter, this.data.searchKeyword),
       emptyText: this.getEmptyText(activeQuickFilter, this.data.searchKeyword),
     })
+
+    if (keyword) {
+      tracking.trackSearch(keyword, this.data.products.length)
+    }
   },
 
   getQuickFilters(products: any[], isInstitution: boolean) {

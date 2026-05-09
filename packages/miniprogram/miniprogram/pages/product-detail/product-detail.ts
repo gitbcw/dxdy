@@ -1,4 +1,5 @@
 const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice } = require('../../services/index')
+const tracking = require('../../services/tracking')
 
 Page({
   _product: null as any,
@@ -56,6 +57,7 @@ Page({
 
     if (onPromo) this.startCountdown(product.promotionEnd)
     this._loadReviews(product.id || product._id)
+    tracking.trackProductView(product.id || product._id, product.name, price, product.isBloodPack ? 'blood' : 'normal')
   },
 
   async _loadReviews(productId: string) {
@@ -105,6 +107,7 @@ Page({
     const check = canPurchase(this._product, user)
     if (!check.allowed) { wx.showToast({ title: check.reason, icon: 'none' }); return }
     addToCart(this._product)
+    tracking.trackAddToCart(this._product.id, this._product.name, this.data.price, 1, 'product-detail')
     wx.showToast({ title: '已加入购物车', icon: 'success' })
   },
 

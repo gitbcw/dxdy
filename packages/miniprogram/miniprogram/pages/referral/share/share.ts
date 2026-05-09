@@ -1,3 +1,5 @@
+const tracking = require('../../../services/tracking')
+
 Page({
   data: {
     referralCode: '',
@@ -36,6 +38,7 @@ Page({
   },
 
   onShareAppMessage() {
+    tracking.trackReferralShare(this.data.referralCode)
     return {
       title: '大熊动医 — 宠物医疗检测，推荐有礼',
       path: this.data.referralLink,

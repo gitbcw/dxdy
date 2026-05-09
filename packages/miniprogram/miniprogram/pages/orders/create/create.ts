@@ -1,4 +1,5 @@
 const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry } = require('../../../services/index')
+const tracking = require('../../../services/tracking')
 
 const CART_KEY = 'cart_items'
 
@@ -386,6 +387,7 @@ Page({
       })
       wx.hideLoading()
       if (this.data.isFromCart) clearCart()
+      tracking.trackOrderSubmit(order.id, order.pricing?.actualAmount || 0, orderItems.length)
       const label = (!this.data.isFromCart && this.data.orderType === 'booking') ? '预约已提交' : '订单已提交'
       wx.showToast({ title: label, icon: 'success' })
       setTimeout(() => {

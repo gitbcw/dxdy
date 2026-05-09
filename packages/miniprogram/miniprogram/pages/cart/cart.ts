@@ -1,5 +1,6 @@
 const { formatMoney, getProductVisualImage, canPurchase } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
+const tracking = require('../../services/tracking')
 
 const CART_KEY = 'cart_items'
 
@@ -38,6 +39,7 @@ Page({
     cartStore.length = 0
     fresh.forEach((item: any) => cartStore.push(item))
     this.refreshCart()
+    tracking.trackPageView('cart', { cartItemCount: cartStore.length })
   },
 
   syncTabBar() {

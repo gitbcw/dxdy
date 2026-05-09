@@ -6,6 +6,7 @@ const {
 } = require('../../services/index')
 const { normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
+const tracking = require('../../services/tracking')
 
 function withMenuIcons(items: any[]) {
   return items.map((item) => ({
@@ -41,6 +42,7 @@ Page({
 
   onShow() {
     this.syncTabBar()
+    tracking.trackPageView('mine')
     this.loadUserInfo()
   },
 

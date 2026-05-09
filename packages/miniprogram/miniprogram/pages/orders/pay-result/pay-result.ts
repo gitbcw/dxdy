@@ -1,5 +1,6 @@
 const { getOrderById, formatMoney, formatDateTime } = require('../../../services/index')
 const icons = require('../../../services/icons')
+const tracking = require('../../../services/tracking')
 
 Page({
   data: {
@@ -43,6 +44,7 @@ Page({
       payTime: payment.paidAt || formatDateTime(new Date()),
       payMethod: payment.method === 'wallet' ? '钱包余额' : '微信支付',
     })
+    tracking.trackOrderPay(id, order.pricing?.actualAmount || 0, payment.method || 'wechat')
   },
 
   onViewOrder() {
