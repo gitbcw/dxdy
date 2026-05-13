@@ -51,6 +51,7 @@ Page({
     priceLabel: '零售价',
     canBooking: false,
     isBloodProduct: false,
+    isCardVoucher: false,
     policyText: '',
     primaryButtonText: '提交订单',
     specText: '标准规格',
@@ -134,7 +135,8 @@ Page({
 
       const unitPrice = getEffectivePrice(product, isInstitution ? 'institution' : 'personal')
       const canBooking = !!product.isBloodPack
-      const orderType = canBooking ? 'booking' : 'normal'
+      const isCardVoucher = product.productType === 'card_voucher'
+      const orderType = isCardVoucher ? 'card_voucher' : canBooking ? 'booking' : 'normal'
       const urgentConfig = product.urgentConfig
       const canUrgent = !!(product.isBloodPack && urgentConfig && urgentConfig.enabled)
 
@@ -145,12 +147,13 @@ Page({
         unitPrice,
         specText: product.specs?.[0]?.value || '标准规格',
         orderType,
-        orderTypeLabel: orderType === 'booking' ? '预约采购' : '普通采购',
+        orderTypeLabel: orderType === 'card_voucher' ? '卡券购买' : orderType === 'booking' ? '预约采购' : '普通采购',
         canBooking,
         isBloodProduct: !!product.isBloodPack,
+        isCardVoucher,
         productImageUrl: getProductVisualImage(product),
         policyText: product.returnPolicy?.note || '以商品详情页说明为准',
-        primaryButtonText: orderType === 'booking' ? '提交预约' : '提交订单',
+        primaryButtonText: orderType === 'booking' ? '提交预约' : orderType === 'card_voucher' ? '购买卡券' : '提交订单',
         canUrgent,
         urgentFee: canUrgent ? (urgentConfig.extraFee || 0) : 0,
         urgentDescription: canUrgent ? (urgentConfig.description || '优先调配与配送') : '',
@@ -322,16 +325,16 @@ Page({
     if (!user) return
     const selectedAddress = this.data.addresses[this.data.selectedAddressIndex]
 
-    if (!selectedAddress) {
+    if (!this.data.isCardVoucher && !selectedAddress) {
       wx.showToast({ title: '请选择收货地址', icon: 'none' })
       return
     }
 
-    const shippingAddress = {
+    const shippingAddress = selectedAddress ? {
       name: selectedAddress.name,
       phone: selectedAddress.phone,
       full: `${selectedAddress.province}${selectedAddress.city}${selectedAddress.district}${selectedAddress.detail}`,
-    }
+    } : undefined
 
     let orderItems: any[]
 
@@ -381,8 +384,8 @@ Page({
           ? {
               date: this.data.bookingDate,
               location: this.data.bookingLocation,
-              contactName: selectedAddress.name,
-              contactPhone: selectedAddress.phone,
+              contactName: selectedAddress?.name || '',
+              contactPhone: selectedAddress?.phone || '',
             }
           : undefined,
         shippingAddress,

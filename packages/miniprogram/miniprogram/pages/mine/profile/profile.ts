@@ -2,6 +2,8 @@ Page({
   data: {
     userInfo: null as any,
     fields: [] as any[],
+    avatarUrl: '',
+    showAvatarPicker: false,
   },
 
   onShow() {
@@ -11,18 +13,41 @@ Page({
       wx.navigateBack()
       return
     }
+    const isAgent = user.role === 'salesperson' || user.agentStatus === 'approved'
+    const fields = [
+      { key: 'avatar', label: '头像', value: '', type: 'avatar' },
+      { key: 'nickname', label: '昵称', value: user.nickname || '', type: 'text' },
+      { key: 'phone', label: '手机号', value: user.phone || '未绑定', type: 'text' },
+      { key: 'role', label: '角色', value: isAgent ? '代理商' : (user.roleName || '普通客户'), type: 'readonly' },
+      { key: 'createdAt', label: '注册时间', value: user.createdAt || '2025-01-15', type: 'readonly' },
+    ]
+
+    if (!isAgent) {
+      fields.splice(
+        3,
+        0,
+        { key: 'email', label: '邮箱', value: user.email || '未绑定', type: 'text' },
+        { key: 'company', label: '所属机构', value: user.company || '未关联', type: 'readonly' },
+      )
+    }
+
     this.setData({
       userInfo: user,
-      fields: [
-        { key: 'avatar', label: '头像', value: '', type: 'avatar' },
-        { key: 'nickname', label: '昵称', value: user.nickname || '', type: 'text' },
-        { key: 'phone', label: '手机号', value: user.phone || '未绑定', type: 'text' },
-        { key: 'email', label: '邮箱', value: user.email || '未绑定', type: 'text' },
-        { key: 'role', label: '角色', value: user.roleName || '普通客户', type: 'readonly' },
-        { key: 'company', label: '所属机构', value: user.company || '未关联', type: 'readonly' },
-        { key: 'createdAt', label: '注册时间', value: user.createdAt || '2025-01-15', type: 'readonly' },
-      ],
+      avatarUrl: user.avatar || user.avatarUrl || '',
+      fields,
     })
+  },
+
+  updateLocalAvatar(avatarUrl: string) {
+    const app = getApp()
+    const user = {
+      ...(this.data.userInfo || {}),
+      avatar: avatarUrl,
+      avatarUrl,
+    }
+    app.globalData.userInfo = user
+    wx.setStorageSync('current_user', JSON.stringify(user))
+    this.setData({ userInfo: user, avatarUrl })
   },
 
   onFieldTap(e: any) {
@@ -31,10 +56,15 @@ Page({
     if (!field || field.type === 'readonly') return
 
     if (key === 'avatar') {
-      wx.chooseMedia({
-        count: 1,
-        mediaType: ['image'],
-        success: () => wx.showToast({ title: '头像更新（开发中）', icon: 'none' }),
+      wx.showActionSheet({
+        itemList: ['选择本地图片', '读取微信头像'],
+        success: (res: any) => {
+          if (res.tapIndex === 0) {
+            this.chooseLocalAvatar()
+            return
+          }
+          this.openWechatAvatarPicker()
+        },
       })
       return
     }
@@ -55,6 +85,37 @@ Page({
       },
     })
   },
+
+  chooseLocalAvatar() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      success: (res: any) => {
+        const avatarUrl = res.tempFiles?.[0]?.tempFilePath
+        if (!avatarUrl) return
+        this.updateLocalAvatar(avatarUrl)
+        wx.showToast({ title: '头像已更新', icon: 'success' })
+      },
+    })
+  },
+
+  openWechatAvatarPicker() {
+    this.setData({ showAvatarPicker: true })
+  },
+
+  onChooseAvatar(e: any) {
+    const avatarUrl = e.detail?.avatarUrl
+    if (!avatarUrl) return
+    this.updateLocalAvatar(avatarUrl)
+    this.setData({ showAvatarPicker: false })
+    wx.showToast({ title: '头像已更新', icon: 'success' })
+  },
+
+  closeAvatarPicker() {
+    this.setData({ showAvatarPicker: false })
+  },
+
+  noop() {},
 })
 
 export {}

@@ -33,6 +33,7 @@ type HomeAction =
   | 'verify'
   | 'testQuery'
   | 'cards'
+  | 'cardVoucherProducts'
   | 'cardWallet'
 
 function withIcon(items: any[]) {
@@ -65,6 +66,7 @@ Page({
     displayName: '未登录客户',
     identityTag: '普通客户',
     identityTagClass: 'default',
+    showSearchBar: true,
     searchPlaceholder: '搜索商品',
     searchKeyword: '',
     banner: null as any,
@@ -129,6 +131,9 @@ Page({
     this.setData({
       currentRole,
       isInstitution,
+      showSearchBar: currentRole !== 'salesperson',
+      searchKeyword: currentRole === 'salesperson' ? '' : this.data.searchKeyword,
+      searchSuggestions: currentRole === 'salesperson' ? [] : this.data.searchSuggestions,
       banner: null,
       homeBannerImage: GENERATED_ASSETS.homeBanner,
       heroTitlePrimary: '专业动医产品',
@@ -279,6 +284,7 @@ Page({
         quickActions: [
           { icon: '审', title: '代理状态', action: 'agentStatus' },
           { icon: '客', title: '客户管理', action: 'customers' },
+          { icon: '券', title: '购买卡券', action: 'cardVoucherProducts' },
           { icon: '卡', title: '我的卡券', action: 'cards' },
           { icon: '单', title: '客户订单', action: 'agentOrders' },
           { icon: '佣', title: '提成中心', action: 'commission' },
@@ -390,6 +396,7 @@ Page({
       clerkShipped: '/pages/clerk/orders/orders?tab=shipped',
       clerkOrders: '/pages/clerk/orders/orders',
       cards: '/pages/agent/cards/cards',
+      cardVoucherProducts: '/pages/agent/card-products/card-products',
       cardWallet: '/pages/card-wallet/card-wallet',
       orders: '/pages/orders/order-detail/order-detail?list=1',
     }

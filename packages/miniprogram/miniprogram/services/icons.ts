@@ -62,6 +62,7 @@ export const customer = iconSvg('<circle cx="24" cy="25" r="7"/><circle cx="42" 
 export const commission = iconSvg('<circle cx="32" cy="32" r="18"/><path d="M32 20v24M25 26c2-3 12-4 14 1 2 6-12 5-14 10-2 5 10 7 15 1"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const withdraw = iconSvg('<rect x="14" y="20" width="36" height="28" rx="5"/><path d="M22 30h20M32 17v18M25 28l7 7 7-7"/>', { color: '#FF6A00', fill: '#FFF4E8' })
 export const qrcode = iconSvg('<rect x="16" y="16" width="11" height="11"/><rect x="37" y="16" width="11" height="11"/><rect x="16" y="37" width="11" height="11"/><path d="M37 37h5v5h6v6H37zM31 16v8M31 37v11"/>')
+export const voucher = iconSvg('<path d="M16 24a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v6a5 5 0 0 0 0 10v6a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4v-6a5 5 0 0 0 0-10v-6z"/><path d="M28 26h12M28 34h12M28 42h8"/><path d="M22 25v2M22 33v2M22 41v2"/>', { color: '#FF6A00', fill: '#FFF4E8' })
 export const bank = iconSvg('<path d="M14 26h36L32 14 14 26z"/><path d="M18 30v16M28 30v16M38 30v16M48 30v16M14 50h36"/>')
 export const profile = user
 
@@ -103,6 +104,7 @@ export const iconByKey: Record<string, string> = {
   commission,
   withdraw,
   qrcode,
+  voucher,
   bank,
   profile,
   packageBox,
@@ -118,6 +120,8 @@ export const iconByKey: Record<string, string> = {
   promote: qrcode,
   customers: customer,
   agentOrders: order,
+  cards: test,
+  cardVoucherProducts: voucher,
   clerkPending: packageBox,
   clerkOrders: truck,
   booking: calendar,

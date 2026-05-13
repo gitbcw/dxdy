@@ -55,6 +55,8 @@ function cleanInfo(info) {
     companyName: String(info.companyName || '').trim(),
     realName: String(info.realName || '').trim(),
     idNumber: String(info.idNumber || '').trim(),
+    idCardFront: String(info.idCardFront || '').trim(),
+    idCardBack: String(info.idCardBack || '').trim(),
     contactName: String(info.contactName || '').trim(),
     contactPhone: String(info.contactPhone || '').trim(),
     region: String(info.region || '').trim(),
@@ -81,9 +83,10 @@ exports.main = async (event) => {
   if (!info.companyName) return error('请输入公司或机构名称')
   if (!info.realName) return error('请输入姓名')
   if (!info.idNumber) return error('请输入身份证号')
+  if (!info.idCardFront || !info.idCardBack) return error('请上传身份证正反面照片')
   if (!info.contactName) return error('请输入联系人姓名')
   if (!/^1\d{10}$/.test(info.contactPhone)) return error('请输入正确联系电话')
-  if (!info.region || !info.businessArea) return error('请填写代理区域和业务覆盖')
+  if (!info.businessArea) return error('请填写业务覆盖')
 
   const now = formatDateTime(new Date())
   const agentApplication = {

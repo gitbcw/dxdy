@@ -14,6 +14,25 @@
       <text class="field-label">身份证号 *</text>
       <input class="field-input" placeholder="请输入身份证号" value="{{idNumber}}" data-field="idNumber" bindinput="onFieldInput" />
     </view>
+    <view class="upload-row">
+      <text class="field-label">身份证照片 *</text>
+      <view class="id-upload-grid">
+        <view class="upload-area" data-field="idCardFront" bindtap="chooseIdCardPhoto">
+          <image wx:if="{{idCardFront}}" src="{{idCardFront}}" class="upload-preview" mode="aspectFill" />
+          <view wx:else class="upload-placeholder">
+            <text class="upload-icon">相机</text>
+            <text class="upload-text">上传人像面</text>
+          </view>
+        </view>
+        <view class="upload-area" data-field="idCardBack" bindtap="chooseIdCardPhoto">
+          <image wx:if="{{idCardBack}}" src="{{idCardBack}}" class="upload-preview" mode="aspectFill" />
+          <view wx:else class="upload-placeholder">
+            <text class="upload-icon">相机</text>
+            <text class="upload-text">上传国徽面</text>
+          </view>
+        </view>
+      </view>
+    </view>
     <view class="field-row">
       <text class="field-label">公司/机构名称 *</text>
       <input class="field-input" placeholder="请输入公司或机构名称" value="{{companyName}}" data-field="companyName" bindinput="onFieldInput" />
@@ -25,10 +44,6 @@
     <view class="field-row">
       <text class="field-label">联系电话 *</text>
       <input class="field-input" type="number" maxlength="11" placeholder="请输入手机号" value="{{contactPhone}}" data-field="contactPhone" bindinput="onFieldInput" />
-    </view>
-    <view class="field-row">
-      <text class="field-label">代理区域 *</text>
-      <input class="field-input" placeholder="如：广东省广州市" value="{{region}}" data-field="region" bindinput="onFieldInput" />
     </view>
     <view class="field-row">
       <text class="field-label">详细地址</text>

@@ -825,9 +825,12 @@ export async function updateWithdrawalStatus(id: string, status: string, operato
 
 export async function submitAgentApplication(userId: string, info: any) {
   try {
+    const basePath = `agent-applications/${userId}/${Date.now()}`
+    const idCardFront = await uploadLocalFile(info.idCardFront, `${basePath}-id-card-front.jpg`)
+    const idCardBack = await uploadLocalFile(info.idCardBack, `${basePath}-id-card-back.jpg`)
     const { result } = await wx.cloud.callFunction({
       name: 'submitAgentApplication',
-      data: { userId, info },
+      data: { userId, info: { ...info, idCardFront, idCardBack } },
     }) as any
     if (!result?.success) return null
     return result.user
@@ -1218,6 +1221,18 @@ export async function getRedeemableProducts(categoryId: string) {
   const { data } = await db.collection('products')
     .where(cond)
     .orderBy('createdAt', 'desc').limit(100).get()
+  return normalizeList(data)
+}
+
+export async function getCardVoucherProducts() {
+  const { data } = await db.collection('products')
+    .where({
+      productType: 'card_voucher',
+      status: 'on_sale',
+    })
+    .orderBy('createdAt', 'desc')
+    .limit(100)
+    .get()
   return normalizeList(data)
 }
 

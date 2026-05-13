@@ -1,0 +1,165 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f6f7f6;
+  box-sizing: border-box;
+}
+
+.hero,
+.product-card,
+.empty-state {
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
+}
+
+.hero {
+  padding: 30rpx;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f7a3e 0%, #18a34a 58%, #ff8a1f 100%);
+}
+
+.eyebrow {
+  display: block;
+  font-size: 23rpx;
+  font-weight: 900;
+  opacity: 0.88;
+}
+
+.title {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  opacity: 0.92;
+}
+
+.product-list {
+  margin-top: 20rpx;
+}
+
+.product-card {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 18rpx;
+  padding: 18rpx;
+}
+
+.product-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 16rpx;
+  color: #139445;
+  font-size: 24rpx;
+  font-weight: 900;
+  background: linear-gradient(135deg, #f0f8f2, #f8faf8);
+  overflow: hidden;
+}
+
+.product-img image {
+  width: 100%;
+  height: 100%;
+}
+
+.product-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.name-row,
+.bottom-row,
+.tag-row {
+  display: flex;
+  align-items: center;
+}
+
+.name-row,
+.bottom-row {
+  justify-content: space-between;
+  gap: 14rpx;
+}
+
+.product-name {
+  flex: 1;
+  min-width: 0;
+  color: #17231f;
+  font-size: 28rpx;
+  line-height: 1.4;
+  font-weight: 900;
+}
+
+.status-tag,
+.tag {
+  flex-shrink: 0;
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  color: #69756f;
+  font-size: 20rpx;
+  font-weight: 800;
+  background: #edf1ee;
+}
+
+.status-tag,
+.tag.green {
+  color: #139445;
+  background: #e6f7ec;
+}
+
+.product-spec {
+  display: block;
+  margin-top: 10rpx;
+  color: #6d7872;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.tag-row {
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.bottom-row {
+  margin-top: 16rpx;
+}
+
+.price {
+  color: #ff6a00;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.stock {
+  color: #7d8983;
+  font-size: 22rpx;
+}
+
+.empty-state {
+  margin-top: 20rpx;
+  padding: 76rpx 24rpx;
+  text-align: center;
+}
+
+.empty-title {
+  display: block;
+  color: #17231f;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.empty-desc {
+  display: block;
+  margin-top: 10rpx;
+  color: #7b8781;
+  font-size: 24rpx;
+}

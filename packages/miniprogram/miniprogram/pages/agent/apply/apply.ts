@@ -6,6 +6,8 @@ Page({
     companyName: '',
     realName: '',
     idNumber: '',
+    idCardFront: '',
+    idCardBack: '',
     contactName: '',
     contactPhone: '',
     region: '',
@@ -36,6 +38,8 @@ Page({
       companyName: appInfo.companyName || '',
       realName: appInfo.realName || appInfo.contactName || user.nickname || '',
       idNumber: appInfo.idNumber || '',
+      idCardFront: appInfo.idCardFront || '',
+      idCardBack: appInfo.idCardBack || '',
       contactName: appInfo.contactName || user.nickname || '',
       contactPhone: appInfo.contactPhone || user.phone || '',
       region: appInfo.region || '',
@@ -53,6 +57,17 @@ Page({
     this.setData({ [field]: e.detail.value })
   },
 
+  chooseIdCardPhoto(e: any) {
+    const field = e.currentTarget.dataset.field
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      success: (res: any) => {
+        this.setData({ [field]: res.tempFiles[0].tempFilePath })
+      },
+    })
+  },
+
   onChannelTap(e: any) {
     this.setData({ channelType: e.currentTarget.dataset.key })
   },
@@ -66,9 +81,10 @@ Page({
       companyName,
       realName,
       idNumber,
+      idCardFront,
+      idCardBack,
       contactName,
       contactPhone,
-      region,
       address,
       businessArea,
       experience,
@@ -86,6 +102,10 @@ Page({
       wx.showToast({ title: '请输入身份证号', icon: 'none' })
       return
     }
+    if (!idCardFront || !idCardBack) {
+      wx.showToast({ title: '请上传身份证正反面照片', icon: 'none' })
+      return
+    }
     if (!companyName.trim()) {
       wx.showToast({ title: '请输入公司或机构名称', icon: 'none' })
       return
@@ -98,8 +118,8 @@ Page({
       wx.showToast({ title: '请输入正确联系电话', icon: 'none' })
       return
     }
-    if (!region.trim() || !businessArea.trim()) {
-      wx.showToast({ title: '请填写代理区域和业务覆盖', icon: 'none' })
+    if (!businessArea.trim()) {
+      wx.showToast({ title: '请填写业务覆盖', icon: 'none' })
       return
     }
     if (!agreementAccepted) {
@@ -114,9 +134,10 @@ Page({
       companyName: companyName.trim(),
       realName: realName.trim(),
       idNumber: idNumber.trim(),
+      idCardFront,
+      idCardBack,
       contactName: contactName.trim(),
       contactPhone,
-      region: region.trim(),
       address: address.trim(),
       businessArea: businessArea.trim(),
       experience: experience.trim(),

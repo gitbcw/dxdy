@@ -14,6 +14,7 @@ Page({
     spec: '',
     stock: 0,
     isBloodProduct: false,
+    isCardVoucher: false,
     bloodType: '按商品标注',
     productImageUrl: '',
     reviews: [] as any[],
@@ -51,6 +52,7 @@ Page({
       spec: product.specs?.[0]?.value || '标准规格',
       stock: product.stock,
       isBloodProduct: !!product.isBloodPack,
+      isCardVoucher: product.productType === 'card_voucher',
       bloodType: product.specs?.find((item: any) => item.name === '血型')?.value || (product.isBloodPack ? '需指定' : '不适用'),
       productImageUrl: getProductVisualImage(product),
     })
@@ -103,6 +105,10 @@ Page({
 
   onAddCart() {
     if (!this._product) return
+    if (this._product.productType === 'card_voucher') {
+      wx.showToast({ title: '卡券商品请直接购买', icon: 'none' })
+      return
+    }
     const user = getApp().globalData.userInfo
     const check = canPurchase(this._product, user)
     if (!check.allowed) { wx.showToast({ title: check.reason, icon: 'none' }); return }

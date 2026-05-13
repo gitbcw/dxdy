@@ -1,12 +1,12 @@
 <view class="page">
-  <view class="topbar">
+  <view wx:if="{{currentRole !== 'salesperson'}}" class="topbar">
     <view>
       <text class="top-title">{{displayName}}</text>
     </view>
     <view class="identity-tag {{identityTagClass}}">{{identityTag}}</view>
   </view>
 
-  <view class="search-bar">
+  <view wx:if="{{showSearchBar}}" class="search-bar">
     <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
     <input
       class="search-input"
@@ -18,7 +18,7 @@
     />
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
   </view>
-  <view wx:if="{{searchSuggestions.length > 0}}" class="suggestion-panel">
+  <view wx:if="{{showSearchBar && searchSuggestions.length > 0}}" class="suggestion-panel">
     <view
       wx:for="{{searchSuggestions}}"
       wx:key="id"
@@ -63,7 +63,7 @@
   </view>
 
   <view wx:if="{{taskCards.length > 0}}" class="section">
-    <view class="section-head">
+    <view wx:if="{{currentRole !== 'salesperson'}}" class="section-head">
       <text class="section-title">待办提醒</text>
       <text class="section-more">及时处理</text>
     </view>

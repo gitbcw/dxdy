@@ -217,6 +217,27 @@
   line-height: 1.5;
 }
 
+.voucher-notice {
+  padding: 20rpx;
+  border-radius: 16rpx;
+  background: #f8faf8;
+}
+
+.voucher-title {
+  display: block;
+  color: #139445;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.voucher-desc {
+  display: block;
+  margin-top: 8rpx;
+  color: #5f6d66;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
 .booking-box {
   margin-top: 16rpx;
   padding-top: 10rpx;

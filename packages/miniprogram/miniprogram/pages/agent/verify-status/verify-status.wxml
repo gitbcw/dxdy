@@ -7,12 +7,8 @@
 
   <view wx:if="{{status !== 'none'}}" class="info-card">
     <view class="info-row">
-      <text class="info-label">申请主体</text>
-      <text class="info-value">{{info.companyName || '-'}}</text>
-    </view>
-    <view class="info-row">
-      <text class="info-label">代理区域</text>
-      <text class="info-value">{{info.region || '-'}}</text>
+      <text class="info-label">身份证号码</text>
+      <text class="info-value">{{info.idNumber || '-'}}</text>
     </view>
     <view class="info-row">
       <text class="info-label">联系人</text>
@@ -26,16 +22,29 @@
       <text class="info-label">提交时间</text>
       <text class="info-value">{{info.submittedAt || '-'}}</text>
     </view>
+    <view class="material-row">
+      <text class="info-label">身份证照片</text>
+      <view class="id-card-images">
+        <view class="id-card-image">
+          <image wx:if="{{info.idCardFront}}" src="{{info.idCardFront}}" mode="aspectFill" />
+          <text wx:else>未上传正面</text>
+        </view>
+        <view class="id-card-image">
+          <image wx:if="{{info.idCardBack}}" src="{{info.idCardBack}}" mode="aspectFill" />
+          <text wx:else>未上传反面</text>
+        </view>
+      </view>
+    </view>
   </view>
 
   <view class="timeline">
     <view class="step active">
       <text>提交资料</text>
-      <text>填写合作主体、区域和渠道资源</text>
+      <text>填写身份信息、上传身份证照片和渠道资源</text>
     </view>
     <view class="step {{status === 'pending_review' || status === 'approved' || status === 'rejected' ? 'active' : ''}}">
       <text>平台审核</text>
-      <text>核对合作区域、客户资源和业务能力</text>
+      <text>核对身份材料、客户资源和业务能力</text>
     </view>
     <view class="step {{status === 'approved' ? 'active' : ''}}">
       <text>开通代理商</text>

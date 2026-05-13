@@ -10,7 +10,7 @@
       <view>
         <text class="product-name">{{productName}}</text>
         <view class="tag-row">
-          <text class="audience-tag">{{isBloodProduct ? '仅限认证医院购买' : '医院/个人可购'}}</text>
+          <text class="audience-tag">{{isCardVoucher ? '代理商专属卡券' : isBloodProduct ? '仅限认证医院购买' : '医院/个人可购'}}</text>
           <text wx:if="{{isOnPromotion}}" class="promotion-tag">限时促销</text>
         </view>
       </view>
@@ -44,7 +44,12 @@
       <text class="service-tag">质量问题售后</text>
     </view>
 
-    <view wx:if="{{isBloodProduct}}" class="permission-card">
+    <view wx:if="{{isCardVoucher}}" class="permission-card">
+      <text class="permission-title">本商品仅限代理商购买</text>
+      <text class="permission-desc">购买完成后会自动生成卡券，可在代理商“我的卡券”中赠送给机构客户。</text>
+    </view>
+
+    <view wx:elif="{{isBloodProduct}}" class="permission-card">
       <text class="permission-title">本商品仅限通过医院认证的客户购买</text>
       <text class="permission-desc">认证通过后可查看机构价并提交预约购买需求。</text>
       <view class="test-link" bindtap="onTestQuery">血包检测信息查询 ></view>
@@ -104,7 +109,7 @@
 
   <view class="bottom-bar">
     <view class="service-btn" bindtap="onServiceTap">联系客服</view>
-    <view class="btn-cart" bindtap="onAddCart">加入购物车</view>
+    <view wx:if="{{!isCardVoucher}}" class="btn-cart" bindtap="onAddCart">加入购物车</view>
     <view class="btn-buy" bindtap="onBuyNow">{{isBloodProduct ? '立即预约' : '立即购买'}}</view>
   </view>
   <floating-actions showCart="{{true}}" />

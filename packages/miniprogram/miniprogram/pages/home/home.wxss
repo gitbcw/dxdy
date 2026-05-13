@@ -333,11 +333,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
+  margin-bottom: 18rpx;
   padding: 22rpx;
   border: 1rpx solid rgba(22, 163, 74, 0.12);
   border-radius: 20rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
+}
+
+.task-card:last-child {
+  margin-bottom: 0;
 }
 
 .task-badge {

@@ -38,8 +38,12 @@
     </view>
 
     <view class="card">
-      <view class="section-title">{{orderType === 'booking' ? '预约与配送' : '收货信息'}}</view>
-      <view class="address-card" bindtap="onAddressTap">
+      <view class="section-title">{{orderType === 'booking' ? '预约与配送' : isCardVoucher ? '卡券发放' : '收货信息'}}</view>
+      <view wx:if="{{isCardVoucher}}" class="voucher-notice">
+        <text class="voucher-title">虚拟卡券自动发放</text>
+        <text class="voucher-desc">支付完成后卡券会进入代理商“我的卡券”，可继续赠送给机构客户。</text>
+      </view>
+      <view wx:else class="address-card" bindtap="onAddressTap">
         <view class="address-head">
           <text class="address-name">{{addressName}}</text>
           <text class="address-phone">{{addressPhone}}</text>

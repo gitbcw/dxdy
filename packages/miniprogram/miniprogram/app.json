@@ -23,6 +23,7 @@
     "pages/agent/promote/promote",
     "pages/agent/commission/commission",
     "pages/agent/customers/customers",
+    "pages/agent/card-products/card-products",
     "pages/clerk/pending/pending",
     "pages/clerk/orders/orders",
     "pages/clerk/order-detail/order-detail",

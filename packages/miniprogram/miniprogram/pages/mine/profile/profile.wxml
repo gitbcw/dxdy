@@ -1,6 +1,7 @@
 <view class="page">
   <view class="profile-header">
-    <view class="avatar-large">{{userInfo.nickname[0] || '用'}}</view>
+    <image wx:if="{{avatarUrl}}" class="avatar-large avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
+    <view wx:else class="avatar-large">{{userInfo.nickname[0] || '用'}}</view>
     <text class="profile-name">{{userInfo.nickname || '未设置'}}</text>
   </view>
 
@@ -14,12 +15,22 @@
     >
       <text class="field-label">{{item.label}}</text>
       <view class="field-right">
-        <view wx:if="{{item.type === 'avatar'}}" class="avatar-small">
+        <image wx:if="{{item.type === 'avatar' && avatarUrl}}" class="avatar-small avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
+        <view wx:elif="{{item.type === 'avatar'}}" class="avatar-small">
           {{userInfo.nickname[0] || '用'}}
         </view>
         <text wx:else class="field-value">{{item.value}}</text>
         <text wx:if="{{item.type !== 'readonly'}}" class="field-arrow">›</text>
       </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showAvatarPicker}}" class="avatar-picker-mask" bindtap="closeAvatarPicker">
+    <view class="avatar-picker-panel" catchtap="noop">
+      <text class="avatar-picker-title">读取微信头像</text>
+      <text class="avatar-picker-desc">点击下方按钮，从微信资料中选择头像。</text>
+      <button class="wechat-avatar-button" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">选择微信头像</button>
+      <view class="avatar-picker-cancel" bindtap="closeAvatarPicker">取消</view>
     </view>
   </view>
 </view>
