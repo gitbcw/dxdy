@@ -1,5 +1,24 @@
 const tracking = require('./services/tracking')
 
+const LOGIN_PATH = '/pages/login/login'
+const ROLE_HOME_PATHS: Record<string, string> = {
+  customer_personal: '/pages/home/home',
+  customer_institution: '/pages/home/home',
+  salesperson: '/pages/home/home',
+  clerk: '/pages/home/home',
+  admin: '/pages/home/home',
+}
+
+function normalizePath(path = '') {
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+function getCurrentPath() {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1]
+  return current?.route ? normalizePath(current.route) : ''
+}
+
 App<IAppOption>({
   globalData: {
     userInfo: null,
@@ -7,30 +26,30 @@ App<IAppOption>({
     userRole: '',
     catalogSearchKeyword: '',
     openid: '',
+    authResolved: false,
   },
 
   onLaunch() {
     if (!wx.cloud) return
     wx.cloud.init({ env: 'cloud1-d7g7ctn4m86bada89', traceUser: true })
     tracking.init()
+    this.restoreCachedUser?.()
 
-    // 获取 openid
     wx.cloud.callFunction({ name: 'getOpenId' }).then((res: any) => {
       const openid = res.result?.openid
-      if (openid) {
-        this.globalData.openid = openid
-        this.loadUserByOpenId?.(openid)
+      if (!openid) {
+        this.globalData.authResolved = true
+        this.ensureLogin?.()
+        return
       }
-    }).catch(() => {})
 
-    // 优先从本地缓存恢复
-    const userStr = wx.getStorageSync('current_user') as string
-    if (userStr) {
-      try {
-        this.globalData.userInfo = JSON.parse(userStr)
-        this.globalData.userRole = this.resolveRole?.(this.globalData.userInfo) || ''
-      } catch { /* ignore */ }
-    }
+      this.globalData.openid = openid
+      this.globalData.authResolved = true
+      this.ensureLogin?.()
+    }).catch(() => {
+      this.globalData.authResolved = true
+      this.ensureLogin?.()
+    })
   },
 
   onHide() {
@@ -39,29 +58,53 @@ App<IAppOption>({
 
   onShow() {
     tracking.resume()
+    this.ensureLogin?.()
   },
 
-  /** 根据 openid 从云数据库查找用户 */
-  async loadUserByOpenId(openid: string) {
+  restoreCachedUser() {
+    const userStr = wx.getStorageSync('current_user') as string
+    if (!userStr) return
+
     try {
-      const db = wx.cloud.database()
-      const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
-      if (data.length > 0) {
-        const user = { ...data[0], id: data[0]._id }
-        this.globalData.userInfo = user
-        this.globalData.userRole = this.resolveRole?.(user) || ''
-        wx.setStorageSync('current_user', JSON.stringify(user))
-      }
-    } catch { /* ignore */ }
+      this.globalData.userInfo = JSON.parse(userStr)
+      this.globalData.userRole = this.resolveRole?.(this.globalData.userInfo) || ''
+    } catch {
+      wx.removeStorageSync('current_user')
+      wx.removeStorageSync('user_role')
+    }
   },
 
-  /** 从用户对象推导角色标识（页面用） */
+  getRoleHomePath(role?: string) {
+    return ROLE_HOME_PATHS[role || this.globalData.userRole || ''] || '/pages/home/home'
+  },
+
+  goRoleHome() {
+    const url = this.getRoleHomePath?.() || '/pages/home/home'
+    wx.switchTab({ url })
+  },
+
+  ensureLogin() {
+    const currentPath = getCurrentPath()
+    if (!currentPath) return
+
+    const user = this.globalData.userInfo
+    const isLoginPage = currentPath === LOGIN_PATH
+    if (!user && !isLoginPage) {
+      wx.reLaunch({ url: LOGIN_PATH })
+      return
+    }
+
+    if (user && isLoginPage) {
+      this.goRoleHome?.()
+    }
+  },
+
   resolveRole(user: any): string {
     if (!user) return ''
     if (user.role === 'customer') {
       return user.customerType === 'institution' ? 'customer_institution' : 'customer_personal'
     }
-    return user.role // salesperson | clerk | admin
+    return user.role
   },
 })
 

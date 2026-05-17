@@ -21,6 +21,7 @@ function getDisplayOrderNo(order: any) {
 
 Page({
   data: {
+    loadingUser: true,
     userInfo: null as any,
     currentRole: 'customer_personal',
     userRoleLabel: '普通客户',
@@ -54,16 +55,18 @@ Page({
 
   async loadUserInfo() {
     const app = getApp()
+    app.restoreCachedUser?.()
     const user = app.globalData.userInfo
     const userRole = app.globalData.userRole as string || 'customer_personal'
 
     if (!user) {
-      this.setData({ userInfo: null, menuItems: [], focusItems: [], showOrderBar: false, compactProfile: false, statNote: '' })
+      this.setData({ loadingUser: false, userInfo: null, menuItems: [], focusItems: [], showOrderBar: false, compactProfile: false, statNote: '' })
       return
     }
 
     const roleData = await this.getRoleCopy(userRole, user)
     this.setData({
+      loadingUser: false,
       userInfo: user,
       currentRole: userRole,
       ...roleData,
@@ -123,7 +126,7 @@ Page({
             badge: exchangeCount > 0 ? '含换货单' : '待发货',
             title: pending.length > 0 ? `${pending.length} 单待处理` : '暂无待处理订单',
             desc: pending.length > 0
-              ? `普通发货与换货发货统一从待处理订单进入`
+              ? '普通发货与换货发货统一从待处理订单进入'
               : '当前没有待处理发货任务',
             meta: pending[0]
               ? `最近订单：${getDisplayOrderNo(pending[0])} · ${pending[0].customerName || '客户'}`
@@ -139,9 +142,15 @@ Page({
       }
     }
 
-    // 客户角色
     const orders = user.role === 'customer' ? await getOrders({ customerId: user.id }) : []
     const isInstitution = role === 'customer_institution' || user.customerType === 'institution'
+    const customerMenuItems = [
+      { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
+      { id: 'wallet', icon: '余', title: '钱包与积分', tap: 'onWalletTap', desc: '充值余额，查看积分和优惠' },
+      { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
+      { id: 'service', icon: '客', title: '售后与客服', tap: 'onHelpTap', desc: '订单、物流、售后咨询' },
+    ]
+
     return {
       userRoleLabel: isInstitution ? '宠物医院客户' : '普通客户',
       avatarText: user.nickname?.[0] || '客',
@@ -161,13 +170,7 @@ Page({
       },
       focusTitle: '',
       focusItems: [],
-      menuItems: [
-        { id: 'agentApply', icon: '代', title: '代理商申请', value: user.agentStatus === 'pending_review' ? '审核中' : user.agentStatus === 'rejected' ? '被驳回' : '', tap: user.agentStatus ? 'onAgentStatusTap' : 'onAgentApplyTap', desc: '申请成为代理商，开通推广和提成能力' },
-        { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
-        { id: 'wallet', icon: '充', title: '钱包与积分', tap: 'onWalletTap', desc: '充值余额，查看积分和优惠' },
-        { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
-        { id: 'service', icon: '客', title: '售后与客服', tap: 'onHelpTap', desc: '订单、物流、售后咨询' },
-      ],
+      menuItems: customerMenuItems,
     }
   },
 
@@ -290,9 +293,12 @@ Page({
   },
 
   onLogout() {
+    this.setData({ loadingUser: true })
     getApp().globalData.userInfo = null
+    getApp().globalData.userRole = ''
     wx.removeStorageSync('current_user')
-    this.setData({ userInfo: null })
+    wx.removeStorageSync('user_role')
+    wx.reLaunch({ url: '/pages/login/login' })
   },
 
   onFavoritesTap() {

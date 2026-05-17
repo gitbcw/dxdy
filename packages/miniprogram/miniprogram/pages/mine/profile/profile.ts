@@ -13,16 +13,19 @@ Page({
       wx.navigateBack()
       return
     }
+
     const isAgent = user.role === 'salesperson' || user.agentStatus === 'approved'
+    const isClerk = user.role === 'clerk'
+    const roleLabel = isAgent ? '代理商' : isClerk ? '制单员' : (user.roleName || '普通客户')
     const fields = [
       { key: 'avatar', label: '头像', value: '', type: 'avatar' },
       { key: 'nickname', label: '昵称', value: user.nickname || '', type: 'text' },
       { key: 'phone', label: '手机号', value: user.phone || '未绑定', type: 'text' },
-      { key: 'role', label: '角色', value: isAgent ? '代理商' : (user.roleName || '普通客户'), type: 'readonly' },
+      { key: 'role', label: '角色', value: roleLabel, type: 'readonly' },
       { key: 'createdAt', label: '注册时间', value: user.createdAt || '2025-01-15', type: 'readonly' },
     ]
 
-    if (!isAgent) {
+    if (!isAgent && !isClerk) {
       fields.splice(
         3,
         0,

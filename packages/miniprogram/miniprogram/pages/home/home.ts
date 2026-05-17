@@ -131,9 +131,9 @@ Page({
     this.setData({
       currentRole,
       isInstitution,
-      showSearchBar: currentRole !== 'salesperson',
-      searchKeyword: currentRole === 'salesperson' ? '' : this.data.searchKeyword,
-      searchSuggestions: currentRole === 'salesperson' ? [] : this.data.searchSuggestions,
+      showSearchBar: currentRole !== 'salesperson' && currentRole !== 'clerk',
+      searchKeyword: currentRole === 'salesperson' || currentRole === 'clerk' ? '' : this.data.searchKeyword,
+      searchSuggestions: currentRole === 'salesperson' || currentRole === 'clerk' ? [] : this.data.searchSuggestions,
       banner: null,
       homeBannerImage: GENERATED_ASSETS.homeBanner,
       heroTitlePrimary: '专业动医产品',
@@ -305,10 +305,10 @@ Page({
         displayName: name,
         identityTag: '制单员',
         identityTagClass: 'staff',
-        homeBannerImage: '',
-        heroTitlePrimary: '',
-        heroTitleSecondary: '',
-        heroPill: '',
+        homeBannerImage: GENERATED_ASSETS.homeBanner,
+        heroTitlePrimary: '制单发货工作台',
+        heroTitleSecondary: '高效处理订单履约',
+        heroPill: '待处理 · 发货 · 跟踪',
         heroClass: 'clerk',
         taskCards: [
           {

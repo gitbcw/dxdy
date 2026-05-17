@@ -6,6 +6,37 @@
   box-sizing: border-box;
 }
 
+.mine-loading {
+  margin-top: 24rpx;
+  padding: 36rpx 28rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 28rpx rgba(30, 62, 44, 0.06);
+}
+
+.loading-avatar,
+.loading-line {
+  background: linear-gradient(90deg, #edf1ee 0%, #f7f8f7 50%, #edf1ee 100%);
+}
+
+.loading-avatar {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+}
+
+.loading-line {
+  width: 42%;
+  height: 24rpx;
+  margin-top: 18rpx;
+  border-radius: 999rpx;
+}
+
+.loading-line.wide {
+  width: 68%;
+  margin-top: 24rpx;
+}
+
 .login-prompt {
   margin-top: 100rpx;
   padding: 40rpx 32rpx;

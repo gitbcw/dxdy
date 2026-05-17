@@ -4,6 +4,7 @@ const icons = require('../../services/icons')
 
 Page({
   data: {
+    checkingSession: true,
     phone: '',
     isRegister: false,
     nickname: '',
@@ -24,6 +25,16 @@ Page({
   },
 
   onLoad(options: Record<string, string | undefined> = {}) {
+    const app = getApp()
+    const cachedUser = app.globalData.userInfo
+    if (cachedUser) {
+      app.globalData.userRole = app.globalData.userRole || this.inferRole(cachedUser)
+      app.goRoleHome?.()
+      return
+    }
+
+    this.setData({ checkingSession: false })
+
     if (options.referralCode) {
       this.setData({ referralCode: options.referralCode, isRegister: true })
     }
@@ -77,6 +88,7 @@ Page({
     const app = getApp()
     app.globalData.userInfo = user
     app.globalData.userRole = this.inferRole(user)
+    app.globalData.authResolved = true
     tracking.setUserId(user.id || user._id || '')
     wx.setStorageSync('current_user', JSON.stringify(user))
     wx.setStorageSync('user_role', app.globalData.userRole)
@@ -84,7 +96,7 @@ Page({
 
     setTimeout(() => {
       if (redirectHome || getCurrentPages().length <= 1) {
-        wx.switchTab({ url: '/pages/home/home' })
+        app.goRoleHome?.()
         return
       }
       wx.navigateBack()

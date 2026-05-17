@@ -1,5 +1,11 @@
 <view class="page">
-  <view wx:if="{{!userInfo}}" class="login-prompt">
+  <view wx:if="{{loadingUser}}" class="mine-loading">
+    <view class="loading-avatar"></view>
+    <view class="loading-line wide"></view>
+    <view class="loading-line"></view>
+  </view>
+
+  <view wx:elif="{{!userInfo}}" class="login-prompt">
     <view class="brand">大熊动医</view>
     <text class="login-title">欢迎来到大熊动医</text>
     <text class="login-desc">登录后查看订单、认证、售后和检测报告</text>

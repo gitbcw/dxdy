@@ -1,4 +1,12 @@
 <view class="page">
+  <view wx:if="{{checkingSession}}" class="session-check">
+    <view class="session-logo">
+      <image class="session-logo-icon" src="{{logoIcon}}" mode="aspectFit" />
+    </view>
+    <text class="session-text">正在进入...</text>
+  </view>
+
+  <block wx:else>
   <view class="brand-hero">
     <view class="brand-row">
       <view class="logo-mark">
@@ -67,4 +75,5 @@
       </view>
     </view>
   </view>
+  </block>
 </view>
