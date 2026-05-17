@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/admin/app-sidebar';
@@ -9,6 +9,9 @@ import { useAuth, type AdminProfile } from '@/hooks/use-auth';
 import { getDb } from '@/lib/cloudbase';
 
 type AdminRole = AdminProfile['role'];
+type UserStatusDoc = {
+  status?: string;
+};
 
 const routeAccess: Record<string, AdminRole[]> = {
   dashboard: ['system_admin'],
@@ -38,6 +41,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   // 未登录则跳转登录页
   useEffect(() => {
@@ -63,7 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     intervalRef.current = setInterval(async () => {
       try {
         const res = await getDb().collection('users').doc(user.id).get()
-        const doc = (res.data as any[])?.[0]
+        const doc = (res.data as UserStatusDoc[])?.[0]
         if (!doc || doc.status === 'disabled') {
           router.replace('/login')
         }
@@ -72,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [user, router])
 
-  if (loading || !user) return null;
+  if (!mounted || loading || !user) return null;
 
   return (
     <SidebarProvider>

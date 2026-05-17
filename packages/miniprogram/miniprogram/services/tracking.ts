@@ -21,6 +21,7 @@ let userId = ''
 let buffer: TrackEvent[] = []
 let timer: ReturnType<typeof setInterval> | null = null
 let flushing = false
+let disabled = false
 
 function generateId(prefix = 'evt') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -64,6 +65,7 @@ export function setUserId(uid: string) {
 }
 
 export function track(eventType: string, properties: Record<string, any> = {}) {
+  if (disabled) return
   ensureSession()
   buffer.push({
     eventId: generateId('evt'),
@@ -113,7 +115,7 @@ export function trackSearch(keyword: string, resultCount: number) {
 }
 
 export async function flush() {
-  if (flushing || buffer.length === 0) return
+  if (disabled || flushing || buffer.length === 0) return
   flushing = true
   const batch = buffer.splice(0)
   try {
@@ -125,9 +127,14 @@ export async function flush() {
         createdAt: new Date().toISOString(),
       },
     })
-  } catch {
-    // 刷新失败，放回缓冲区（下次再试）
-    buffer.unshift(...batch)
+  } catch (error: any) {
+    const message = String(error?.errMsg || error?.message || '')
+    if (message.includes('collection not exists') || message.includes('Db or Table not exist')) {
+      disabled = true
+      stopTimer()
+    } else {
+      buffer.unshift(...batch)
+    }
   } finally {
     flushing = false
   }

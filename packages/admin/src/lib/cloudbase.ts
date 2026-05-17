@@ -13,7 +13,7 @@ function getApp() {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const cloudbase = require('@cloudbase/js-sdk')
     _app = cloudbase.default.init({
-      env: 'cloudbase-d4gwpsm7gcc59b6fc',
+      env: 'cloud1-d7g7ctn4m86bada89',
       region: 'ap-shanghai',
       accessKey: process.env.NEXT_PUBLIC_CLOUDBASE_ACCESS_KEY!,
       auth: { detectSessionInUrl: true },
