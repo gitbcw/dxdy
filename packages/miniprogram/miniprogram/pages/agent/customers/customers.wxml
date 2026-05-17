@@ -19,6 +19,10 @@
       <text class="section-more"></text>
     </view>
     <view class="focus-list">
+      <view wx:if="{{focusCustomers.length === 0}}" class="focus-empty">
+        <text class="focus-empty-title">暂无重点关注客户</text>
+        <text class="focus-empty-desc">点击客户卡片右上角星标后会显示在这里</text>
+      </view>
       <view wx:for="{{focusCustomers}}" wx:key="id" class="focus-card" data-id="{{item.id}}" bindtap="onCustomerTap">
         <view class="focus-top">
           <text class="focus-badge">{{item.priorityTag}}</text>
@@ -51,6 +55,16 @@
   <view wx:else class="customer-list">
     <block wx:for="{{visibleCustomers}}" wx:key="id">
       <view class="customer-card" data-id="{{item.id}}" bindtap="onCustomerTap">
+        <button
+          class="focus-toggle {{item.isFocused ? 'active' : ''}}"
+          plain
+          hover-class="focus-toggle-hover"
+          data-id="{{item.id}}"
+          catchtap="onFocusToggle"
+          aria-label="{{item.isFocused ? '取消重点关注' : '设为重点关注'}}"
+        >
+          <text class="focus-toggle-icon">{{item.isFocused ? '★' : '☆'}}</text>
+        </button>
         <view class="avatar">
           <text class="avatar-text">{{item.avatarText}}</text>
         </view>

@@ -1,4 +1,4 @@
-const { getSalesmanCustomers, formatMoney } = require('../../../services/index')
+const { getSalesmanCustomers, toggleSalesmanCustomerFocus, formatMoney } = require('../../../services/index')
 
 Page({
   data: {
@@ -10,6 +10,7 @@ Page({
     focusCustomers: [] as any[],
     filters: [] as any[],
     activeFilter: 'all',
+    focusSubmittingId: '',
   },
 
   onShow() {
@@ -18,7 +19,7 @@ Page({
 
   async loadCustomers() {
     const customers = await getSalesmanCustomers()
-    const sortedCustomers = customers
+    const mappedCustomers = customers
       .map((customer: any) => ({
         ...customer,
         avatarText: (customer.nickname || customer.phone || '客').charAt(0),
@@ -34,27 +35,30 @@ Page({
         boundAtText: customer.boundAt || '未记录',
         lastOrderText: customer.lastOrderAt ? `${customer.lastOrderNo} · ${customer.lastOrderAt}` : '暂无订单',
       }))
-      .sort((a: any, b: any) => (b.totalAmount || 0) - (a.totalAmount || 0))
+
+    const focusCustomers = mappedCustomers
+      .filter((customer: any) => customer.isFocused)
+      .sort((a: any, b: any) => String(b.focusCreatedAt || '').localeCompare(String(a.focusCreatedAt || '')))
 
     const filters = [
-      { key: 'all', label: '全部', count: sortedCustomers.length },
-      { key: 'institution', label: '医院', count: sortedCustomers.filter((item: any) => item.type === 'institution').length },
-      { key: 'personal', label: '个人', count: sortedCustomers.filter((item: any) => item.type !== 'institution').length },
-      { key: 'active', label: '高活跃', count: sortedCustomers.filter((item: any) => item.orderCount >= 3).length },
-      { key: 'afterSale', label: '售后关注', count: sortedCustomers.filter((item: any) => item.exchangeCount > 0).length },
+      { key: 'all', label: '全部', count: mappedCustomers.length },
+      { key: 'institution', label: '医院', count: mappedCustomers.filter((item: any) => item.type === 'institution').length },
+      { key: 'personal', label: '个人', count: mappedCustomers.filter((item: any) => item.type !== 'institution').length },
+      { key: 'active', label: '高活跃', count: mappedCustomers.filter((item: any) => item.orderCount >= 3).length },
+      { key: 'afterSale', label: '售后关注', count: mappedCustomers.filter((item: any) => item.exchangeCount > 0).length },
     ]
 
     this.setData({
-      customers: sortedCustomers,
-      visibleCustomers: this.filterCustomers(sortedCustomers, this.data.activeFilter),
-      totalAmount: formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0)),
-      totalCount: sortedCustomers.length,
+      customers: mappedCustomers,
+      visibleCustomers: this.filterCustomers(mappedCustomers, this.data.activeFilter),
+      totalAmount: formatMoney(mappedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0)),
+      totalCount: mappedCustomers.length,
       summaryCards: [
-        { value: String(sortedCustomers.length), label: '绑定客户', desc: '' },
-        { value: `¥${formatMoney(sortedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0))}`, label: '累计采购', desc: '' },
-        { value: String(sortedCustomers.filter((item: any) => item.exchangeCount > 0).length), label: '售后关注', desc: '' },
+        { value: String(mappedCustomers.length), label: '绑定客户', desc: '' },
+        { value: `¥${formatMoney(mappedCustomers.reduce((sum: number, item: any) => sum + item.totalAmount, 0))}`, label: '累计采购', desc: '' },
+        { value: String(mappedCustomers.filter((item: any) => item.exchangeCount > 0).length), label: '售后关注', desc: '' },
       ],
-      focusCustomers: sortedCustomers.slice(0, 3),
+      focusCustomers,
       filters,
     })
   },
@@ -78,6 +82,24 @@ Page({
   onCustomerTap(e: any) {
     const id = e.currentTarget.dataset.id
     wx.navigateTo({ url: `/pages/agent/customer-detail/customer-detail?id=${id}` })
+  },
+
+  async onFocusToggle(e: any) {
+    const id = e.currentTarget.dataset.id
+    if (!id || this.data.focusSubmittingId) return
+    this.setData({ focusSubmittingId: id })
+    try {
+      const result = await toggleSalesmanCustomerFocus(id)
+      wx.showToast({
+        title: result.focused ? '已设为重点关注' : '已取消关注',
+        icon: 'none',
+      })
+      await this.loadCustomers()
+    } catch (error: any) {
+      wx.showToast({ title: error?.message || '操作失败，请重试', icon: 'none' })
+    } finally {
+      this.setData({ focusSubmittingId: '' })
+    }
   },
 })
 

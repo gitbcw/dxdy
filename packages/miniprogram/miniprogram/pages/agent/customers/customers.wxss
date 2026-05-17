@@ -114,6 +114,28 @@
   background: #f5faf9;
 }
 
+.focus-empty {
+  padding: 28rpx 24rpx;
+  border-radius: 24rpx;
+  background: #f5faf9;
+  text-align: center;
+}
+
+.focus-empty-title {
+  display: block;
+  color: #173236;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.focus-empty-desc {
+  display: block;
+  margin-top: 8rpx;
+  color: #7a8a8d;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
 .focus-top {
   display: flex;
   align-items: center;
@@ -184,14 +206,69 @@
 }
 
 .customer-card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 20rpx;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 28rpx;
-  padding: 24rpx;
+  padding: 24rpx 78rpx 24rpx 24rpx;
   margin-bottom: 16rpx;
   box-shadow: 0 14rpx 36rpx rgba(23, 61, 64, 0.07);
+}
+
+.focus-toggle {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46rpx !important;
+  min-width: 46rpx;
+  max-width: 46rpx;
+  height: 46rpx;
+  min-height: 46rpx;
+  padding: 0;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 999rpx;
+  outline: 0;
+  background: #edf4f3;
+  color: #98a7aa;
+  line-height: 46rpx;
+  box-sizing: border-box;
+}
+
+.focus-toggle::after {
+  border: 0 !important;
+  border-radius: 999rpx;
+}
+
+.focus-toggle[plain] {
+  border: 0 !important;
+}
+
+.focus-toggle[plain]::after {
+  border: 0 !important;
+}
+
+.focus-toggle.active {
+  background: #fff4d8;
+  color: #d39b19;
+}
+
+.focus-toggle-hover {
+  opacity: 0.72;
+}
+
+.focus-toggle-icon {
+  display: block;
+  width: 46rpx;
+  height: 46rpx;
+  font-size: 30rpx;
+  line-height: 44rpx;
+  text-align: center;
 }
 
 .avatar {

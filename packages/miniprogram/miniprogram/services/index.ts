@@ -666,8 +666,10 @@ export async function getSalesmanCustomers() {
     db.collection('orders').where({ salespersonId: user.id }).orderBy('createdAt', 'desc').limit(100).get(),
     db.collection('returns').limit(100).get(),
   ])
+  const focusDocs = await getSalesmanCustomerFocusRecords()
   const orders = normalizeList(orderDocs)
   const returns = normalizeList(returnDocs)
+  const focusMap = new Map(focusDocs.map((item: any) => [item.customerId, item]))
   return normalizeList(customerDocs).map((customer: any) => {
     const customerOrders = orders.filter((order: any) => order.customerId === customer.id)
     const customerReturns = returns.filter((record: any) => customerOrders.some((order: any) => order.id === record.orderId))
@@ -688,8 +690,43 @@ export async function getSalesmanCustomers() {
       lastOrderNo: lastOrder?.orderNo || '',
       lastOrderStatus: lastOrder?.status || '',
       boundAt: customer.boundAt || customer.createdAt || '',
+      isFocused: focusMap.has(customer.id),
+      focusCreatedAt: focusMap.get(customer.id)?.createdAt || '',
     }
   })
+}
+
+export async function getSalesmanCustomerFocusRecords() {
+  const user = getCurrentUser()
+  if (!user) return []
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'toggleSalesmanCustomerFocus',
+      data: {
+        action: 'list',
+        userId: user.id,
+      },
+    }) as any
+    return result?.success ? normalizeList(result.focusRecords) : []
+  } catch {
+    return []
+  }
+}
+
+export async function toggleSalesmanCustomerFocus(customerId: string) {
+  const user = getCurrentUser()
+  if (!user || !customerId) return { focused: false }
+  const { result } = await wx.cloud.callFunction({
+    name: 'toggleSalesmanCustomerFocus',
+    data: {
+      customerId,
+      userId: user.id,
+    },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '重点关注操作失败')
+  }
+  return { focused: result.focused }
 }
 
 export async function getAgentCustomerDetail(customerId: string) {

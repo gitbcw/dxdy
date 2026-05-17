@@ -7,10 +7,6 @@
 
   <view wx:if="{{status !== 'none'}}" class="info-card">
     <view class="info-row">
-      <text class="info-label">身份证号码</text>
-      <text class="info-value">{{info.idNumber || '-'}}</text>
-    </view>
-    <view class="info-row">
       <text class="info-label">联系人</text>
       <text class="info-value">{{info.contactName || '-'}}</text>
     </view>
@@ -21,6 +17,10 @@
     <view class="info-row">
       <text class="info-label">提交时间</text>
       <text class="info-value">{{info.submittedAt || '-'}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">身份证号码</text>
+      <text class="info-value">{{info.idNumber || '-'}}</text>
     </view>
     <view class="material-row">
       <text class="info-label">身份证照片</text>

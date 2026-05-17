@@ -1,0 +1,9 @@
+{
+  "name": "toggleSalesmanCustomerFocus",
+  "version": "1.0.0",
+  "description": "切换代理商客户重点关注状态",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
