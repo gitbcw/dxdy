@@ -11,7 +11,7 @@ App<IAppOption>({
 
   onLaunch() {
     if (!wx.cloud) return
-    wx.cloud.init({ env: 'cloudbase-d4gwpsm7gcc59b6fc', traceUser: true })
+    wx.cloud.init({ env: 'cloud1-d7g7ctn4m86bada89', traceUser: true })
     tracking.init()
 
     // 获取 openid

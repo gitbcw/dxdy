@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "cloud1-d7g7ctn4m86bada89",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    { "name": "adjustOrderPrice", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "aggregateDailyStats", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "assignOrderToClerk", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "bindSalesperson", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "clerkShipOrder", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "createInvoice", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "createOrder", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "createRechargeOrder", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "createReturn", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "getOpenId", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "loginByPhone", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "manageCardVoucher", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "manageCoupon", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "manageReview", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "manageTestReport", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "payOrder", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "processInvoice", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "requestWithdrawal", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "reviewAgentApplication", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "reviewReturn", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "reviewVerification", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "reviewWithdrawal", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "saveAgentBankCard", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "submitAgentApplication", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "toggleSalesmanCustomerFocus", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "updateOrderStatus", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 }
+  ]
+}

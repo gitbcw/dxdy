@@ -1,0 +1,9 @@
+{
+  "name": "loginByPhone",
+  "version": "1.0.0",
+  "description": "通过手机号登录并绑定当前小程序 openid",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

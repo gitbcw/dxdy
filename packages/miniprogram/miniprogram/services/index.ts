@@ -180,13 +180,16 @@ export function getProductVisualImage(productOrName: any): string {
 
 export async function loginByPhone(phone: string) {
   try {
-    const { data } = await db.collection('users').where({ phone }).get()
-    if (data.length > 0) {
-      const user = normalize(data[0])
+    const { result } = await wx.cloud.callFunction({
+      name: 'loginByPhone',
+      data: { phone },
+    }) as any
+    if (result?.success && result.user) {
+      const user = result.user
       wx.setStorageSync('current_user', JSON.stringify(user))
       return { success: true, user }
     }
-    return { success: false, error: '用户不存在' }
+    return { success: false, error: result?.error || '用户不存在' }
   } catch (err) {
     return { success: false, error: '登录失败' }
   }
