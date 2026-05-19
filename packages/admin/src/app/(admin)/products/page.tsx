@@ -16,9 +16,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
-import getApp from '@/lib/cloudbase';
 import {
   fetchProductsAndCategories,
+  fetchProductById,
+  fetchProductImagesByIds,
   createProduct,
   updateProduct,
   createProductCategory,
@@ -133,31 +134,9 @@ function readFileAsDataUrl(file: File) {
   });
 }
 
-async function uploadFileToStorage(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const cloudPath = `products/${timestamp}-${safeName}`;
-  const result = await getApp().uploadFile({
-    cloudPath,
-    filePath: new File([arrayBuffer], file.name, { type: file.type }) as any,
-  });
-  return result.fileID || '';
-}
-
 async function processImageFiles(files: FileList | null): Promise<string[]> {
   if (!files || files.length === 0) return [];
-  const results = await Promise.all(
-    Array.from(files).map(async (file) => {
-      try {
-        const cloudUrl = await uploadFileToStorage(file);
-        if (cloudUrl) return cloudUrl;
-      } catch (e) {
-        console.warn('Upload to storage failed, falling back to data URL', e);
-      }
-      return readFileAsDataUrl(file);
-    }),
-  );
+  const results = await Promise.all(Array.from(files).map(readFileAsDataUrl));
   return results;
 }
 
@@ -289,51 +268,82 @@ export default function ProductsPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+  const pagedProductIds = pagedProducts.map(product => product.id).join('|');
   const allCurrentPageSelected =
     pagedProducts.length > 0 && pagedProducts.every(product => selectedIds.has(product.id));
+
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrateCurrentPageImages() {
+      const ids = pagedProductIds ? pagedProductIds.split('|') : [];
+      if (ids.length === 0) return;
+      try {
+        const imageRecords = await fetchProductImagesByIds(ids);
+        if (cancelled || imageRecords.length === 0) return;
+        const map = new Map(imageRecords.map(item => [item.id, item.images]));
+        setProducts(prev => prev.map(product => {
+          const images = map.get(product.id);
+          return images ? { ...product, images } : product;
+        }));
+      } catch {
+        // ignore hydration failures
+      }
+    }
+    void hydrateCurrentPageImages();
+    return () => { cancelled = true; };
+  }, [pagedProductIds]);
 
   function resetToFirstPage() {
     setPage(1);
   }
 
   function startEdit(product: Product) {
-    setEditProduct(product);
-    const bc = product.bookingConfig;
-    const pl = product.purchaseLimit;
-    const ar = product.agreementRequired;
-    setEditForm({
-      name: product.name,
-      description: product.description,
-      category: product.category,
-      institutionPrice: String(product.institutionPrice),
-      personalPrice: String(product.personalPrice),
-      visibility: product.visibility,
-      stock: String(product.stock),
-      specs: productSpecsToText(product.specs),
-      images: product.images ?? [],
-      productType: product.productType || (product.isBloodPack ? 'blood_pack' : 'physical'),
-      bookingEnabled: bc?.enabled || false,
-      bookingLeadDays: String(bc?.leadDays || 2),
-      bookingLocations: (bc?.locations || []).join(','),
-      bookingRequireInstitution: bc?.requireInstitution || false,
-      bookingRequireVerification: bc?.requireVerification || false,
-      purchaseMinQuantity: String(pl?.minQuantity || 1),
-      purchaseMaxPerOrder: String(pl?.maxQuantityPerOrder || 0),
-      purchaseMaxPerUser: String(pl?.maxQuantityPerUser || 0),
-      agreementEnabled: ar?.enabled || false,
-      agreementTitle: ar?.title || '',
-      agreementContent: ar?.content || '',
-      salesCountEnabled: product.salesCountEnabled || false,
-      urgentEnabled: product.urgentConfig?.enabled || false,
-      urgentFee: String(product.urgentConfig?.extraFee || 0),
-      urgentDescription: product.urgentConfig?.description || '',
-      redeemableCategory: product.redeemableCategory || '',
-      validDays: String(product.validDays || 365),
-      promotionEnabled: !!((product.promotionPrice ?? 0) > 0 && product.promotionStart),
-      promotionPrice: String(product.promotionPrice || ''),
-      promotionStart: product.promotionStart || '',
-      promotionEnd: product.promotionEnd || '',
-    });
+    void (async () => {
+      let target = product;
+      try {
+        const fullProduct = await fetchProductById(product.id);
+        target = (fullProduct || product) as Product;
+      } catch (error) {
+        setErrorMsg(error instanceof Error ? error.message : '读取商品详情失败');
+      }
+      setEditProduct(target);
+      const bc = target.bookingConfig;
+      const pl = target.purchaseLimit;
+      const ar = target.agreementRequired;
+      setEditForm({
+        name: target.name,
+        description: target.description || '',
+        category: target.category,
+        institutionPrice: String(target.institutionPrice),
+        personalPrice: String(target.personalPrice),
+        visibility: target.visibility,
+        stock: String(target.stock),
+        specs: productSpecsToText(target.specs || []),
+        images: target.images ?? [],
+        productType: target.productType || (target.isBloodPack ? 'blood_pack' : 'physical'),
+        bookingEnabled: bc?.enabled || false,
+        bookingLeadDays: String(bc?.leadDays || 2),
+        bookingLocations: (bc?.locations || []).join(','),
+        bookingRequireInstitution: bc?.requireInstitution || false,
+        bookingRequireVerification: bc?.requireVerification || false,
+        purchaseMinQuantity: String(pl?.minQuantity || 1),
+        purchaseMaxPerOrder: String(pl?.maxQuantityPerOrder || 0),
+        purchaseMaxPerUser: String(pl?.maxQuantityPerUser || 0),
+        agreementEnabled: ar?.enabled || false,
+        agreementTitle: ar?.title || '',
+        agreementContent: ar?.content || '',
+        salesCountEnabled: target.salesCountEnabled || false,
+        urgentEnabled: target.urgentConfig?.enabled || false,
+        urgentFee: String(target.urgentConfig?.extraFee || 0),
+        urgentDescription: target.urgentConfig?.description || '',
+        redeemableCategory: target.redeemableCategory || '',
+        validDays: String(target.validDays || 365),
+        promotionEnabled: !!((target.promotionPrice ?? 0) > 0 && target.promotionStart),
+        promotionPrice: String(target.promotionPrice || ''),
+        promotionStart: target.promotionStart || '',
+        promotionEnd: target.promotionEnd || '',
+      });
+    })();
   }
 
   function buildExtendedFields(form: ProductFormState) {
@@ -582,12 +592,7 @@ export default function ProductsPage() {
             <h2 className="text-base font-semibold">商品分类配置</h2>
             <p className="text-sm text-muted-foreground">分类保存后会同步用于小程序商品分类页和商品编辑表单。</p>
           </div>
-          <div className="grid gap-3 md:grid-cols-[1fr_1fr_120px_auto]">
-            <Input
-              placeholder="分类 ID，留空自动生成"
-              value={categoryForm.id}
-              onChange={event => setCategoryForm(form => ({ ...form, id: event.target.value }))}
-            />
+          <div className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
             <Input
               placeholder="分类名称"
               value={categoryForm.name}
@@ -605,7 +610,7 @@ export default function ProductsPage() {
             {[...categories].sort((a, b) => a.sort - b.sort).map(category => (
               <div key={category.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                 <span className="font-medium">{category.name}</span>
-                <span className="text-xs text-muted-foreground">{category.id} · {category.sort}</span>
+                <span className="text-xs text-muted-foreground">排序 {category.sort}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -726,7 +731,6 @@ export default function ProductsPage() {
                     onChange={toggleSelectAllOnPage}
                   />
                 </TableHead>
-                <TableHead>ID</TableHead>
                 <TableHead>图片</TableHead>
                 <TableHead>商品名</TableHead>
                 <TableHead>分类</TableHead>
@@ -741,7 +745,7 @@ export default function ProductsPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                     加载商品数据中...
                   </TableCell>
                 </TableRow>
@@ -755,7 +759,6 @@ export default function ProductsPage() {
                       onChange={() => toggleSelect(product.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{product.id}</TableCell>
                   <TableCell>
                     {product.images?.[0] ? (
                       <div className="flex items-center gap-2">
@@ -889,10 +892,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label htmlFor="editCat">分类</Label>
                 <Select
+                  items={catMap}
                   value={editForm.category}
                   onValueChange={value => setEditForm(form => ({ ...form, category: value ?? '' }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择分类" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1048,7 +1052,7 @@ export default function ProductsPage() {
                   value={editForm.visibility}
                   onValueChange={value => setEditForm(form => ({ ...form, visibility: value as ProductVisibility }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1099,7 +1103,7 @@ export default function ProductsPage() {
       </Dialog>
 
       <Dialog open={createOpen} onOpenChange={open => !open && setCreateOpen(false)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="w-[min(92vw,960px)] min-w-[33vw] max-w-none">
           <DialogHeader>
             <DialogTitle>新增商品</DialogTitle>
           </DialogHeader>
@@ -1117,10 +1121,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label htmlFor="prodCat">分类</Label>
                 <Select
+                  items={catMap}
                   value={createForm.category}
                   onValueChange={value => setCreateForm(form => ({ ...form, category: value ?? '' }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择分类" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1129,6 +1134,25 @@ export default function ProductsPage() {
                         {category.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>商品类型</Label>
+                <Select
+                  value={createForm.productType}
+                  onValueChange={value => setCreateForm(form => ({ ...form, productType: value as ProductType }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="physical">实体商品</SelectItem>
+                    <SelectItem value="blood_pack">血包商品</SelectItem>
+                    <SelectItem value="test_service">检测服务</SelectItem>
+                    <SelectItem value="card_voucher">卡券</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

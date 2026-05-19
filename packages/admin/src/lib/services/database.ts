@@ -34,9 +34,10 @@ function sortByRecent<T extends CloudDoc>(a: T, b: T) {
   return String(b.createdAt || b.updatedAt || '').localeCompare(String(a.createdAt || a.updatedAt || ''))
 }
 
-async function readCollection<T extends CloudDoc>(name: string, query?: Record<string, unknown>): Promise<(T & { id: string })[]> {
+async function readCollection<T extends CloudDoc>(name: string, query?: Record<string, unknown>, projection?: Record<string, unknown>): Promise<(T & { id: string })[]> {
   let q = db().collection(name) as any
   if (query && Object.keys(query).length > 0) q = q.where(query)
+  if (projection && Object.keys(projection).length > 0) q = q.field(projection)
   const res = await q.orderBy('createdAt', 'desc').limit(500).get()
   const docs: T[] = res.data || []
   return docs.map(normalizeDoc).sort(sortByRecent)
@@ -78,11 +79,50 @@ export async function fetchDashboardData() {
 // ===== Products =====
 
 export async function fetchProductsAndCategories() {
+  const productProjection = {
+    name: 1,
+    category: 1,
+    institutionPrice: 1,
+    personalPrice: 1,
+    visibility: 1,
+    stock: 1,
+    status: 1,
+    productType: 1,
+    isBloodPack: 1,
+    bookingConfig: 1,
+    purchaseLimit: 1,
+    agreementRequired: 1,
+    salesCountEnabled: 1,
+    urgentConfig: 1,
+    redeemableCategory: 1,
+    validDays: 1,
+    promotionPrice: 1,
+    promotionStart: 1,
+    promotionEnd: 1,
+    createdAt: 1,
+    updatedAt: 1,
+  }
   const [products, categories] = await Promise.all([
-    readCollection('products'),
+    readCollection('products', undefined, productProjection),
     readCollection('categories'),
   ]) as any
   return { products, categories }
+}
+
+export async function fetchProductById(id: string) {
+  const res = await db().collection('products').doc(id).get()
+  const data = Array.isArray(res.data) ? res.data[0] : res.data
+  return data ? normalizeDoc(data as CloudDoc) : null
+}
+
+export async function fetchProductImagesByIds(ids: string[]) {
+  if (ids.length === 0) return [] as Array<{ id: string; images: string[] }>
+  const records = await Promise.all(ids.map(async id => {
+    const res = await db().collection('products').doc(id).field({ images: 1 }).get()
+    const data = Array.isArray(res.data) ? res.data[0] : res.data
+    return { id, images: Array.isArray((data as any)?.images) ? (data as any).images as string[] : [] }
+  }))
+  return records
 }
 
 export async function createProduct(product: Product & { id: string }) {
