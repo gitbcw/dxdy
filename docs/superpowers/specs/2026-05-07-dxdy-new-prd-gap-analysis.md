@@ -26,8 +26,8 @@
 
 当前项目级目标环境：
 
-- `CLOUDBASE_ENV_ID=cloudbase-d4gwpsm7gcc59b6fc`
-- 本地小程序 `packages/miniprogram/miniprogram/app.ts` 初始化的云开发环境也是 `cloudbase-d4gwpsm7gcc59b6fc`。
+- `CLOUDBASE_ENV_ID=cloud1-d7g7ctn4m86bada89`
+- 本地小程序 `packages/miniprogram/miniprogram/app.ts` 初始化的云开发环境也是 `cloud1-d7g7ctn4m86bada89`。
 
 说明：此前通过全局 MCP 探测到的 `clo-test-4g8ukdond34672de` 是全局级自动绑定环境，只能作为误差来源提示，不应作为本项目后续设计、数据查询或改造判断的依据。
 
@@ -38,7 +38,7 @@
 下一轮深入设计时，应优先补充以下 CloudBase 实况：
 
 - 拉取关键云函数详情或下载云函数代码，尤其是 `wx-goods`、`wx-order`、`wx-coupon`、`wx-tracker`、`wx-express`、`admin-goods`、`admin-order`、`admin-marketing`、`wx-pay-callback`。
-- 确认真实业务集合、索引和权限规则是否存在于项目级环境 `cloudbase-d4gwpsm7gcc59b6fc`。
+- 确认真实业务集合、索引和权限规则是否存在于项目级环境 `cloud1-d7g7ctn4m86bada89`。
 - 整理云函数 API 清单，包括 action、入参、出参、错误码和权限判断。
 - 整理云数据库集合设计，包括索引、安全规则和关键状态字段。
 - 再基于真实 CloudBase 结构拆分改造任务。
@@ -47,7 +47,7 @@
 
 2026-05-07 已按项目根目录 `.mcp.json` 单独启动 CloudBase MCP server，并通过 MCP 协议完成只读验证：
 
-- `auth/status` 成功，当前环境为 `cloudbase-d4gwpsm7gcc59b6fc`，状态 `READY`。
+- `auth/status` 成功，当前环境为 `cloud1-d7g7ctn4m86bada89`，状态 `READY`。
 - `envQuery(info)` 成功，环境别名 `cloudbase`，地域 `ap-shanghai`，环境状态 `NORMAL`。
 - 环境资源包含 1 个数据库和 1 个云存储。
 - `readNoSqlDatabaseStructure(listCollections)` 成功，当前返回 10 个集合：`categories`、`commission_records`、`config`、`logs`、`notifications`、`orders`、`products`、`returns`、`users`、`withdrawals`。

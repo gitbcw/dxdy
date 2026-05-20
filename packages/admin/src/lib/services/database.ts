@@ -26,8 +26,8 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
 // ===== Helpers =====
 
 function normalizeDoc<T extends CloudDoc>(doc: T): T & { id: string } {
-  const { _id, _openid, boundOpenid, ...rest } = doc as any
-  return { id: String(_id || ''), ...rest }
+  const { _id, id, _openid, boundOpenid, ...rest } = doc as any
+  return { ...rest, id: String(_id || id || '') }
 }
 
 function sortByRecent<T extends CloudDoc>(a: T, b: T) {
@@ -70,7 +70,7 @@ export async function fetchDashboardData() {
   return {
     orders,
     returns,
-    products,
+    products: products.filter((product: any) => !product.isDeleted && !product.deletedAt),
     customers: users.filter((u: any) => u.role === 'customer'),
     config: configRecords[0] || defaultSystemConfig,
   }
@@ -80,6 +80,8 @@ export async function fetchDashboardData() {
 
 export async function fetchProductsAndCategories() {
   const productProjection = {
+    _id: 1,
+    id: 1,
     name: 1,
     category: 1,
     institutionPrice: 1,
@@ -99,6 +101,8 @@ export async function fetchProductsAndCategories() {
     promotionPrice: 1,
     promotionStart: 1,
     promotionEnd: 1,
+    isDeleted: 1,
+    deletedAt: 1,
     createdAt: 1,
     updatedAt: 1,
   }
@@ -106,7 +110,10 @@ export async function fetchProductsAndCategories() {
     readCollection('products', undefined, productProjection),
     readCollection('categories'),
   ]) as any
-  return { products, categories }
+  return {
+    products: products.filter((product: any) => !product.isDeleted && !product.deletedAt),
+    categories,
+  }
 }
 
 export async function fetchProductById(id: string) {

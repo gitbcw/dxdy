@@ -78,6 +78,18 @@ export async function manageCoupon(params: Record<string, unknown> & {
   return callFunction<CloudFunctionResult>('manageCoupon', params)
 }
 
+// ===== Products =====
+
+export async function manageProduct(params: Record<string, unknown> & {
+  action: 'deleteProduct' | 'updateProductStatus'
+  productId: string
+  status?: 'on_sale' | 'off_sale'
+  operatorId: string
+  operatorName?: string
+}) {
+  return callFunction<CloudFunctionResult>('manageProduct', params)
+}
+
 // ===== Test Reports =====
 
 export async function manageTestReport(params: Record<string, unknown> & {

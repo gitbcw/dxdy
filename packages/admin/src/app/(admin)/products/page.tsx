@@ -16,6 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
+import getApp from '@/lib/cloudbase';
 import {
   fetchProductsAndCategories,
   fetchProductById,
@@ -26,6 +27,7 @@ import {
   updateProductCategory,
   deleteProductCategory,
 } from '@/lib/services/database';
+import { manageProduct } from '@/lib/services/functions';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
 import type { Product, ProductCategory, ProductVisibility, ProductType } from '@/lib/types';
@@ -85,7 +87,17 @@ const stockFilterLabel: Record<StockFilter, string> = {
   empty: '库存为 0',
 };
 
+const productTypeLabel: Record<ProductType, string> = {
+  physical: '实体商品',
+  blood_pack: '血包商品',
+  test_service: '检测服务',
+  card_voucher: '卡券',
+};
+
 const STOCK_WARNING_THRESHOLD = 10;
+const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
+const PRODUCT_IMAGE_PUBLIC_BASE_URL = 'https://636c-cloud1-d7g7ctn4m86bada89-1433980811.tcb.qcloud.la';
+const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const emptyProductForm = (): ProductFormState => ({
   name: '',
@@ -125,19 +137,36 @@ function productSpecsToText(specs: Product['specs']) {
   return specs.map(spec => spec.value).join(',');
 }
 
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
-    reader.readAsDataURL(file);
+function getSafeImageFileName(file: File) {
+  const name = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') || 'image';
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  return `${name}.${ext}`;
+}
+
+async function uploadFileToStorage(file: File): Promise<string> {
+  if (!PRODUCT_IMAGE_ALLOWED_TYPES.has(file.type)) {
+    throw new Error('仅支持 JPG、PNG、WebP 格式的商品图片');
+  }
+  if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+    throw new Error('单张商品图片不能超过 2MB');
+  }
+
+  const app = getApp();
+  if (!app) throw new Error('CloudBase 未初始化，无法上传图片');
+
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  const cloudPath = `products/${timestamp}-${random}-${getSafeImageFileName(file)}`;
+  await app.uploadFile({
+    cloudPath,
+    filePath: file,
   });
+  return `${PRODUCT_IMAGE_PUBLIC_BASE_URL}/${cloudPath}`;
 }
 
 async function processImageFiles(files: FileList | null): Promise<string[]> {
   if (!files || files.length === 0) return [];
-  const results = await Promise.all(Array.from(files).map(readFileAsDataUrl));
-  return results;
+  return Promise.all(Array.from(files).map(uploadFileToStorage));
 }
 
 function RichTextEditor({
@@ -414,12 +443,51 @@ export default function ProductsPage() {
   async function toggleStatus(product: Product) {
     const newStatus = product.status === 'on_sale' ? 'off_sale' : 'on_sale';
     try {
-      const updated = await updateProductRemote(product.id, { status: newStatus });
-      if (updated) {
-        setProducts(prev => prev.map(item => (item.id === updated.id ? { ...item, ...updated } as Product : item)));
+      const result = await manageProduct({
+        action: 'updateProductStatus',
+        productId: product.id,
+        status: newStatus,
+        operatorId: user?.id || '',
+        operatorName: user?.realName || user?.username || '',
+      });
+      if (!result?.success) {
+        throw new Error(String(result?.error || '更新商品状态失败'));
       }
+      const updatedAt = String(result.updatedAt || new Date().toISOString());
+      setProducts(prev => prev.map(item => (
+        item.id === product.id ? { ...item, status: newStatus, updatedAt } : item
+      )));
+      setErrorMsg('');
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '更新商品状态失败');
+    }
+  }
+
+  async function handleDeleteProduct(product: Product) {
+    if (product.status !== 'off_sale') {
+      setErrorMsg('仅已下架商品可以删除');
+      return;
+    }
+    if (!window.confirm(`确认删除商品「${product.name}」？删除后无法恢复。`)) return;
+    try {
+      const result = await manageProduct({
+        action: 'deleteProduct',
+        productId: product.id,
+        operatorId: user?.id || '',
+        operatorName: user?.realName || user?.username || '',
+      });
+      if (!result?.success) {
+        throw new Error(String(result?.error || '删除商品失败'));
+      }
+      setProducts(prev => prev.filter(item => item.id !== product.id));
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+      setErrorMsg('');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '删除商品失败');
     }
   }
 
@@ -481,15 +549,25 @@ export default function ProductsPage() {
   }
 
   async function handleCreateImageUpload(files: FileList | null) {
-    const images = await processImageFiles(files);
-    if (images.length === 0) return;
-    setCreateForm(form => ({ ...form, images: [...form.images, ...images] }));
+    try {
+      const images = await processImageFiles(files);
+      if (images.length === 0) return;
+      setCreateForm(form => ({ ...form, images: [...form.images, ...images] }));
+      setErrorMsg('');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '上传商品图片失败');
+    }
   }
 
   async function handleEditImageUpload(files: FileList | null) {
-    const images = await processImageFiles(files);
-    if (images.length === 0) return;
-    setEditForm(form => ({ ...form, images: [...form.images, ...images] }));
+    try {
+      const images = await processImageFiles(files);
+      if (images.length === 0) return;
+      setEditForm(form => ({ ...form, images: [...form.images, ...images] }));
+      setErrorMsg('');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '上传商品图片失败');
+    }
   }
 
   function removeCreateImage(index: number) {
@@ -504,12 +582,23 @@ export default function ProductsPage() {
     if (selectedIds.size === 0) return;
     try {
       for (const id of selectedIds) {
-        await updateProductRemote(id, { status: 'off_sale' });
+        const result = await manageProduct({
+          action: 'updateProductStatus',
+          productId: id,
+          status: 'off_sale',
+          operatorId: user?.id || '',
+          operatorName: user?.realName || user?.username || '',
+        });
+        if (!result?.success) {
+          throw new Error(String(result?.error || '批量下架失败'));
+        }
       }
+      const updatedAt = new Date().toISOString();
       setProducts(prev =>
-        prev.map(product => (selectedIds.has(product.id) ? { ...product, status: 'off_sale', updatedAt: new Date().toISOString() } : product)),
+        prev.map(product => (selectedIds.has(product.id) ? { ...product, status: 'off_sale', updatedAt } : product)),
       );
       setSelectedIds(new Set());
+      setErrorMsg('');
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '批量下架失败');
     }
@@ -808,6 +897,11 @@ export default function ProductsPage() {
                       <Button variant="outline" size="sm" onClick={() => toggleStatus(product)}>
                         {product.status === 'on_sale' ? '下架' : '上架'}
                       </Button>
+                      {product.status === 'off_sale' && (
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product)}>
+                          删除
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -912,7 +1006,11 @@ export default function ProductsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>商品类型</Label>
-                <Select value={editForm.productType} onValueChange={value => setEditForm(form => ({ ...form, productType: value as ProductType }))}>
+                <Select
+                  items={productTypeLabel}
+                  value={editForm.productType}
+                  onValueChange={value => setEditForm(form => ({ ...form, productType: value as ProductType }))}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="physical">实体商品</SelectItem>
@@ -1142,6 +1240,7 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label>商品类型</Label>
                 <Select
+                  items={productTypeLabel}
                   value={createForm.productType}
                   onValueChange={value => setCreateForm(form => ({ ...form, productType: value as ProductType }))}
                 >

@@ -4,7 +4,7 @@
 
 ## Project Environment
 
-- Project CloudBase env ID: `cloudbase-d4gwpsm7gcc59b6fc`
+- Project CloudBase env ID: `cloud1-d7g7ctn4m86bada89`
 - Alias: `cloudbase`
 - Region: `ap-shanghai`
 - Status: `NORMAL`
@@ -76,11 +76,11 @@ NODE
 Expected result:
 
 - `toolCount` is greater than zero. On 2026-05-08 it was `36`.
-- `auth` reports `current_env_id: "cloudbase-d4gwpsm7gcc59b6fc"`.
+- `auth` reports `current_env_id: "cloud1-d7g7ctn4m86bada89"`.
 - `envQuery(action=info)` reports `EnvInfo.Status: "NORMAL"`.
 
 ## Operational Rule
 
-For project CloudBase checks and writes, prefer the project `.mcp.json` startup path above. Use the globally available `mcp__cloudbase__` tools only after verifying they are bound to `cloudbase-d4gwpsm7gcc59b6fc`, or when the task explicitly targets the global/test environment.
+For project CloudBase checks and writes, prefer the project `.mcp.json` startup path above. Use the globally available `mcp__cloudbase__` tools only after verifying they are bound to `cloud1-d7g7ctn4m86bada89`, or when the task explicitly targets the global/test environment.
 
 Never paste or re-document the secret values from `.mcp.json` in chat, docs, logs, or commits.

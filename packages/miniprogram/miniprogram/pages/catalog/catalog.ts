@@ -52,6 +52,15 @@ Page({
     tabBar?.updateForPage?.(normalizePath('/pages/catalog/catalog'))
   },
 
+  setCustomTabBarHidden(hidden: boolean) {
+    const tabBar = (this as any).getTabBar?.()
+    if (tabBar?.setHidden) {
+      tabBar.setHidden(hidden)
+      return
+    }
+    tabBar?.setData?.({ hidden })
+  },
+
   redirectStaffRole() {
     const role = getApp().globalData.userRole || 'customer_personal'
     if (!isStaffRole(role)) return false
@@ -62,11 +71,12 @@ Page({
 
   async loadCategories() {
     const cats = await getCategories()
-    this.setData({ categories: cats })
-    if (cats.length > 0) {
-      this.setData({ activeCategory: this.data.searchKeyword.trim() ? '' : cats[0].id })
-      this.loadProducts()
-    }
+    const currentCategory = this.data.activeCategory
+    const activeCategory = this.data.searchKeyword.trim()
+      ? ''
+      : (cats.some((item: any) => item.id === currentCategory) ? currentCategory : '')
+    this.setData({ categories: cats, activeCategory })
+    this.loadProducts()
   },
 
   async loadProducts() {
@@ -182,7 +192,7 @@ Page({
 
   onSearchClear() {
     this.setData({
-      activeCategory: this.data.categories[0]?.id || '',
+      activeCategory: '',
       searchKeyword: '',
       keywordMode: false,
       searchSuggestions: [],
@@ -248,24 +258,31 @@ Page({
     if (!product) return
     this.setData({
       actionSheetVisible: true,
-      actionSheetProduct: { ...product },
+      actionSheetProduct: {
+        ...product,
+        imageUrl: product.imageUrl || getProductVisualImage(product),
+      },
     })
+    this.setCustomTabBarHidden(true)
   },
 
   onActionSheetClose() {
     this.setData({ actionSheetVisible: false })
+    this.setCustomTabBarHidden(false)
   },
 
   onActionSheetAddCart(e: any) {
     const { product, quantity } = e.detail
     addToCart(product, quantity)
     this.setData({ actionSheetVisible: false })
+    this.setCustomTabBarHidden(false)
     wx.showToast({ title: '已加入购物车', icon: 'success' })
   },
 
   onActionSheetBuyNow(e: any) {
     const { product } = e.detail
     this.setData({ actionSheetVisible: false })
+    this.setCustomTabBarHidden(false)
     wx.navigateTo({ url: `/pages/orders/create/create?productId=${product.id}` })
   },
 })

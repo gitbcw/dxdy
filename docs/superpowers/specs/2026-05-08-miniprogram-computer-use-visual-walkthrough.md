@@ -96,7 +96,7 @@
 - 登录页 hero 从绝对定位小裁切图改为完整宽图卡片，降低人物/动物主体被硬裁的概率。
 - 登录页“演示账号”改为折叠入口，保留测试切换能力但降低正式首屏干扰。
 - 首页移除未使用的 `getReturns()` 请求，避免首页加载时触发 `returns` 空条件全表查询告警。
-- 通过项目 `.mcp.json` 直连项目环境 `cloudbase-d4gwpsm7gcc59b6fc`，新增云数据库组合索引：
+- 通过项目 `.mcp.json` 直连项目环境 `cloud1-d7g7ctn4m86bada89`，新增云数据库组合索引：
   - `orders.customerId + createdAt desc`
   - `orders.salespersonId + createdAt desc`
   - `orders.clerkId + createdAt desc`

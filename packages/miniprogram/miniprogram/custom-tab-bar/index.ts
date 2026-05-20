@@ -3,6 +3,7 @@ const icons = require('../services/icons')
 
 Component({
   data: {
+    hidden: false,
     selectedPath: '/pages/home/home',
     tabs: [] as Array<{ pagePath: string, text: string, icon?: string, activeIcon?: string }>,
   },
@@ -22,8 +23,13 @@ Component({
     updateForPage(path: string, role?: string) {
       this.sync(role)
       this.setData({
+        hidden: false,
         selectedPath: normalizePath(path),
       })
+    },
+
+    setHidden(hidden: boolean) {
+      this.setData({ hidden })
     },
 
     onTabTap(e: any) {

@@ -9,7 +9,8 @@
   <!-- 商品信息 -->
   <view class="sheet-header">
     <view class="product-thumb">
-      <text class="thumb-text">商品</text>
+      <image wx:if="{{productImage}}" class="thumb-image" src="{{productImage}}" mode="aspectFit" />
+      <text wx:else class="thumb-text">商品</text>
     </view>
     <view class="header-info">
       <text class="header-price">{{displayPrice}}</text>

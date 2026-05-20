@@ -20,7 +20,7 @@
 - UI 对齐清单：已完成。
 - 客户侧 UI 第一轮：基本完成。
 - 客户侧扩展业务接入：医院认证、地址、支付结果、售后、发票、物流、检测报告已接入 CloudBase 服务层。
-- 云端结构与权限：已形成本地基线文档、索引 JSON、安全规则 JSON；已通过项目 `.mcp.json` 直连 `cloudbase-d4gwpsm7gcc59b6fc`，完成新增集合、索引、最小安全规则和 `createOrder/payOrder/createInvoice/createReturn/clerkShipOrder/adjustOrderPrice/updateOrderStatus/submitAgentApplication/reviewAgentApplication/saveAgentBankCard/requestWithdrawal/reviewReturn/reviewWithdrawal/processInvoice/reviewVerification` 云函数部署。
+- 云端结构与权限：已形成本地基线文档、索引 JSON、安全规则 JSON；已通过项目 `.mcp.json` 直连 `cloud1-d7g7ctn4m86bada89`，完成新增集合、索引、最小安全规则和 `createOrder/payOrder/createInvoice/createReturn/clerkShipOrder/adjustOrderPrice/updateOrderStatus/submitAgentApplication/reviewAgentApplication/saveAgentBankCard/requestWithdrawal/reviewReturn/reviewWithdrawal/processInvoice/reviewVerification` 云函数部署。
 - 代理商侧：已有推广、客户、提成等基础页，但与设计图相比缺少申请、审核状态、客户详情、订单视角、提现/银行卡等闭环页面。
 - 制单员侧：已有待处理、订单列表、订单详情和录入物流弹层，但缺少独立录入物流、发货成功、物流详情/修改物流等履约闭环页面。
 
@@ -92,7 +92,7 @@
 
 | 项目 | 当前状态 | 风险 | 下一步 |
 | --- | --- | --- | --- |
-| 项目级环境访问 | 已通过项目 `.mcp.json` 直连 `cloudbase-d4gwpsm7gcc59b6fc` | 已挂载全局 MCP 仍指向测试环境，后续操作需继续使用项目级 MCP 子进程 | 保持项目级 MCP 调用方式 |
+| 项目级环境访问 | 已通过项目 `.mcp.json` 直连 `cloud1-d7g7ctn4m86bada89` | 已挂载全局 MCP 仍指向测试环境，后续操作需继续使用项目级 MCP 子进程 | 保持项目级 MCP 调用方式 |
 | `invoices` 集合 | 已创建，已加索引和最小安全规则 | 后台开票 UI 未做 | P1 补后台开票页面、通知和纸票邮寄细节 |
 | `test_reports` 集合 | 已创建，已加索引和最小安全规则 | 暂无后台维护报告能力 | P1 补后台维护与报告上传 |
 | 索引 | `invoices`、`test_reports` 已应用；其他集合有草案 | `orders/returns/users` 尚未补齐 | 后续按需检查并补充 |
@@ -567,7 +567,7 @@
 - 后台退换货页：售后审核、等待寄回、确认收货验货、验货合格/不合格、确认退款、换货发货、换货完成均通过后台 API 代理调用 `reviewReturn` 云函数。
 - 状态兼容：后台已兼容旧状态 `pending_return_ship/returned/verifying` 和云函数新状态 `customer_shipping/received`。
 - 云函数兼容：`reviewReturn` 已补服务端调用分支；无小程序 `OPENID` 时必须传后台操作人 ID，并由云函数校验其客服/管理员售后权限。
-- 云端状态：`reviewReturn` 已通过项目 `.mcp.json` 直连 `cloudbase-d4gwpsm7gcc59b6fc` 更新函数代码。
+- 云端状态：`reviewReturn` 已通过项目 `.mcp.json` 直连 `cloud1-d7g7ctn4m86bada89` 更新函数代码。
 
 已验证：
 
@@ -600,7 +600,7 @@
 - 订单状态推进：后台调用 `updateOrderStatus` 云函数，支持取消、预约确认、开始服务、完成服务等状态流转。
 - 订单发货：后台调用 `clerkShipOrder` 云函数，录入物流公司和物流单号。
 - 云函数兼容：`adjustOrderPrice`、`updateOrderStatus`、`clerkShipOrder` 已补服务端调用分支；无小程序 `OPENID` 时必须传后台操作人 ID，并由云函数校验管理员/客服/制单员权限。
-- 云端状态：`adjustOrderPrice`、`updateOrderStatus`、`clerkShipOrder` 已通过项目 `.mcp.json` 直连 `cloudbase-d4gwpsm7gcc59b6fc` 更新函数代码。
+- 云端状态：`adjustOrderPrice`、`updateOrderStatus`、`clerkShipOrder` 已通过项目 `.mcp.json` 直连 `cloud1-d7g7ctn4m86bada89` 更新函数代码。
 
 已验证：
 
@@ -635,7 +635,7 @@
 - 指派云函数校验：后台操作人权限、订单存在、订单状态为 `pending_shipment/confirmed`、目标用户为 `clerk`。
 - 指派云函数写入：`orders.clerkId`、`orders.assignedAt`、`orders.updatedAt`，并为制单员用户追加 `assignedOrderIds`。
 - 操作日志：写入 `logs` 集合，记录订单指派制单员。
-- 云端状态：`assignOrderToClerk` 已通过项目 `.mcp.json` 直连 `cloudbase-d4gwpsm7gcc59b6fc` 创建部署。
+- 云端状态：`assignOrderToClerk` 已通过项目 `.mcp.json` 直连 `cloud1-d7g7ctn4m86bada89` 创建部署。
 
 已验证：
 
@@ -918,7 +918,7 @@ P0 阶段已经从“小程序 UI 和基础业务接入”推进到“后台真�
 
 仍需注意：
 
-- CloudBase 全局 MCP 可能仍指向测试环境；项目操作应继续使用项目 `.mcp.json` 绑定的 `cloudbase-d4gwpsm7gcc59b6fc`。
+- CloudBase 全局 MCP 可能仍指向测试环境；项目操作应继续使用项目 `.mcp.json` 绑定的 `cloud1-d7g7ctn4m86bada89`。
 - `orders/users/returns` 等旧核心集合的安全规则尚未正式远端发布，需要先做分阶段规则上线方案。
 - 后台默认账号适合开发和验收；生产前需要初始化真实密码或补密码重置/邀请流程。
 - 商品页仍有 Next.js `<img>` lint warning，可后续统一替换为 `next/image` 或配置图片域名策略。

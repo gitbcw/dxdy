@@ -62,7 +62,7 @@
     </view>
   </view>
 
-  <view wx:if="{{taskCards.length > 0}}" class="section">
+  <view wx:if="{{taskCards.length > 0 && currentRole !== 'customer_personal' && currentRole !== 'customer_institution'}}" class="section">
     <view wx:if="{{currentRole !== 'salesperson'}}" class="section-head">
       <text class="section-title">待办提醒</text>
       <text class="section-more">及时处理</text>

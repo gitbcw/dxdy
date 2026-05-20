@@ -168,6 +168,9 @@ export function checkPointsExpiry(user: any, expiryDays?: number): { balance: nu
 }
 
 export function getProductVisualImage(productOrName: any): string {
+  const firstImage = Array.isArray(productOrName?.images) ? productOrName.images[0] : ''
+  if (firstImage && typeof firstImage === 'string' && !firstImage.startsWith('data:image/')) return firstImage
+
   const name = typeof productOrName === 'string'
     ? productOrName
     : String(productOrName?.name || productOrName?.productName || '')
@@ -265,29 +268,71 @@ export async function registerCustomer(phone: string, nickname: string, customer
 
 // ===== 商品服务 =====
 
+function normalizeProductVisibility(visibility: any): string {
+  const value = String(visibility || '').trim()
+  if (!value || value === 'all' || value === 'public') return 'all'
+  if (value === 'institution' || value === 'institution_only' || value === 'hospital') return 'institution_only'
+  if (value === 'personal' || value === 'personal_only') return 'personal_only'
+  return 'all'
+}
+
+function canViewProduct(product: any, visibility?: string): boolean {
+  const viewer = normalizeProductVisibility(visibility || 'all')
+  if (viewer === 'all') return true
+
+  const productVisibility = normalizeProductVisibility(product?.visibility)
+  if (viewer === 'institution_only') return productVisibility === 'all' || productVisibility === 'institution_only'
+  if (viewer === 'personal_only') return productVisibility === 'all' || productVisibility === 'personal_only'
+  return true
+}
+
+const PRODUCT_LIST_FIELDS = {
+  _id: true,
+  name: true,
+  images: true,
+  category: true,
+  specs: true,
+  institutionPrice: true,
+  personalPrice: true,
+  visibility: true,
+  stock: true,
+  status: true,
+  returnPolicy: true,
+  isPrescription: true,
+  isBloodPack: true,
+  testInfoUrl: true,
+  productType: true,
+  bookingConfig: true,
+  urgentConfig: true,
+  purchaseLimit: true,
+  agreementRequired: true,
+  salesCountEnabled: true,
+  deliveryConfig: true,
+  redeemableCategory: true,
+  validDays: true,
+  promotionPrice: true,
+  promotionStart: true,
+  promotionEnd: true,
+  createdAt: true,
+  updatedAt: true,
+}
+
 export async function getProducts(options?: { visibility?: string; categoryId?: string; keyword?: string }) {
   const cond: any = { status: 'on_sale' }
   if (options?.categoryId) cond.category = options.categoryId
-  if (options?.visibility && options.visibility !== 'all') {
-    const visibilityMap: Record<string, string[]> = {
-      personal: ['personal_only', 'all'],
-      institution: ['institution_only', 'all'],
-      personal_only: ['personal_only', 'all'],
-      institution_only: ['institution_only', 'all'],
-    }
-    cond.visibility = _.in(visibilityMap[options.visibility] || [options.visibility, 'all'])
-  }
   if (options?.keyword) {
     cond.name = db.RegExp({ regexp: options.keyword, options: 'i' })
   }
-  const { data } = await db.collection('products').where(cond).limit(100).get()
+  const { data } = await db.collection('products').where(cond).field(PRODUCT_LIST_FIELDS).limit(100).get()
   return normalizeList(data)
+    .map((product: any) => ({ ...product, visibility: normalizeProductVisibility(product.visibility) }))
+    .filter((product: any) => canViewProduct(product, options?.visibility))
 }
 
 export async function getProductById(id: string) {
   try {
-    const { data } = await db.collection('products').doc(id).get()
-    return normalize(data)
+    const { data } = await db.collection('products').where({ _id: id }).field(PRODUCT_LIST_FIELDS).limit(1).get()
+    return data?.[0] ? normalize(data[0]) : null
   } catch { return null }
 }
 
@@ -299,26 +344,31 @@ export async function getCategories() {
 // ===== 订单服务 =====
 
 export async function getOrders(options?: { customerId?: string; salespersonId?: string; clerkId?: string; status?: string }) {
-  const cond: any = {}
-  if (options?.customerId) cond.customerId = options.customerId
-  if (options?.salespersonId) cond.salespersonId = options.salespersonId
-  if (options?.clerkId) cond.clerkId = options.clerkId
-  if (options?.status) cond.status = options.status
-  const { data } = await db.collection('orders').where(cond).orderBy('createdAt', 'desc').limit(100).get()
-  return normalizeList(data)
+  const { result } = await wx.cloud.callFunction({
+    name: 'queryOrders',
+    data: { action: 'listOrders', ...(options || {}) },
+  }) as any
+  if (!result?.success) throw new Error(result?.error || '订单读取失败')
+  return result.orders || []
 }
 
 export async function getOrderById(id: string) {
   try {
-    const { data } = await db.collection('orders').doc(id).get()
-    return normalize(data)
+    const { result } = await wx.cloud.callFunction({
+      name: 'queryOrders',
+      data: { action: 'getOrderById', orderId: id },
+    }) as any
+    return result?.success ? result.order : null
   } catch { return null }
 }
 
 export async function getOrderByNo(orderNo: string) {
   try {
-    const { data } = await db.collection('orders').where({ orderNo }).limit(1).get()
-    return data[0] ? normalize(data[0]) : null
+    const { result } = await wx.cloud.callFunction({
+      name: 'queryOrders',
+      data: { action: 'getOrderByNo', orderNo },
+    }) as any
+    return result?.success ? result.order : null
   } catch { return null }
 }
 

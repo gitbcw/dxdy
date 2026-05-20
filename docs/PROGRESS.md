@@ -130,7 +130,7 @@ P0-P2 已全部完成。P3 数据化运营核心功能已实施：埋点 SDK（1
 | `tracking_events_batch` | 已创建，已配索引（批量埋点事件，sessionId + createdAt） |
 | `analytics_daily` | 已创建，唯一索引 date（每日预聚合分析数据） |
 
-**环境**：`cloudbase-d4gwpsm7gcc59b6fc`（上海，个人版）
+**环境**：`cloud1-d7g7ctn4m86bada89`（上海，个人版）
 **MCP 注意**：全局 MCP 可能指向测试环境，项目操作应使用项目 `.mcp.json` 绑定的环境。连接方式详见 `docs/CLOUDBASE_MCP.md`。
 
 ---

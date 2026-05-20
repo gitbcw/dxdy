@@ -101,6 +101,15 @@ Page({
     tabBar?.updateForPage?.(normalizePath('/pages/home/home'))
   },
 
+  setCustomTabBarHidden(hidden: boolean) {
+    const tabBar = (this as any).getTabBar?.()
+    if (tabBar?.setHidden) {
+      tabBar.setHidden(hidden)
+      return
+    }
+    tabBar?.setData?.({ hidden })
+  },
+
   async loadDemoHome() {
     const app = getApp()
     const user = app.globalData.userInfo
@@ -507,24 +516,31 @@ Page({
 
     this.setData({
       actionSheetVisible: true,
-      actionSheetProduct: { ...rawProduct },
+      actionSheetProduct: {
+        ...rawProduct,
+        imageUrl: item.imageUrl || getProductVisualImage(rawProduct),
+      },
     })
+    this.setCustomTabBarHidden(true)
   },
 
   onActionSheetClose() {
     this.setData({ actionSheetVisible: false })
+    this.setCustomTabBarHidden(false)
   },
 
   onActionSheetAddCart(e: any) {
     const { product, quantity } = e.detail
     addToCart(product, quantity)
     this.setData({ actionSheetVisible: false })
+    this.setCustomTabBarHidden(false)
     wx.showToast({ title: '已加入购物车', icon: 'success' })
   },
 
   onActionSheetBuyNow(e: any) {
     const { product } = e.detail
     this.setData({ actionSheetVisible: false })
+    this.setCustomTabBarHidden(false)
     wx.navigateTo({ url: `/pages/orders/create/create?productId=${product.id}` })
   },
 

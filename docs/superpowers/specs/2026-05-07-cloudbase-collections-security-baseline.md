@@ -1,14 +1,14 @@
 # CloudBase 集合、索引与安全规则基线
 
 > 日期：2026-05-07  
-> 适用环境：`cloudbase-d4gwpsm7gcc59b6fc`  
+> 适用环境：`cloud1-d7g7ctn4m86bada89`  
 > 背景：小程序端已完成医院认证、地址、支付结果、售后、发票、物流、检测报告的 CloudBase 真实读写接入。下一步需要收口云数据库集合、索引与安全边界。
 
 ## 1. 当前约束
 
 - 当前会话中已挂载的全局 `mcp__cloudbase__` 工具会自动绑定到测试环境 `clo-test-4g8ukdond34672de`，不能直接作为本项目云端操作基准。
-- 项目级 `.mcp.json` 与小程序 `app.ts` 均指向 `cloudbase-d4gwpsm7gcc59b6fc`。
-- 2026-05-07 已按项目 `.mcp.json` 直接启动 CloudBase MCP 子进程，确认当前环境为 `cloudbase-d4gwpsm7gcc59b6fc`。
+- 项目级 `.mcp.json` 与小程序 `app.ts` 均指向 `cloud1-d7g7ctn4m86bada89`。
+- 2026-05-07 已按项目 `.mcp.json` 直接启动 CloudBase MCP 子进程，确认当前环境为 `cloud1-d7g7ctn4m86bada89`。
 - 已知项目级环境此前返回集合：`categories`、`commission_records`、`config`、`logs`、`notifications`、`orders`、`products`、`returns`、`users`、`withdrawals`。
 - 本轮新增业务依赖集合：`invoices`、`test_reports`。这两个集合已在项目级环境创建，并已添加基础索引和最小安全规则。
 - 订单、售后、发票等文档当前使用 `customerId = users._id` 表达业务归属；CloudBase 数据库安全规则天然可用的是 `auth.openid` / `auth.uid` 与文档字段，无法安全地跨集合查询用户文档。因此，强业务校验应逐步下沉云函数。
@@ -227,7 +227,7 @@
 
 ## 8. 云端执行记录
 
-2026-05-07 已在项目级环境 `cloudbase-d4gwpsm7gcc59b6fc` 完成：
+2026-05-07 已在项目级环境 `cloud1-d7g7ctn4m86bada89` 完成：
 
 - 创建 `invoices` 集合。
 - 为 `invoices` 创建索引：`customer_created`、`order_created`、`status_created`。
@@ -280,7 +280,7 @@
 - `packages/miniprogram/cloudfunctions/assignOrderToClerk`: 新增订单指派制单员云函数。
 - `packages/admin/src/app/api/cloudbase/orders/route.ts`: 新增 `assign` 动作，代理调用 `assignOrderToClerk`。
 - `assignOrderToClerk` 写入 `orders.clerkId/assignedAt/updatedAt`，并为制单员用户追加 `assignedOrderIds`。
-- `assignOrderToClerk` 已创建部署到项目级环境 `cloudbase-d4gwpsm7gcc59b6fc`。
+- `assignOrderToClerk` 已创建部署到项目级环境 `cloud1-d7g7ctn4m86bada89`。
 
 2026-05-07 已完成后台 dashboard、日志、系统配置第一版 CloudBase 接入：
 

@@ -1,7 +1,7 @@
 # 后台 CloudBase 接入检查点
 
 > 日期：2026-05-07  
-> 环境：`cloudbase-d4gwpsm7gcc59b6fc`  
+> 环境：`cloud1-d7g7ctn4m86bada89`  
 > 入口文档：
 > - `docs/superpowers/specs/2026-05-07-ui-function-acceptance-audit.md`
 > - `docs/superpowers/specs/2026-05-07-cloudbase-collections-security-baseline.md`

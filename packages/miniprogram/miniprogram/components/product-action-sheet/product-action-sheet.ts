@@ -1,4 +1,22 @@
-const { formatMoney } = require('../../services/index')
+const { formatMoney, getProductVisualImage } = require('../../services/index')
+
+function resolveProductImage(product: any): string {
+  if (!product) return ''
+  const candidates = [
+    product.imageUrl,
+    product.coverImage,
+    product.thumbnail,
+    product.productImage,
+    product.image,
+    ...(Array.isArray(product.images) ? product.images : []),
+  ]
+  const image = candidates.find((item: any) => (
+    typeof item === 'string'
+    && item.trim()
+    && !item.startsWith('data:image/')
+  ))
+  return image || getProductVisualImage(product)
+}
 
 Component({
   properties: {
@@ -22,6 +40,7 @@ Component({
     displayPrice: '',
     stock: 0,
     productName: '',
+    productImage: '',
     specs: [] as { name: string; value: string }[],
   },
 
@@ -32,6 +51,7 @@ Component({
           displayPrice: '',
           stock: 0,
           productName: '',
+          productImage: '',
           specs: [],
           quantity: 1,
           selectedSpecIdx: 0,
@@ -46,6 +66,7 @@ Component({
         displayPrice: '¥' + formatMoney(price || 0),
         stock: product.stock || 0,
         productName: product.name || '',
+        productImage: resolveProductImage(product),
         specs: product.specs || [],
         quantity: 1,
         selectedSpecIdx: 0,
