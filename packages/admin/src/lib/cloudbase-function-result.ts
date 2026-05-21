@@ -27,13 +27,18 @@ function parseRetMsg(retMsg?: string) {
   }
 }
 
+function isBusinessResult(value: unknown): value is CloudFunctionResult {
+  if (!value || typeof value !== 'object') return false;
+  return 'success' in value || 'error' in value || 'code' in value;
+}
+
 export function unwrapCloudFunctionResult(response: FunctionResponse): CloudFunctionResult {
   const dataInvokeResult = response?.data?.invokeResult as { RetMsg?: string } | undefined;
   const dataRawResult = response?.data?.raw as { RetMsg?: string } | undefined;
   return (
     parseRetMsg(dataInvokeResult?.RetMsg) ||
     parseRetMsg(dataRawResult?.RetMsg) ||
-    response?.data ||
+    (isBusinessResult(response?.data) ? response.data : null) ||
     response?.result ||
     parseRetMsg(response?.invokeResult?.RetMsg) ||
     parseRetMsg(response?.raw?.RetMsg) ||

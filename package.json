@@ -6,7 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:admin": "npm run dev -w packages/admin"
+    "dev:admin": "npm run dev -w packages/admin",
+    "seed:test-data": "node scripts/seed-cloudbase-test-data.mjs"
   },
   "dependencies": {
     "@cloudbase/signature-nodejs": "^2.0.0",
