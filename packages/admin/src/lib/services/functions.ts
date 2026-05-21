@@ -34,6 +34,17 @@ export async function updateOrderStatus(params: {
   return callFunction<CloudFunctionResult>('updateOrderStatus', params)
 }
 
+export async function queryOrders(params: {
+  action: 'listOrders' | 'getOrderById' | 'getOrderByNo' | 'listClerks'
+  operatorId?: string
+  orderId?: string
+  orderNo?: string
+  customerId?: string
+  status?: string
+}) {
+  return callFunction<CloudFunctionResult & { orders?: unknown[]; order?: unknown; clerks?: unknown[] }>('queryOrders', params)
+}
+
 // ===== Returns =====
 
 export async function reviewReturn(params: {

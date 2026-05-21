@@ -3,6 +3,7 @@
     "pages/login/login",
     "pages/home/home",
     "pages/blood/booking/booking",
+    "pages/transfusion/assistant/assistant",
     "pages/catalog/catalog",
     "pages/cart/cart",
     "pages/mine/mine",

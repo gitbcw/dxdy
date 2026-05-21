@@ -44,7 +44,7 @@ export default function OrderDetailPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id') || '';
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [newPrice, setNewPrice] = useState('');
@@ -56,7 +56,7 @@ export default function OrderDetailPage() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const docs = await fetchOrders(id);
+      const docs = await fetchOrders(id, user?.id);
       setOrder(docs[0] || null);
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '读取订单详情失败');
@@ -67,9 +67,10 @@ export default function OrderDetailPage() {
   }
 
   useEffect(() => {
+    if (authLoading) return;
     if (!orderId) return;
     loadOrder(orderId);
-  }, [orderId]);
+  }, [authLoading, orderId, user?.id]);
 
   function getOperator() {
     return {

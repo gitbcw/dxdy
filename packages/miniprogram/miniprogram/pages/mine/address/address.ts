@@ -42,13 +42,18 @@ Page({
     const user = getApp().globalData.userInfo
     if (!item || !user) return
     wx.showLoading({ title: '保存中...' })
-    const updated = await saveAddress(user.id, { ...item, isDefault: true })
-    wx.hideLoading()
-    if (updated) {
-      this.syncUser(updated)
-      wx.showToast({ title: '已设为默认', icon: 'success' })
-    } else {
-      wx.showToast({ title: '保存失败', icon: 'none' })
+    try {
+      const updated = await saveAddress(user.id, { ...item, isDefault: true })
+      if (updated) {
+        this.syncUser(updated)
+        wx.showToast({ title: '已设为默认', icon: 'success' })
+      } else {
+        wx.showToast({ title: '保存失败', icon: 'none' })
+      }
+    } catch (err: any) {
+      wx.showToast({ title: err?.message || '保存失败', icon: 'none' })
+    } finally {
+      wx.hideLoading()
     }
   },
 
@@ -80,13 +85,18 @@ Page({
           const user = getApp().globalData.userInfo
           if (!user) return
           wx.showLoading({ title: '删除中...' })
-          const updated = await deleteAddress(user.id, id)
-          wx.hideLoading()
-          if (updated) {
-            this.syncUser(updated)
-            wx.showToast({ title: '已删除', icon: 'success' })
-          } else {
-            wx.showToast({ title: '删除失败', icon: 'none' })
+          try {
+            const updated = await deleteAddress(user.id, id)
+            if (updated) {
+              this.syncUser(updated)
+              wx.showToast({ title: '已删除', icon: 'success' })
+            } else {
+              wx.showToast({ title: '删除失败', icon: 'none' })
+            }
+          } catch (err: any) {
+            wx.showToast({ title: err?.message || '删除失败', icon: 'none' })
+          } finally {
+            wx.hideLoading()
           }
         }
       },
@@ -142,14 +152,19 @@ Page({
       isDefault: form.isDefault,
     }
     wx.showLoading({ title: '保存中...' })
-    const updated = await saveAddress(user.id, next)
-    wx.hideLoading()
-    if (updated) {
-      this.syncUser(updated)
-      this.setData({ showForm: false, editingId: '' })
-      wx.showToast({ title: '已保存', icon: 'success' })
-    } else {
-      wx.showToast({ title: '保存失败', icon: 'none' })
+    try {
+      const updated = await saveAddress(user.id, next)
+      if (updated) {
+        this.syncUser(updated)
+        this.setData({ showForm: false, editingId: '' })
+        wx.showToast({ title: '已保存', icon: 'success' })
+      } else {
+        wx.showToast({ title: '保存失败', icon: 'none' })
+      }
+    } catch (err: any) {
+      wx.showToast({ title: err?.message || '保存失败', icon: 'none' })
+    } finally {
+      wx.hideLoading()
     }
   },
 })

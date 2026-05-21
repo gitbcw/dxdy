@@ -5,19 +5,22 @@ import type {
   CouponTemplate, UserCoupon,
 } from '@/lib/types'
 import { defaultSystemConfig } from '@/lib/format'
+import { queryOrders } from '@/lib/services/functions'
 
 type CloudDoc = Record<string, unknown>
+const ADMIN_SESSION_KEY = 'dxdy_admin_profile'
 
 /** Lazy-access database — avoids top-level CloudBase init during SSR/build */
 function db() { return getDb() }
 
 const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin']
+const ROLE_PERMISSIONS_CONFIG_ID = 'role_permissions'
 
 const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
-  service: { view_dashboard: true, manage_orders: true, manage_returns: true },
+  service: { view_dashboard: true, manage_orders: true, order_price_adjust: false, manage_returns: true },
   product_manager: { view_dashboard: true, manage_products: true },
   system_admin: {
-    view_dashboard: true, manage_products: true, manage_orders: true,
+    view_dashboard: true, manage_products: true, manage_orders: true, order_price_adjust: false,
     manage_returns: true, manage_users: true, manage_accounts: true,
     manage_roles: true, manage_system: true, view_logs: true,
   },
@@ -32,6 +35,38 @@ function normalizeDoc<T extends CloudDoc>(doc: T): T & { id: string } {
 
 function sortByRecent<T extends CloudDoc>(a: T, b: T) {
   return String(b.createdAt || b.updatedAt || '').localeCompare(String(a.createdAt || a.updatedAt || ''))
+}
+
+function resolveAdminOperatorId(operatorId?: string) {
+  if (operatorId) return operatorId
+  if (typeof window === 'undefined') return ''
+  try {
+    const stored = window.localStorage.getItem(ADMIN_SESSION_KEY)
+    if (!stored) return ''
+    const profile = JSON.parse(stored) as { id?: unknown }
+    return typeof profile.id === 'string' ? profile.id : ''
+  } catch {
+    return ''
+  }
+}
+
+function mergeRolePermissions(source?: Partial<Record<AdminRole, Record<string, boolean>>>) {
+  const result = {} as Record<AdminRole, Record<string, boolean>>
+  for (const role of ADMIN_ROLES) {
+    result[role] = { ...defaultPermissions[role], ...(source?.[role] || {}) }
+  }
+  return result
+}
+
+async function fetchRolePermissionTemplates() {
+  try {
+    const res = await db().collection('config').doc(ROLE_PERMISSIONS_CONFIG_ID).get()
+    const data = Array.isArray(res.data) ? res.data[0] : res.data
+    const saved = (data as any)?.permissions as Partial<Record<AdminRole, Record<string, boolean>>> | undefined
+    return mergeRolePermissions(saved)
+  } catch {
+    return mergeRolePermissions()
+  }
 }
 
 async function readCollection<T extends CloudDoc>(name: string, query?: Record<string, unknown>, projection?: Record<string, unknown>): Promise<(T & { id: string })[]> {
@@ -161,17 +196,23 @@ export async function deleteProductCategory(id: string) {
 
 // ===== Orders =====
 
-export async function fetchOrders(id?: string): Promise<any[]> {
+export async function fetchOrders(id?: string, operatorId?: string): Promise<any[]> {
+  const resolvedOperatorId = resolveAdminOperatorId(operatorId)
   if (id) {
-    const docs = await readCollection('orders', { _id: id })
-    return docs as any
+    const result = await queryOrders({ action: 'getOrderById', orderId: id, operatorId: resolvedOperatorId })
+    if (!result.success) throw new Error(result.error || '璇诲彇璁㈠崟璇︽儏澶辫触')
+    return result.order ? [result.order] as any[] : []
   }
-  return readCollection('orders') as any
+  const result = await queryOrders({ action: 'listOrders', operatorId: resolvedOperatorId })
+  if (!result.success) throw new Error(result.error || '璇诲彇璁㈠崟鏁版嵁澶辫触')
+  return (result.orders || []) as any[]
 }
 
-export async function fetchClerks(): Promise<any[]> {
-  const docs = await readCollection('users', { role: 'clerk' })
-  return docs as any
+export async function fetchClerks(operatorId?: string): Promise<any[]> {
+  const resolvedOperatorId = resolveAdminOperatorId(operatorId)
+  const result = await queryOrders({ action: 'listClerks', operatorId: resolvedOperatorId })
+  if (!result.success) throw new Error(result.error || '璇诲彇鍒跺崟鍛樻暟鎹け璐?')
+  return (result.clerks || []) as any[]
 }
 
 // ===== Returns =====
@@ -216,6 +257,7 @@ export async function createAdminAccount(input: { username: string; password: st
   if (!password || password.length < 6) throw new Error('密码长度至少 6 位')
   const now = new Date().toISOString()
   const id = `admin_${Date.now().toString(36)}`
+  const rolePermissions = await fetchRolePermissionTemplates()
   const doc = {
     _id: id,
     username,
@@ -225,7 +267,7 @@ export async function createAdminAccount(input: { username: string; password: st
     phone,
     avatar: '',
     role,
-    permissions: defaultPermissions[role],
+    permissions: rolePermissions[role],
     status: 'active',
     createdAt: now,
     updatedAt: now,
@@ -244,8 +286,9 @@ export async function updateAdminAccount(id: string, updates: Partial<AdminUser>
     updateData.password = '***'
   }
   if (ADMIN_ROLES.includes(updates.role as AdminRole) && updates.role) {
+    const rolePermissions = await fetchRolePermissionTemplates()
     updateData.role = updates.role
-    updateData.permissions = defaultPermissions[updates.role]
+    updateData.permissions = rolePermissions[updates.role]
   }
   await db().collection('users').doc(id).update(updateData)
   return updateData
@@ -258,23 +301,34 @@ export async function deleteAdminAccount(id: string) {
 // ===== Roles =====
 
 export async function fetchRoles() {
-  const users = await readCollection('users')
+  const [users, rolePermissions] = await Promise.all([
+    readCollection('users'),
+    fetchRolePermissionTemplates(),
+  ])
   const admins = users.filter(u => ADMIN_ROLES.includes(u.role as AdminRole))
-  const permissions: Record<AdminRole, Record<string, boolean>> = {} as any
+  const permissions = mergeRolePermissions(rolePermissions)
   const counts: Record<AdminRole, number> = { service: 0, product_manager: 0, system_admin: 0 }
   for (const admin of admins) {
     const role = admin.role as AdminRole
     if (ADMIN_ROLES.includes(role)) {
       counts[role] = (counts[role] || 0) + 1
-      if (!permissions[role]) permissions[role] = (admin.permissions as Record<string, boolean>) || defaultPermissions[role]
     }
   }
   return { permissions, counts }
 }
 
 export async function updateRolePermissions(role: AdminRole, perms: Record<string, boolean>) {
-  const _ = db().command
-  await db().collection('users').where({ role }).update({ permissions: perms, updatedAt: new Date().toISOString() })
+  const now = new Date().toISOString()
+  const rolePermissions = await fetchRolePermissionTemplates()
+  const nextPermissions = {
+    ...rolePermissions,
+    [role]: { ...defaultPermissions[role], ...perms },
+  }
+  await db().collection('config').doc(ROLE_PERMISSIONS_CONFIG_ID).set({
+    permissions: nextPermissions,
+    updatedAt: now,
+  })
+  await db().collection('users').where({ role }).update({ permissions: nextPermissions[role], updatedAt: now })
 }
 
 // ===== System =====

@@ -1,4 +1,4 @@
-const { formatMoney } = require('../../../services/index')
+const { formatMoney, getSystemConfig } = require('../../../services/index')
 
 Page({
   data: {
@@ -17,22 +17,20 @@ Page({
     const user = app.globalData.userInfo
     if (!user) return
 
-    const db = wx.cloud.database()
-    const [userRes, configRes] = await Promise.all([
-      db.collection('users').doc(user.id || user._id).get(),
-      db.collection('config').doc('system').get(),
-    ])
+    const config = await getSystemConfig()
 
-    const tiers = (configRes.data?.rechargeTiers || []).map((t: any, i: number) => ({
-      ...t,
-      index: i,
-      amountText: formatMoney(t.amount),
-      bonusText: t.bonus > 0 ? `赠 ¥${formatMoney(t.bonus)}` : '',
-      label: t.label || `充值 ¥${t.amount}`,
-    }))
+    const tiers = (config?.rechargeTiers || [])
+      .filter((t: any) => Number(t.amount) > 0)
+      .map((t: any, i: number) => ({
+        ...t,
+        index: i,
+        amountText: formatMoney(t.amount),
+        bonusText: t.bonus > 0 ? `赠 ¥${formatMoney(t.bonus)}` : '',
+        label: t.label || `充值 ¥${t.amount}`,
+      }))
 
     this.setData({
-      balance: userRes.data?.wallet?.balance || 0,
+      balance: user.wallet?.balance || 0,
       tiers,
     })
   },
@@ -56,7 +54,7 @@ Page({
       // 创建充值订单
       const { result: createResult } = await wx.cloud.callFunction({
         name: 'createRechargeOrder',
-        data: { tierIndex: selectedIndex },
+        data: { tierIndex: selectedIndex, operatorId: getApp().globalData.userInfo?.id },
       }) as any
 
       if (!createResult?.success) {
@@ -73,6 +71,13 @@ Page({
       if (!payResult?.success) {
         wx.showToast({ title: payResult?.error || '支付失败', icon: 'none' })
         return
+      }
+
+      if (payResult.user) {
+        const app = getApp()
+        app.globalData.userInfo = payResult.user
+        app.globalData.userRole = app.resolveRole?.(payResult.user) || app.globalData.userRole
+        wx.setStorageSync('current_user', JSON.stringify(payResult.user))
       }
 
       const tier = tiers[selectedIndex]

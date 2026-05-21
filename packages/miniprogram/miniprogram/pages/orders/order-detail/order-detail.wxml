@@ -1,13 +1,5 @@
 <view class="page">
   <block wx:if="{{!isDetailMode}}">
-    <view class="list-header">
-      <text class="page-title">订单</text>
-      <view class="header-actions">
-        <text>⌕</text>
-        <text>•••</text>
-      </view>
-    </view>
-
     <scroll-view scroll-x class="tabs">
       <view
         wx:for="{{tabs}}"
@@ -52,6 +44,7 @@
             catchtap="onLogisticsFromList"
           >查看物流</view>
           <view wx:if="{{item.status === 'completed'}}" class="ghost-btn" data-id="{{item.id}}" catchtap="onReturnFromList">申请售后</view>
+          <view wx:if="{{item.canDelete}}" class="danger-btn" data-id="{{item.id}}" catchtap="onDeleteFromList">删除订单</view>
           <view class="orange-btn">查看详情</view>
         </view>
       </view>
@@ -158,7 +151,7 @@
       <view
         wx:for="{{detailActions}}"
         wx:key="key"
-        class="action-btn {{item.primary ? 'primary' : ''}}"
+        class="action-btn {{item.primary ? 'primary' : ''}} {{item.danger ? 'danger' : ''}}"
         data-key="{{item.key}}"
         bindtap="onActionTap"
       >{{item.label}}</view>

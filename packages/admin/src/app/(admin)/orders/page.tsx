@@ -80,7 +80,7 @@ const doneStatuses: OrderStatus[] = [
 ];
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<OrderTab>('todo');
@@ -106,14 +106,15 @@ export default function OrdersPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    if (authLoading) return;
     loadOrders();
-  }, []);
+  }, [authLoading, user?.id]);
 
   async function loadOrders() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [orderData, clerkData] = await Promise.all([fetchOrders(), fetchClerks()]);
+      const [orderData, clerkData] = await Promise.all([fetchOrders(undefined, user?.id), fetchClerks(user?.id)]);
       setOrders(orderData);
       setClerks(clerkData);
     } catch (error) {
@@ -203,12 +204,27 @@ export default function OrdersPage() {
   const todoCount = orders.filter(order => pendingStatuses.includes(order.status)).length;
   const doneCount = orders.filter(order => doneStatuses.includes(order.status)).length;
 
+  function getClerkName(order: Order) {
+    if (!order.clerkId) return '-';
+    const clerk = clerks.find(item => item.id === order.clerkId);
+    const orderWithClerkName = order as Order & { clerkName?: string };
+    return clerk?.realName || clerk?.nickname || orderWithClerkName.clerkName || order.clerkId;
+  }
+
+  function canAdjustOrderPrice() {
+    return user?.role === 'system_admin' ||
+      user?.role === 'service' ||
+      user?.permissions?.manage_orders === true ||
+      user?.permissions?.order_price_adjust === true;
+  }
+
   async function handleAdjustPrice() {
     if (!adjustOrder || !newPrice || !user) return;
     const price = parseFloat(newPrice);
     if (Number.isNaN(price) || price <= 0) return;
-    if (price > adjustOrder.pricing.actualAmount) {
+    if (Math.round(price * 100) === Math.round(adjustOrder.pricing.actualAmount * 100)) {
       setErrorMsg('改价只能低于原价');
+      setErrorMsg('新价格不能和当前价格相同');
       return;
     }
     const ok = await submitOrderAction({
@@ -368,6 +384,7 @@ export default function OrdersPage() {
                 <TableHead>客户</TableHead>
                 <TableHead>类型</TableHead>
                 <TableHead>状态</TableHead>
+                <TableHead>制单员</TableHead>
                 <TableHead>金额</TableHead>
                 <TableHead>创建时间</TableHead>
                 <TableHead>操作</TableHead>
@@ -376,7 +393,7 @@ export default function OrdersPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                     加载订单数据中...
                   </TableCell>
                 </TableRow>
@@ -391,16 +408,17 @@ export default function OrdersPage() {
                       {statusLabel[order.status] ?? order.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>{getClerkName(order)}</TableCell>
                   <TableCell>¥{formatMoney(order.pricing.actualAmount)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDateTime(order.createdAt)}
                   </TableCell>
                   <TableCell>
                     <div className="flex min-w-[220px] flex-wrap gap-2">
-                      <Link href={`/orders/${order.id}`}>
+                      <Link href={`/orders/detail/?id=${encodeURIComponent(order.id)}`}>
                         <Button variant="outline" size="sm">详情</Button>
                       </Link>
-                      {order.status === 'pending_payment' && user?.permissions?.order_price_adjust && (
+                      {order.status === 'pending_payment' && canAdjustOrderPrice() && (
                         <>
                           <Button
                             variant="outline"
@@ -419,7 +437,7 @@ export default function OrdersPage() {
                           </Button>
                         </>
                       )}
-                      {order.status === 'pending_payment' && !user?.permissions?.order_price_adjust && (
+                      {order.status === 'pending_payment' && !canAdjustOrderPrice() && (
                         <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)} disabled={submittingId === order.id}>
                           取消
                         </Button>
@@ -483,7 +501,7 @@ export default function OrdersPage() {
               ))}
               {!loading && filteredOrders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                     没有符合当前筛选条件的订单
                   </TableCell>
                 </TableRow>

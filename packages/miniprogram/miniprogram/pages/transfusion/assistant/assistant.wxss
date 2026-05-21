@@ -1,0 +1,144 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx 22rpx 54rpx;
+  background: #f6f7f6;
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 34rpx 30rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #e7f7ee 0%, #f8fbf9 100%);
+}
+
+.hero-title {
+  display: block;
+  color: #0c6a34;
+  font-size: 40rpx;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.hero-sub {
+  display: block;
+  margin-top: 12rpx;
+  color: #5f6d66;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.panel,
+.result-card {
+  margin-top: 22rpx;
+  padding: 26rpx 24rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 26rpx rgba(24, 45, 32, 0.06);
+}
+
+.field + .field {
+  margin-top: 28rpx;
+}
+
+.field-title {
+  display: block;
+  margin-bottom: 16rpx;
+  color: #17231f;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.segmented,
+.options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+}
+
+.segmented {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.options.compact {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.segment,
+.option {
+  min-height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #e4ebe6;
+  border-radius: 16rpx;
+  color: #53615a;
+  font-size: 24rpx;
+  font-weight: 800;
+  background: #f8faf8;
+  box-sizing: border-box;
+}
+
+.segment.active,
+.option.active {
+  border-color: #18a34a;
+  color: #0f7a38;
+  background: #e9f8ef;
+}
+
+.primary-btn {
+  min-height: 88rpx;
+  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+  background: linear-gradient(180deg, #22b757, #159445);
+}
+
+.result-title {
+  display: block;
+  color: #17231f;
+  font-size: 30rpx;
+  line-height: 1.4;
+  font-weight: 900;
+}
+
+.result-section {
+  margin-top: 22rpx;
+}
+
+.result-label {
+  display: block;
+  margin-bottom: 12rpx;
+  color: #6d7a73;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.result-item,
+.note-item {
+  margin-top: 10rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 14rpx;
+  color: #25332c;
+  font-size: 24rpx;
+  line-height: 1.55;
+  background: #f5f7f5;
+}
+
+.result-item.ok {
+  color: #0d6f34;
+  background: #eaf8ef;
+}
+
+.result-item.danger {
+  color: #a13a16;
+  background: #fff1ea;
+}
+
+.note-item {
+  color: #59665f;
+}

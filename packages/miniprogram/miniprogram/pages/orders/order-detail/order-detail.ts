@@ -1,6 +1,7 @@
 const {
   getOrders,
   getOrderById,
+  deleteOrder,
   updateOrderStatus,
   payOrder,
   getReturns,
@@ -25,6 +26,7 @@ Page({
       { key: 'pending_shipment', label: '待处理' },
       { key: 'pending_receipt', label: '配送中' },
       { key: 'completed', label: '已完成' },
+      { key: 'cancelled', label: '已取消' },
     ],
     activeTab: 'all',
     summaryCards: [] as any[],
@@ -125,6 +127,7 @@ Page({
           : '',
       returnRecord,
       returnStatusText: returnRecord ? this.getReturnStatusText(returnRecord.status) : '',
+      canDelete: order.status === 'completed' || order.status === 'cancelled',
       commissionText: this.getCommissionText(order, returnRecord),
       logisticsText: order.shipping?.trackingNo
         ? `${order.shipping.company} ${order.shipping.trackingNo}`
@@ -209,6 +212,9 @@ Page({
     if (order.returnRecord) {
       actions.push({ key: 'returnProgress', label: '查看售后进度', primary: true })
     }
+    if (order.status === 'completed' || order.status === 'cancelled') {
+      actions.push({ key: 'delete', label: '删除订单', danger: true })
+    }
     if (!actions.length) {
       actions.push({ key: 'timeline', label: '查看流程说明', primary: true })
     }
@@ -281,6 +287,42 @@ Page({
     wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${orderId}` })
   },
 
+  onDeleteFromList(e: any) {
+    const orderId = e.currentTarget.dataset.id
+    if (!orderId) return
+    this.confirmDeleteOrder(orderId)
+  },
+
+  confirmDeleteOrder(orderId: string) {
+    wx.showModal({
+      title: '删除订单',
+      content: '删除后该订单将不再显示，是否继续？',
+      confirmText: '删除',
+      confirmColor: '#e5484d',
+      success: async (res) => {
+        if (!res.confirm) return
+        try {
+          await deleteOrder(orderId)
+          wx.showToast({ title: '已删除', icon: 'success' })
+          if (this.data.isDetailMode) {
+            this.loadOrders()
+            return
+          }
+          const orders = this.data.orders.filter((item: any) => item.id !== orderId)
+          const visibleOrders = this.filterOrders(orders, this.data.activeTab)
+          this.setData({
+            orders,
+            visibleOrders,
+            isEmpty: visibleOrders.length === 0,
+            summaryCards: this.getSummaryCards(orders),
+          })
+        } catch (err: any) {
+          wx.showToast({ title: err?.message || '删除失败', icon: 'none' })
+        }
+      },
+    })
+  },
+
   async onActionTap(e: any) {
     const key = e.currentTarget.dataset.key
     const order = this.data.selectedOrder
@@ -308,6 +350,11 @@ Page({
         await updateOrderStatus(order.id, 'completed')
         wx.showToast({ title: '已确认收货', icon: 'success' })
         this.loadOrderDetail(order.id)
+        return
+      }
+
+      if (key === 'delete') {
+        this.confirmDeleteOrder(order.id)
         return
       }
     } catch (e: any) {

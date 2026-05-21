@@ -21,13 +21,27 @@ function error(message, code = 'BAD_REQUEST') {
 
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext()
-  const openid = wxContext.OPENID
-  if (!openid) return error('登录状态无效', 'UNAUTHORIZED')
+  const openid = wxContext.OPENID || ''
+  const operatorId = String(event.operatorId || '').trim()
+  if (!openid && !operatorId) return error('登录状态无效', 'UNAUTHORIZED')
 
   // 获取用户
-  const { data: users } = await db.collection('users').where({ _openid: openid }).limit(1).get()
-  if (!users || !users.length) return error('用户不存在', 'FORBIDDEN')
-  const customer = users[0]
+  let customer = null
+  if (openid) {
+    const { data: users } = await db.collection('users').where({ _openid: openid }).limit(1).get()
+    customer = users && users[0]
+    if (!customer) {
+      const { data: boundUsers } = await db.collection('users').where({ boundOpenid: openid }).limit(1).get()
+      customer = boundUsers && boundUsers[0]
+    }
+  }
+  if (!customer && operatorId) {
+    try {
+      const { data } = await db.collection('users').doc(operatorId).get()
+      customer = data
+    } catch (_e) { /* keep null */ }
+  }
+  if (!customer) return error('用户不存在', 'FORBIDDEN')
 
   // 读取充值档位配置
   const tierIndex = parseInt(event.tierIndex, 10)
@@ -53,7 +67,7 @@ exports.main = async (event) => {
     status: 'pending_payment',
     customerId: customer._id,
     customerName: customer.nickname || customer.phone || '客户',
-    customerOpenid: openid,
+    customerOpenid: openid || customer._openid || customer.boundOpenid || '',
     salespersonId: '',
     clerkId: null,
     items: [{

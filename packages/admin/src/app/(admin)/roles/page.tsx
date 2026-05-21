@@ -16,6 +16,7 @@ const roleLabel: Record<AdminRole, string> = {
 };
 
 const permissionLabels: Record<string, string> = {
+  order_price_adjust: '调整订单价格',
   view_dashboard: '查看仪表盘',
   manage_products: '管理商品',
   manage_orders: '管理订单',
@@ -31,6 +32,7 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
   service: {
     view_dashboard: true,
     manage_orders: true,
+    order_price_adjust: false,
     manage_returns: true,
   },
   product_manager: {
@@ -41,6 +43,7 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
     view_dashboard: true,
     manage_products: true,
     manage_orders: true,
+    order_price_adjust: false,
     manage_returns: true,
     manage_users: true,
     manage_accounts: true,
@@ -69,7 +72,15 @@ export default function RolesPage() {
       setError('');
       try {
         const data = await fetchRoles();
-        if (data.permissions) setPermissions(data.permissions);
+        if (data.permissions) {
+          setPermissions(() => {
+            const result = {} as Record<AdminRole, Record<string, boolean>>;
+            for (const role of Object.keys(defaultPermissions) as AdminRole[]) {
+              result[role] = { ...defaultPermissions[role], ...(data.permissions[role] || {}) };
+            }
+            return result;
+          });
+        }
         if (data.counts) setCounts(data.counts);
       } catch (err) {
         setError(err instanceof Error ? err.message : '读取角色权限失败');
@@ -104,7 +115,7 @@ export default function RolesPage() {
     }));
   }
 
-  const roles: AdminRole[] = ['service', 'product_manager', 'system_admin'];
+  const roles: AdminRole[] = ['service', 'system_admin'];
 
   return (
     <div className="space-y-6">
@@ -112,7 +123,7 @@ export default function RolesPage() {
       {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
       {message && <div className="rounded-md border border-emerald-700/20 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         {roles.map(role => (
           <Card key={role}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

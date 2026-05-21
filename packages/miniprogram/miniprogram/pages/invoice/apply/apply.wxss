@@ -12,30 +12,6 @@
   box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
 }
 
-.segment {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16rpx;
-  margin-bottom: 8rpx;
-}
-
-.segment view {
-  height: 64rpx;
-  line-height: 64rpx;
-  border-radius: 10rpx;
-  color: #5d6862;
-  border: 1rpx solid #e1e8e4;
-  text-align: center;
-  font-size: 25rpx;
-  font-weight: 900;
-}
-
-.segment .active {
-  color: #18a44a;
-  border-color: #18a44a;
-  background: #ecf8ef;
-}
-
 .row {
   display: flex;
   align-items: center;

@@ -35,6 +35,7 @@ type HomeAction =
   | 'cards'
   | 'cardVoucherProducts'
   | 'cardWallet'
+  | 'transfusionAssistant'
 
 function withIcon(items: any[]) {
   return items.map((item) => ({
@@ -202,6 +203,7 @@ Page({
             { icon: '览', title: '浏览商品', action: 'catalog' },
             { icon: '单', title: '我的订单', action: 'orders' },
             { icon: '证', title: '去认证', action: 'verify' },
+            { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
           ],
           boardTitle: '商品推荐',
           boardMoreText: '查看全部',
@@ -251,6 +253,7 @@ Page({
         quickActions: [
           { icon: '购', title: '商品采购', action: 'catalog' },
           { icon: '血', title: '预约用血', action: 'blood' },
+          { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
           { icon: '单', title: '我的订单', action: 'orders' },
           { icon: '券', title: '我的卡券', action: 'cardWallet' },
           { icon: '检', title: '检测查询', action: 'testQuery' },
@@ -380,6 +383,7 @@ Page({
       }] : [],
       quickActions: [
         { icon: '购', title: '商品浏览', action: 'catalog' },
+        { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
         { icon: '单', title: '我的订单', action: 'orders' },
         { icon: '代', title: data.user?.agentStatus ? '代理状态' : '申请代理', action: data.user?.agentStatus ? 'agentStatus' : 'agentApply' },
       ],
@@ -407,6 +411,7 @@ Page({
       cards: '/pages/agent/cards/cards',
       cardVoucherProducts: '/pages/agent/card-products/card-products',
       cardWallet: '/pages/card-wallet/card-wallet',
+      transfusionAssistant: '/pages/transfusion/assistant/assistant',
       orders: '/pages/orders/order-detail/order-detail?list=1',
     }
 

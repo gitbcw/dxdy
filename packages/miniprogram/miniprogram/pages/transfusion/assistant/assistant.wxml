@@ -1,0 +1,142 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">配血助手</text>
+    <text class="hero-sub">选择受血动物和关键血型条件，生成供血匹配建议</text>
+  </view>
+
+  <view class="panel">
+    <text class="field-title">动物类型</text>
+    <view class="segmented">
+      <view
+        wx:for="{{speciesOptions}}"
+        wx:key="value"
+        class="segment {{species === item.value ? 'active' : ''}}"
+        bindtap="selectSpecies"
+        data-value="{{item.value}}"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{species === 'dog'}}" class="panel">
+    <view class="field">
+      <text class="field-title">受血犬 DEA1.1</text>
+      <view class="options">
+        <view
+          wx:for="{{dogBloodOptions}}"
+          wx:key="value"
+          class="option {{dogDea11 === item.value ? 'active' : ''}}"
+          bindtap="selectOption"
+          data-field="dogDea11"
+          data-value="{{item.value}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <text class="field-title">受血犬 DEA7</text>
+      <view class="options">
+        <view
+          wx:for="{{dogBloodOptions}}"
+          wx:key="value"
+          class="option {{dogDea7 === item.value ? 'active' : ''}}"
+          bindtap="selectOption"
+          data-field="dogDea7"
+          data-value="{{item.value}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <text class="field-title">曾经输血</text>
+      <view class="options compact">
+        <view
+          wx:for="{{yesNoOptions}}"
+          wx:key="value"
+          class="option {{dogPriorTransfusion === item.value ? 'active' : ''}}"
+          bindtap="selectOption"
+          data-field="dogPriorTransfusion"
+          data-value="{{item.value}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <text class="field-title">妊娠/繁育/长期贫血</text>
+      <view class="options compact">
+        <view
+          wx:for="{{yesNoOptions}}"
+          wx:key="value"
+          class="option {{dogHighRisk === item.value ? 'active' : ''}}"
+          bindtap="selectOption"
+          data-field="dogHighRisk"
+          data-value="{{item.value}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{species === 'cat'}}" class="panel">
+    <view class="field">
+      <text class="field-title">受血猫血型</text>
+      <view class="options">
+        <view
+          wx:for="{{catBloodOptions}}"
+          wx:key="value"
+          class="option {{catBloodType === item.value ? 'active' : ''}}"
+          bindtap="selectOption"
+          data-field="catBloodType"
+          data-value="{{item.value}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <text class="field-title">急诊场景</text>
+      <view class="options compact">
+        <view
+          wx:for="{{yesNoOptions}}"
+          wx:key="value"
+          class="option {{catEmergency === item.value ? 'active' : ''}}"
+          bindtap="selectOption"
+          data-field="catEmergency"
+          data-value="{{item.value}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="primary-btn" bindtap="generateResult">生成匹配建议</view>
+
+  <view wx:if="{{result}}" class="result-card">
+    <text class="result-title">{{result.title}}</text>
+
+    <view class="result-section">
+      <text class="result-label">优先匹配</text>
+      <view wx:for="{{result.compatible}}" wx:key="*this" class="result-item ok">{{item}}</view>
+    </view>
+
+    <view class="result-section">
+      <text class="result-label">禁用/慎用</text>
+      <view wx:for="{{result.forbidden}}" wx:key="*this" class="result-item danger">{{item}}</view>
+    </view>
+
+    <view class="result-section">
+      <text class="result-label">注意事项</text>
+      <view wx:for="{{result.notes}}" wx:key="*this" class="note-item">{{item}}</view>
+    </view>
+  </view>
+</view>

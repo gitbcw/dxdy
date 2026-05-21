@@ -92,6 +92,7 @@ exports.main = async (event) => {
 
   // 充值订单：增加钱包余额
   if (order.type === 'recharge') {
+    let updatedUser = null
     try {
       const tier = order.rechargeTier || {}
       const credit = (tier.amount || actualAmount) + (tier.bonus || 0)
@@ -108,11 +109,18 @@ exports.main = async (event) => {
             updatedAt: paidAt,
           }
         })
+        const { data } = await db.collection('users').doc(order.customerId).get()
+        if (data) {
+          const { _id, ...rest } = data
+          updatedUser = { id: _id, ...rest }
+        }
       }
-    } catch (_e) { /* non-critical */ }
+    } catch (_e) {
+      return error('钱包余额更新失败', 'WALLET_CREDIT_FAILED')
+    }
 
     const updated = await getOrder(order._id)
-    return { success: true, order: { ...updated, id: updated._id } }
+    return { success: true, order: { ...updated, id: updated._id }, user: updatedUser }
   }
 
   // 锁定对应的提成记录

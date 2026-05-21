@@ -372,6 +372,17 @@ export async function getOrderByNo(orderNo: string) {
   } catch { return null }
 }
 
+export async function deleteOrder(orderId: string) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'queryOrders',
+    data: { action: 'deleteOrder', orderId },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '订单删除失败')
+  }
+  return result
+}
+
 export async function createOrder(params: {
   customerId: string; items: any[]; type: string
   booking?: any; shippingAddress?: any; remark?: string; couponId?: string; isUrgent?: boolean
@@ -1036,58 +1047,52 @@ export async function reviewVerification(userId: string, approved: boolean, reje
 }
 
 export async function saveAddress(customerId: string, address: any) {
-  const { data: customer } = await db.collection('users').doc(customerId).get()
-  const u = normalize(customer)
-  if (!u) return null
-
-  const now = formatDateTime(new Date())
-  const nextAddress = {
-    ...address,
-    id: address.id || generateId('addr'),
-    updatedAt: now,
-    createdAt: address.createdAt || now,
+  const user = getCurrentUser()
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageAddress',
+    data: {
+      action: 'saveAddress',
+      customerId,
+      operatorId: user?.id,
+      address,
+    },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '地址保存失败')
   }
-  let addresses = u.addresses || []
-  if (nextAddress.isDefault) {
-    addresses = addresses.map((a: any) => ({ ...a, isDefault: false }))
-  }
-  if (addresses.length === 0) nextAddress.isDefault = true
-  const idx = addresses.findIndex((a: any) => a.id === nextAddress.id)
-  if (idx >= 0) {
-    addresses[idx] = { ...addresses[idx], ...nextAddress }
-  } else {
-    addresses.push(nextAddress)
-  }
-  await db.collection('users').doc(customerId).update({ data: { addresses, updatedAt: now } })
-  try {
-    const { data: updated } = await db.collection('users').doc(customerId).get()
-    return normalize(updated)
-  } catch { return null }
+  return result.user
 }
 
 export async function deleteAddress(customerId: string, addressId: string) {
-  const { data: customer } = await db.collection('users').doc(customerId).get()
-  const u = normalize(customer)
-  if (!u) return false
-  let addresses = (u.addresses || []).filter((a: any) => a.id !== addressId)
-  if (addresses.length > 0 && !addresses.some((a: any) => a.isDefault)) {
-    addresses = addresses.map((a: any, index: number) => ({ ...a, isDefault: index === 0 }))
+  const user = getCurrentUser()
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageAddress',
+    data: {
+      action: 'deleteAddress',
+      customerId,
+      operatorId: user?.id,
+      addressId,
+    },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '地址删除失败')
   }
-  await db.collection('users').doc(customerId).update({
-    data: { addresses, updatedAt: formatDateTime(new Date()) },
-  })
-  try {
-    const { data: updated } = await db.collection('users').doc(customerId).get()
-    return normalize(updated)
-  } catch { return false }
+  return result.user
 }
 
 // ===== 系统服务 =====
 
 export async function getSystemConfig() {
   try {
-    const { data } = await db.collection('config').doc('system').get()
-    return normalize(data)
+    const { result } = await wx.cloud.callFunction({
+      name: 'getSystemConfig',
+    }) as any
+    return result?.config || {
+      commissionRate: 0.2, commissionLockDays: 15, minWithdrawAmount: 100,
+      withdrawReviewEnabled: true, paymentTimeoutMinutes: 30, returnDeadlineDays: 7,
+      returnAddress: '', reviewTimeoutHours: 24, stockWarningThreshold: 10,
+      pointsRate: 1, pointsExpiryDays: 365, rechargeTiers: [],
+    }
   } catch {
     return {
       commissionRate: 0.2, commissionLockDays: 15, minWithdrawAmount: 100,

@@ -43,10 +43,6 @@ Page({
     })
   },
 
-  onTypeTap(e: any) {
-    this.setData({ invoiceType: e.currentTarget.dataset.type })
-  },
-
   onInput(e: any) {
     const field = e.currentTarget.dataset.field
     this.setData({ [field]: e.detail.value })
@@ -95,7 +91,7 @@ Page({
     const result = await createInvoice({
       customerId: user.id,
       orderId,
-      invoiceType: this.data.invoiceType,
+      invoiceType: 'electronic',
       title: this.data.title.trim(),
       taxNo: this.data.taxNo.trim(),
       email: this.data.email.trim(),
