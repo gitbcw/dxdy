@@ -8,6 +8,7 @@ interface IAppOption extends Record<string, any> {
     catalogSearchKeyword?: string,
     openid?: string,
     authResolved?: boolean,
+    cartVersion?: number,
   }
   restoreCachedUser?: () => void
   ensureLogin?: () => void

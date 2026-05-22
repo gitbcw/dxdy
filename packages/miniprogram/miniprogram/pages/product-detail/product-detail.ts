@@ -103,7 +103,7 @@ Page({
     this._countdownTimer = setInterval(update, 1000)
   },
 
-  onAddCart() {
+  async onAddCart() {
     if (!this._product) return
     if (this._product.productType === 'card_voucher') {
       wx.showToast({ title: '卡券商品请直接购买', icon: 'none' })
@@ -112,7 +112,8 @@ Page({
     const user = getApp().globalData.userInfo
     const check = canPurchase(this._product, user)
     if (!check.allowed) { wx.showToast({ title: check.reason, icon: 'none' }); return }
-    addToCart(this._product)
+    await addToCart(this._product)
+    ;(this as any).selectComponent?.('#floatingActions')?.refresh?.()
     tracking.trackAddToCart(this._product.id, this._product.name, this.data.price, 1, 'product-detail')
     wx.showToast({ title: '已加入购物车', icon: 'success' })
   },

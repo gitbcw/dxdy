@@ -4,10 +4,13 @@
       wx:for="{{addresses}}"
       wx:key="id"
       class="address-card {{item.isDefault ? 'is-default' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onSelectAddress"
     >
       <view class="address-top">
         <view class="address-info">
           <view wx:if="{{item.isDefault}}" class="default-badge">默认</view>
+          <text wx:if="{{selectMode}}" class="select-badge">选择</text>
           <text class="address-name">{{item.name}}</text>
           <text class="address-phone">{{item.phone}}</text>
         </view>
@@ -22,15 +25,15 @@
           wx:if="{{!item.isDefault}}"
           class="action-text"
           data-id="{{item.id}}"
-          bindtap="onSetDefault"
+          catchtap="onSetDefault"
         >设为默认</view>
-        <view class="action-text" data-id="{{item.id}}" bindtap="onEdit">编辑</view>
-        <view class="action-text danger" data-id="{{item.id}}" bindtap="onDelete">删除</view>
+        <view class="action-text" data-id="{{item.id}}" catchtap="onEdit">编辑</view>
+        <view class="action-text danger" data-id="{{item.id}}" catchtap="onDelete">删除</view>
       </view>
     </view>
   </view>
 
-  <view class="empty-state" wx:if="{{addresses.length === 0}}">
+  <view class="empty-state" wx:if="{{!showForm && addresses.length === 0}}">
     <text class="empty-icon">地址</text>
     <text class="empty-text">暂无收货地址</text>
     <text class="empty-hint">点击下方按钮添加地址</text>
@@ -51,7 +54,9 @@
     </view>
     <view class="field-row">
       <text>所在地区</text>
-      <input placeholder="请选择所在地区" value="{{form.region}}" data-field="region" bindinput="onFormInput" />
+      <picker mode="region" value="{{form.regionArray}}" bindchange="onRegionChange">
+        <view class="picker-value {{form.region ? '' : 'placeholder'}}">{{form.region || '请选择所在地区'}}</view>
+      </picker>
     </view>
     <view class="field-row">
       <text>详细地址</text>

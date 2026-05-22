@@ -249,6 +249,51 @@ async function releasePoints(customerId, pointsDeduction, now) {
   })
 }
 
+async function clearCustomerCart(customerId, openid, now) {
+  if (!customerId) return
+  const cartDocId = `cart_${customerId}`
+  const data = {
+    items: [],
+    updatedAt: now,
+    clearedByOrderAt: now,
+  }
+  try {
+    await db.collection('carts').doc(cartDocId).update({ data })
+  } catch (_e) {
+    await db.collection('carts').add({
+      data: {
+        _id: cartDocId,
+        userId: customerId,
+        openid,
+        ...data,
+        createdAt: now,
+      },
+    })
+  }
+}
+
+async function getCustomerCart(customerId) {
+  if (!customerId) return null
+  try {
+    const { data } = await db.collection('carts').doc(`cart_${customerId}`).get()
+    return data || null
+  } catch (_e) {
+    return null
+  }
+}
+
+function cartMatchesOrder(cartItems, orderItems) {
+  if (!Array.isArray(cartItems) || !Array.isArray(orderItems)) return false
+  if (cartItems.length === 0 || cartItems.length !== orderItems.length) return false
+  return orderItems.every((orderItem) => {
+    return cartItems.some((cartItem) => (
+      cartItem.productId === orderItem.productId &&
+      (cartItem.spec || '') === (orderItem.spec || '') &&
+      Number(cartItem.quantity || 0) === Number(orderItem.quantity || 0)
+    ))
+  })
+}
+
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
@@ -406,6 +451,16 @@ exports.main = async (event) => {
   }
 
   // 生成提成记录
+  const currentCart = await getCustomerCart(customer._id)
+  const shouldClearCart = event.source === 'cart' || event.fromCart === true || cartMatchesOrder(currentCart?.items, built.items)
+  if (shouldClearCart) {
+    try {
+      await clearCustomerCart(customer._id, openid, now)
+    } catch (e) {
+      console.error('clear cart after order failed', { customerId: customer._id, orderId: _id, message: e && e.message })
+    }
+  }
+
   if (order.salespersonId && order.commission.amount > 0) {
     try {
       const salesperson = await getUserIdentity(order.salespersonId)

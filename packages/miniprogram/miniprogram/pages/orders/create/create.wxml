@@ -8,7 +8,7 @@
       <view class="goods-main">
         <text class="goods-name">{{product.name}}</text>
         <text class="goods-meta">{{specText}}</text>
-        <text class="goods-price">¥{{unitPrice}}</text>
+        <text class="goods-price">￥{{unitPrice}}</text>
       </view>
     </view>
 
@@ -18,7 +18,7 @@
         <image wx:if="{{item.imageUrl}}" class="cart-thumb" src="{{item.imageUrl}}" mode="aspectFit" />
         <text class="cart-name">{{item.name}}</text>
         <text class="cart-meta">{{item.specText}} ×{{item.quantity}}</text>
-        <text class="cart-price">¥{{item.lineTotal}}</text>
+        <text class="cart-price">￥{{item.lineTotal}}</text>
       </view>
     </view>
 
@@ -43,33 +43,39 @@
         <text class="voucher-title">虚拟卡券自动发放</text>
         <text class="voucher-desc">支付完成后卡券会进入代理商“我的卡券”，可继续赠送给机构客户。</text>
       </view>
+      <picker wx:elif="{{addressOptions.length}}" mode="selector" range="{{addressOptions}}" value="{{selectedAddressIndex}}" bindchange="onAddressChange">
+        <view class="address-card">
+          <view class="address-head">
+            <text class="address-name">{{addressName}}</text>
+            <text class="address-phone">{{addressPhone}}</text>
+            <text class="address-action">更换</text>
+          </view>
+          <view class="address-text">{{addressText}} ></view>
+        </view>
+      </picker>
       <view wx:else class="address-card" bindtap="onAddressTap">
         <view class="address-head">
-          <text class="address-name">{{addressName}}</text>
-          <text class="address-phone">{{addressPhone}}</text>
-          <text class="address-action">默认</text>
+          <text class="address-name">请选择收货人</text>
+          <text class="address-action">新增</text>
         </view>
-        <picker wx:if="{{addressOptions.length}}" mode="selector" range="{{addressOptions}}" value="{{selectedAddressIndex}}" bindchange="onAddressChange">
-          <view class="address-text">{{addressText}} ></view>
-        </picker>
-        <view wx:else class="address-text">暂无可用地址，请先新增地址 ></view>
+        <view class="address-text">暂无可用地址，请先新增地址 ></view>
       </view>
 
       <view wx:if="{{orderType === 'booking'}}" class="booking-box">
         <view class="row">
           <text class="row-label">预约日期</text>
           <picker mode="date" value="{{bookingDate}}" start="{{minBookingDate}}" bindchange="onBookingDateChange">
-            <view class="row-value">{{bookingDate}} 📅</view>
+            <view class="row-value">{{bookingDate}} ></view>
           </picker>
         </view>
         <view class="row">
-          <text class="row-label">预约时间</text>
+          <text class="row-label">预约地点</text>
           <input class="row-input" data-field="bookingLocation" value="{{bookingLocation}}" bindinput="onBookingInput" />
         </view>
         <view wx:if="{{canUrgent}}" class="urgent-row">
           <view>
             <text class="urgent-title">加急配送</text>
-            <text class="urgent-desc">{{urgentDescription}}，加急费 ¥{{urgentFee}}</text>
+            <text class="urgent-desc">{{urgentDescription}}，加急费 ￥{{urgentFee}}</text>
           </view>
           <switch checked="{{isUrgent}}" bindchange="onUrgentToggle" color="#ea580c" />
         </view>
@@ -91,7 +97,7 @@
       </view>
       <view class="row">
         <text class="row-label">运费</text>
-        <text class="row-value orange">¥0.00</text>
+        <text class="row-value orange">￥0.00</text>
       </view>
       <view class="row">
         <text class="row-label">订单备注</text>
@@ -120,10 +126,10 @@
   <view class="footer" wx:if="{{product || isFromCart}}">
     <view>
       <text class="footer-label">应付金额</text>
-      <view wx:if="{{isUrgent}}" class="fee-detail">含加急费 ¥{{urgentFee}}</view>
-      <text class="total">¥{{total}}</text>
+      <view wx:if="{{isUrgent}}" class="fee-detail">含加急费 ￥{{urgentFee}}</view>
+      <text class="total">￥{{total}}</text>
     </view>
     <view class="submit-btn" bindtap="onSubmit">{{primaryButtonText}}</view>
   </view>
-  <floating-actions showCart="{{true}}" />
+  <floating-actions id="floatingActions" showCart="{{true}}" />
 </view>

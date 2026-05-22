@@ -1,7 +1,8 @@
 const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry, requireBoundPhone } = require('../../../services/index')
 const tracking = require('../../../services/tracking')
 
-const CART_KEY = 'cart_items'
+const SELECTED_ADDRESS_KEY = 'selected_order_address_id'
+const CART_CLEAR_FLAG = 'cart_cleared_after_submit'
 
 function formatDate(date: Date) {
   const year = date.getFullYear()
@@ -16,14 +17,39 @@ function getDefaultBookingDate() {
   return formatDate(date)
 }
 
-function loadCartItems(): any[] {
-  try {
-    const stored = wx.getStorageSync(CART_KEY)
-    if (Array.isArray(stored)) return stored
-    return stored ? JSON.parse(stored) : []
-  } catch {
-    return []
+function loadCartItems(): Promise<any[]> {
+  return getCartItems()
+}
+
+function formatAddressText(address: any): string {
+  if (!address) return '暂无可用地址，请先新增地址'
+  return `${address.province || ''}${address.city || ''}${address.district || ''}${address.detail || ''}`
+}
+
+function buildAddressState(addresses: any[], preferredId?: string) {
+  const safeAddresses = Array.isArray(addresses) ? addresses : []
+  let selectedAddressIndex = safeAddresses.findIndex((item: any) => item.id === preferredId)
+  if (selectedAddressIndex < 0) selectedAddressIndex = safeAddresses.findIndex((item: any) => item.isDefault)
+  if (selectedAddressIndex < 0) selectedAddressIndex = 0
+
+  const currentAddress = safeAddresses[selectedAddressIndex]
+  return {
+    addresses: safeAddresses,
+    addressOptions: safeAddresses.map((item: any) => `${item.name} ${item.phone} ${formatAddressText(item)}`),
+    selectedAddressIndex,
+    addressText: currentAddress ? formatAddressText(currentAddress) : '暂无可用地址，请先新增地址',
+    addressName: currentAddress?.name || '请选择收货人',
+    addressPhone: currentAddress?.phone || '',
   }
+}
+
+function clearOpenedCartPages() {
+  const pages = getCurrentPages()
+  pages.forEach((page: any) => {
+    if (page?.route === 'pages/cart/cart') {
+      page.clearLocalCart?.()
+    }
+  })
 }
 
 Page({
@@ -71,14 +97,20 @@ Page({
   },
 
   _cartRaw: [] as any[],
+  _loaded: false,
 
   async onLoad(options: any) {
     const user = getApp().globalData.userInfo
     if (!requireBoundPhone(user)) return
+    this._loaded = true
 
     const isInstitution = user.customerType === 'institution'
+    const selectedAddressId = wx.getStorageSync(SELECTED_ADDRESS_KEY) as string
     const addresses = user.addresses || []
-    const defaultAddressIndex = Math.max(0, addresses.findIndex((item: any) => item.isDefault))
+    const preferredAddressIndex = addresses.findIndex((item: any) => item.id === selectedAddressId)
+    const defaultAddressIndex = preferredAddressIndex >= 0
+      ? preferredAddressIndex
+      : Math.max(0, addresses.findIndex((item: any) => item.isDefault))
     const currentAddress = addresses[defaultAddressIndex] || addresses[0]
     const addressText = currentAddress
       ? `${currentAddress.province}${currentAddress.city}${currentAddress.district}${currentAddress.detail}`
@@ -98,12 +130,12 @@ Page({
 
     if (options.fromCart === '1') {
       // 购物车结算
-      const items = loadCartItems()
+      const items = await loadCartItems()
       if (items.length === 0) return
       this._cartRaw = items
 
       const displayItems = items.map((item: any) => {
-        const price = getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
+        const price = item.unitPrice ?? getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
         return {
           ...item,
           unitPrice: price,
@@ -113,7 +145,7 @@ Page({
         }
       })
       const total = items.reduce((s: number, item: any) => {
-        const price = getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
+        const price = item.unitPrice ?? getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
         return s + price * item.quantity
       }, 0)
 
@@ -161,6 +193,14 @@ Page({
     // 加载可用优惠券和积分
     this._loadCoupons()
     this._loadPoints()
+  },
+
+  onShow() {
+    if (!this._loaded) return
+    const user = getApp().globalData.userInfo
+    if (!user) return
+    const selectedAddressId = wx.getStorageSync(SELECTED_ADDRESS_KEY) as string
+    this.setData(buildAddressState(user.addresses || [], selectedAddressId))
   },
 
   async _loadCoupons() {
@@ -246,17 +286,17 @@ Page({
     const index = Number(e.detail.value)
     const address = this.data.addresses[index]
     if (!address) return
+    wx.setStorageSync(SELECTED_ADDRESS_KEY, address.id)
     this.setData({
       selectedAddressIndex: index,
-      addressText: `${address.province}${address.city}${address.district}${address.detail}`,
+      addressText: formatAddressText(address),
       addressName: address.name,
       addressPhone: address.phone,
     })
   },
 
   onAddressTap() {
-    if (this.data.addresses.length > 0) return
-    wx.navigateTo({ url: '/pages/mine/address/address' })
+    wx.navigateTo({ url: '/pages/mine/address/address?select=1' })
   },
 
   calcTotal() {
@@ -339,12 +379,12 @@ Page({
     if (this.data.isFromCart) {
       const isInstitution = user.customerType === 'institution'
       orderItems = this._cartRaw.map((item: any) => {
-        const price = getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
+        const price = item.unitPrice ?? getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
         return {
-          productId: item.id,
+          productId: item.productId || item.id || item._id,
           productName: item.name,
           productImage: getProductVisualImage(item),
-          spec: item.specs?.[0]?.value ?? '',
+          spec: item.spec || item.specs?.[0]?.value || '',
           quantity: item.quantity,
           unitPrice: price,
           totalPrice: price * item.quantity,
@@ -390,9 +430,15 @@ Page({
         remark: this.data.remark,
         couponId: this.data.selectedCoupon?.id || undefined,
         pointsToUse: this.data.pointsToUse || undefined,
+        source: this.data.isFromCart ? 'cart' : undefined,
+        fromCart: this.data.isFromCart,
       })
       wx.hideLoading()
-      if (this.data.isFromCart) clearCart()
+      if (this.data.isFromCart || this._cartRaw.length > 0) {
+        wx.setStorageSync(CART_CLEAR_FLAG, '1')
+        await clearCart()
+        clearOpenedCartPages()
+      }
       tracking.trackOrderSubmit(order.id, order.pricing?.actualAmount || 0, orderItems.length)
       const label = (!this.data.isFromCart && this.data.orderType === 'booking') ? '预约已提交' : '订单已提交'
       wx.showToast({ title: label, icon: 'success' })

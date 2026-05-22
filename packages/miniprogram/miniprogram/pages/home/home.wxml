@@ -137,5 +137,5 @@
     bind:addcart="onActionSheetAddCart"
     bind:buynow="onActionSheetBuyNow"
   />
-  <floating-actions showCart="{{currentRole !== 'salesperson' && currentRole !== 'clerk'}}" showService="{{true}}" />
+  <floating-actions id="floatingActions" showCart="{{currentRole !== 'salesperson' && currentRole !== 'clerk'}}" showService="{{true}}" />
 </view>

@@ -98,7 +98,7 @@ export function formatMoney(amount: number): string {
 }
 
 export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = typeof date === 'string' ? new Date(date.replace(' ', 'T')) : date
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
@@ -106,7 +106,7 @@ export function formatDate(date: string | Date): string {
 }
 
 export function formatDateTime(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = typeof date === 'string' ? new Date(date.replace(' ', 'T')) : date
   return `${formatDate(d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
@@ -494,7 +494,7 @@ export async function deleteOrder(orderId: string) {
 
 export async function createOrder(params: {
   customerId: string; items: any[]; type: string
-  booking?: any; shippingAddress?: any; remark?: string; couponId?: string; isUrgent?: boolean
+  booking?: any; shippingAddress?: any; remark?: string; couponId?: string; isUrgent?: boolean; pointsToUse?: number; source?: string; fromCart?: boolean
 }) {
   const { result } = await wx.cloud.callFunction({
     name: 'createOrder',
@@ -1267,28 +1267,105 @@ export function canPurchase(product: any, user: any | null, options?: { quantity
 // ===== 购物车（本地存储，不走云数据库） =====
 
 const CART_KEY = 'cart_items'
+const CART_VERSION_KEY = 'cart_version'
+const CART_CLEAR_FLAG = 'cart_cleared_after_submit'
+const CART_MIGRATED_KEY = 'cart_cloud_migrated'
 
-export function addToCart(item: any) {
-  const cart = getCartItems()
-  const existing = cart.find((c: any) => c.productId === item.productId && c.spec === item.spec)
-  if (existing) {
-    existing.quantity += item.quantity || 1
-  } else {
-    cart.push({ ...item, quantity: item.quantity || 1 })
-  }
-  wx.setStorageSync(CART_KEY, JSON.stringify(cart))
+function getCartSnapshotKey() {
+  const user = getCurrentUser()
+  const identity = user?.id || user?._id || getCurrentOpenid() || 'anonymous'
+  return `${CART_KEY}_${identity}`
 }
 
-export function getCartItems(): any[] {
-  const str = wx.getStorageSync(CART_KEY) as string
-  if (str) {
-    try { return JSON.parse(str) } catch { return [] }
+function getCartMigratedKey() {
+  const user = getCurrentUser()
+  const identity = user?.id || user?._id || getCurrentOpenid() || 'anonymous'
+  return `${CART_MIGRATED_KEY}_${identity}`
+}
+
+function readCartSnapshot(): any[] {
+  const keys = [getCartSnapshotKey(), CART_KEY]
+  for (const key of keys) {
+    const stored = wx.getStorageSync(key) as any
+    if (Array.isArray(stored)) return stored
+    if (stored) {
+      try { return JSON.parse(stored) } catch { /* try next */ }
+    }
   }
   return []
 }
 
-export function clearCart() {
+function bumpCartVersion() {
+  const version = Date.now()
+  wx.setStorageSync(CART_VERSION_KEY, version)
+  getApp().globalData.cartVersion = version
+  return version
+}
+
+export function getCartVersion(): number {
+  return Number(wx.getStorageSync(CART_VERSION_KEY) || getApp().globalData.cartVersion || 0)
+}
+
+export function saveCartItems(items: any[]) {
+  const safeItems = items || []
+  wx.setStorageSync(getCartSnapshotKey(), JSON.stringify(safeItems))
+  wx.setStorageSync(CART_KEY, JSON.stringify(safeItems))
+  bumpCartVersion()
+}
+
+async function callCart(action: string, data: Record<string, any> = {}) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageCart',
+    data: { action, ...data },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '购物车操作失败')
+  }
+  const items = Array.isArray(result.cart?.items) ? result.cart.items : []
+  saveCartItems(items)
+  wx.setStorageSync(getCartMigratedKey(), '1')
+  wx.removeStorageSync(CART_CLEAR_FLAG)
+  return items
+}
+
+export async function addToCart(item: any, quantity?: number) {
+  const count = Math.max(1, Number(quantity || item.quantity || 1))
+  const productId = item.productId || item.id || item._id
+  const spec = item.spec || item.specs?.[0]?.value || ''
+  return callCart('addItem', { item: { ...item, productId, spec }, quantity: count, spec })
+}
+
+export async function getCartItems(): Promise<any[]> {
+  if (wx.getStorageSync(CART_CLEAR_FLAG)) return []
+  const snapshot = readCartSnapshot()
+  const migrated = !!wx.getStorageSync(getCartMigratedKey())
+  const items = await callCart('getCart')
+  if (!migrated && items.length === 0 && snapshot.length > 0) {
+    return callCart('syncCart', { items: snapshot })
+  }
+  return items
+}
+
+export async function updateCartItem(productId: string, spec: string, quantity: number) {
+  return callCart('updateQuantity', { productId, spec, quantity })
+}
+
+export async function removeCartItem(productId: string, spec: string = '') {
+  return callCart('removeItem', { productId, spec })
+}
+
+export async function clearCart() {
+  wx.removeStorageSync(getCartSnapshotKey())
   wx.removeStorageSync(CART_KEY)
+  wx.setStorageSync(getCartSnapshotKey(), JSON.stringify([]))
+  wx.setStorageSync(CART_KEY, JSON.stringify([]))
+  wx.setStorageSync(getCartMigratedKey(), '1')
+  bumpCartVersion()
+  try {
+    await callCart('clearCart')
+  } catch (_e) {
+    // Keep the local UI empty; the next cloud refresh will retry/surface the issue.
+  }
 }
 
 // ===== 优惠券服务 =====

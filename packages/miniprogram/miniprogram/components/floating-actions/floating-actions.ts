@@ -1,11 +1,9 @@
 const icons = require('../../services/icons')
+const { getCartItems } = require('../../services/index')
 
-const CART_KEY = 'cart_items'
-
-function getCartCount() {
+async function getCartCount() {
   try {
-    const stored = wx.getStorageSync(CART_KEY)
-    const items = Array.isArray(stored) ? stored : stored ? JSON.parse(stored) : []
+    const items = await getCartItems()
     return items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0)
   } catch {
     return 0
@@ -37,8 +35,8 @@ Component({
   },
 
   methods: {
-    refresh() {
-      this.setData({ cartCount: getCartCount() })
+    async refresh() {
+      this.setData({ cartCount: await getCartCount() })
     },
 
     onCartTap() {

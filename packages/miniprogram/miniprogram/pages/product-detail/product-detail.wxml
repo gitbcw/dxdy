@@ -112,5 +112,5 @@
     <view wx:if="{{!isCardVoucher}}" class="btn-cart" bindtap="onAddCart">加入购物车</view>
     <view class="btn-buy" bindtap="onBuyNow">{{isBloodProduct ? '立即预约' : '立即购买'}}</view>
   </view>
-  <floating-actions showCart="{{true}}" />
+  <floating-actions id="floatingActions" showCart="{{true}}" />
 </view>

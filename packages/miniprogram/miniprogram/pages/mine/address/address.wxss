@@ -40,6 +40,15 @@
   font-weight: 900;
 }
 
+.select-badge {
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+  color: #ff5a00;
+  background: #fff2e8;
+  font-size: 20rpx;
+  font-weight: 900;
+}
+
 .address-name {
   color: #17201b;
   font-size: 30rpx;
@@ -150,6 +159,21 @@
   color: #17201b;
   font-size: 26rpx;
   text-align: right;
+}
+
+.field-row picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.picker-value {
+  color: #17201b;
+  font-size: 26rpx;
+  text-align: right;
+}
+
+.picker-value.placeholder {
+  color: #9aa39e;
 }
 
 .switch-row {

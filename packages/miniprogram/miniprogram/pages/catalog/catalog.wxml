@@ -108,5 +108,5 @@
     bind:addcart="onActionSheetAddCart"
     bind:buynow="onActionSheetBuyNow"
   />
-  <floating-actions showCart="{{true}}" />
+  <floating-actions id="floatingActions" showCart="{{true}}" />
 </view>

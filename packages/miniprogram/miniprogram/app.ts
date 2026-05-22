@@ -26,6 +26,7 @@ App<IAppOption>({
     catalogSearchKeyword: '',
     openid: '',
     authResolved: false,
+    cartVersion: Number(wx.getStorageSync('cart_version') || 0),
   },
 
   onLaunch() {

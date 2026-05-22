@@ -19,6 +19,7 @@
     { "name": "getOpenId", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "loginByPhone", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "manageCardVoucher", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "manageCart", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "manageCoupon", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "manageProduct", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "manageReview", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },

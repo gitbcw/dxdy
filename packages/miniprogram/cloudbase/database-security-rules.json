@@ -97,5 +97,14 @@
       "update": "auth.openid != null && doc._openid == auth.openid",
       "delete": "false"
     }
+  },
+  "carts": {
+    "permission": "CUSTOM",
+    "securityRule": {
+      "read": "false",
+      "create": "false",
+      "update": "false",
+      "delete": "false"
+    }
   }
 }

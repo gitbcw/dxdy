@@ -154,5 +154,26 @@
         "MgoIsUnique": false
       }
     }
+  ],
+  "carts": [
+    {
+      "IndexName": "user_id",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "userId", "Direction": "1" }
+        ],
+        "MgoIsUnique": true
+      }
+    },
+    {
+      "IndexName": "openid_updated",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [
+          { "Name": "openid", "Direction": "1" },
+          { "Name": "updatedAt", "Direction": "-1" }
+        ],
+        "MgoIsUnique": false
+      }
+    }
   ]
 }

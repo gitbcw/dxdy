@@ -8,11 +8,17 @@ Page({
       name: '',
       phone: '',
       region: '',
+      regionArray: [] as string[],
       detail: '',
       hospitalName: '',
       isDefault: true,
     } as any,
     addresses: [] as any[],
+    selectMode: false,
+  },
+
+  onLoad(options: any = {}) {
+    this.setData({ selectMode: options.select === '1' || options.mode === 'select' })
   },
 
   onShow() {
@@ -61,13 +67,18 @@ Page({
     const id = e.currentTarget.dataset.id
     const item = this.data.addresses.find((a: any) => a.id === id)
     if (!item) return
+    const regionArray = item.city || item.district
+      ? [item.province || '', item.city || '', item.district || '']
+      : []
+    const region = regionArray.length ? regionArray.join('') : `${item.province || ''}${item.city || ''}${item.district || ''}`
     this.setData({
       showForm: true,
       editingId: id,
       form: {
         name: item.name,
         phone: item.phone,
-        region: `${item.province}${item.city}${item.district}`,
+        region,
+        regionArray,
         detail: item.detail,
         hospitalName: item.hospitalName || '',
         isDefault: item.isDefault,
@@ -111,6 +122,7 @@ Page({
         name: '',
         phone: '',
         region: '',
+        regionArray: [],
         detail: '',
         hospitalName: '',
         isDefault: this.data.addresses.length === 0,
@@ -127,13 +139,29 @@ Page({
     this.setData({ [`form.${field}`]: e.detail.value })
   },
 
+  onRegionChange(e: any) {
+    const regionArray = e.detail.value || []
+    this.setData({
+      'form.regionArray': regionArray,
+      'form.region': regionArray.join(''),
+    })
+  },
+
   onDefaultChange(e: any) {
     this.setData({ 'form.isDefault': e.detail.value })
   },
 
+  onSelectAddress(e: any) {
+    if (!this.data.selectMode) return
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+    wx.setStorageSync('selected_order_address_id', id)
+    wx.navigateBack()
+  },
+
   async onSaveAddress() {
     const form = this.data.form
-    if (!form.name || !form.phone || !form.region || !form.detail) {
+    if (!form.name || !form.phone || !form.regionArray?.length || !form.detail) {
       wx.showToast({ title: '请补全地址信息', icon: 'none' })
       return
     }
@@ -144,9 +172,9 @@ Page({
       id: this.data.editingId,
       name: form.name,
       phone: form.phone,
-      province: form.region,
-      city: '',
-      district: '',
+      province: form.regionArray[0] || '',
+      city: form.regionArray[1] || '',
+      district: form.regionArray[2] || '',
       detail: form.detail,
       hospitalName: form.hospitalName,
       isDefault: form.isDefault,
@@ -156,7 +184,17 @@ Page({
       const updated = await saveAddress(user.id, next)
       if (updated) {
         this.syncUser(updated)
+        if (this.data.selectMode) {
+          const selected = (updated.addresses || []).find((item: any) => {
+            if (next.id) return item.id === next.id
+            return item.name === next.name && item.phone === next.phone && item.detail === next.detail
+          })
+          if (selected?.id) wx.setStorageSync('selected_order_address_id', selected.id)
+        }
         this.setData({ showForm: false, editingId: '' })
+        if (this.data.selectMode) {
+          setTimeout(() => wx.navigateBack(), 500)
+        }
         wx.showToast({ title: '已保存', icon: 'success' })
       } else {
         wx.showToast({ title: '保存失败', icon: 'none' })

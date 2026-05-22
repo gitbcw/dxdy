@@ -1,0 +1,9 @@
+{
+  "name": "manageCart",
+  "version": "1.0.0",
+  "description": "User cart management",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

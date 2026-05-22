@@ -271,9 +271,10 @@ Page({
     this.setCustomTabBarHidden(false)
   },
 
-  onActionSheetAddCart(e: any) {
+  async onActionSheetAddCart(e: any) {
     const { product, quantity } = e.detail
-    addToCart(product, quantity)
+    await addToCart(product, quantity)
+    ;(this as any).selectComponent?.('#floatingActions')?.refresh?.()
     this.setData({ actionSheetVisible: false })
     this.setCustomTabBarHidden(false)
     wx.showToast({ title: '已加入购物车', icon: 'success' })
