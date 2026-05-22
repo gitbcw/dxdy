@@ -272,7 +272,7 @@ export default function ProductsPage() {
   }
 
   const catMap = Object.fromEntries(categories.map(category => [category.id, category.name]));
-  const categoryFilterItems = { all: '全部分类', ...catMap };
+  const categoryFilterItems: Record<string, string> = { all: '全部分类', ...catMap };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch =
