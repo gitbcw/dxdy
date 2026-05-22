@@ -23,26 +23,12 @@
   </view>
 
   <view class="form dx-card">
-    <text class="title">欢迎来到大熊动医</text>
-    <text class="subtitle">客户采购、代理推广与制单履约统一入口</text>
-
-    <view class="segmented">
-      <view class="segment {{!isRegister ? 'active' : ''}}" bindtap="showLogin">登录</view>
-      <view class="segment {{isRegister ? 'active' : ''}}" bindtap="showRegister">注册</view>
-    </view>
+    <text class="title">绑定手机号</text>
+    <text class="subtitle">用于订单通知、售后联系和账号安全验证</text>
 
     <view class="field-row">
       <image class="field-icon" src="{{phoneIcon}}" mode="aspectFit" />
       <input class="field-input" placeholder="请输入手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
-    </view>
-    <view wx:if="{{isRegister}}" class="field-row">
-      <image class="field-icon" src="{{userIcon}}" mode="aspectFit" />
-      <input class="field-input" placeholder="请输入昵称" value="{{nickname}}" bindinput="onNicknameInput" />
-    </view>
-    <view wx:if="{{!isRegister}}" class="field-row">
-      <image class="field-icon" src="{{shieldIcon}}" mode="aspectFit" />
-      <input class="field-input" placeholder="请输入验证码" maxlength="6" />
-      <view class="code-btn">获取验证码</view>
     </view>
 
     <view class="agreement">
@@ -53,16 +39,9 @@
       <text class="link">《隐私政策》</text>
     </view>
 
-    <view class="submit-btn dx-orange-btn" bindtap="onSubmit">{{isRegister ? '立即注册' : '立即登录'}}</view>
-    <view class="switch-line">
-      <text>{{isRegister ? '已有账号？' : '还没有账号？'}}</text>
-      <text class="switch" bindtap="toggleMode">{{isRegister ? '立即登录' : '立即注册'}}</text>
-    </view>
+    <view class="submit-btn dx-orange-btn" bindtap="onSubmit">完成绑定</view>
 
-    <view class="divider"><text>其他登录方式</text></view>
-    <image class="wechat-login" src="{{wechatIcon}}" mode="aspectFit" />
-
-    <view class="demo-box">
+    <view wx:if="{{demoLoginEnabled}}" class="demo-box">
       <view class="demo-head" bindtap="toggleDemoAccounts">
         <text class="demo-title">演示账号</text>
         <text class="demo-toggle">{{showDemoAccounts ? '收起' : '展开'}}</text>

@@ -106,6 +106,7 @@ async function buildOrderItems(rawItems, customer) {
       totalPrice: Math.round(unitPrice * quantity * 100) / 100,
       testReportCode: raw.testReportCode || '',
       batchNo: raw.batchNo || product.batchNo || '',
+      stockManaged: typeof product.stock === 'number',
     })
   }
 
@@ -157,7 +158,10 @@ async function applyCoupon(couponId, customerId, openid, orderItems, totalAmount
     const finalAmount = Math.max(0.01, Math.round((totalAmount - discount) * 100) / 100)
 
     // 原子核销：更新状态为 used
-    const updateRes = await db.collection('user_coupons').doc(couponId).update({
+    const updateRes = await db.collection('user_coupons').where({
+      _id: couponId,
+      status: 'available',
+    }).update({
       data: { status: 'used', usedAt: now, updatedAt: now }
     })
     if (updateRes.stats.updated === 0) {
@@ -178,6 +182,71 @@ async function applyCoupon(couponId, customerId, openid, orderItems, totalAmount
   } catch (e) {
     return { success: false, error: '优惠券验证失败' }
   }
+}
+
+async function getUserIdentity(userId) {
+  if (!userId) return {}
+  try {
+    const { data } = await db.collection('users').doc(userId).get()
+    return data || {}
+  } catch (_e) {
+    return {}
+  }
+}
+
+async function reserveStock(items) {
+  const reserved = []
+  for (const item of items) {
+    const quantity = Number(item.quantity || 0)
+    if (item.stockManaged === false) continue
+    if (quantity <= 0) continue
+    const updateRes = await db.collection('products').where({
+      _id: item.productId,
+      stock: db.command.gte(quantity),
+    }).update({
+      data: {
+        stock: db.command.inc(-quantity),
+        updatedAt: formatDateTime(new Date()),
+      },
+    })
+    if (!updateRes.stats || updateRes.stats.updated < 1) {
+      for (const reservedItem of reserved) {
+        await db.collection('products').doc(reservedItem.productId).update({
+          data: {
+            stock: db.command.inc(reservedItem.quantity),
+            updatedAt: formatDateTime(new Date()),
+          },
+        })
+      }
+      return { success: false, error: `库存不足：${item.productName}` }
+    }
+    reserved.push({ productId: item.productId, quantity })
+  }
+  return { success: true, reserved }
+}
+
+async function releaseCoupon(couponRecord, now) {
+  if (!couponRecord || !couponRecord.userCouponId) return
+  await db.collection('user_coupons').doc(couponRecord.userCouponId).update({
+    data: { status: 'available', usedAt: '', usedOrderId: '', updatedAt: now },
+  })
+}
+
+async function releasePoints(customerId, pointsDeduction, now) {
+  const points = Number(pointsDeduction || 0) * 100
+  if (!customerId || points <= 0) return
+  await db.collection('users').doc(customerId).update({
+    data: {
+      'points.balance': db.command.inc(points),
+      'points.history': db.command.push({
+        id: `pts_refund_${Date.now()}`,
+        change: points,
+        reason: '订单创建失败返还积分',
+        createdAt: now,
+      }),
+      updatedAt: now,
+    },
+  })
 }
 
 exports.main = async (event) => {
@@ -305,57 +374,45 @@ exports.main = async (event) => {
     updatedAt: now,
   }
 
-  const { _id } = await db.collection('orders').add({ data: order })
+  const stockResult = await reserveStock(built.items)
+  if (!stockResult.success) {
+    try {
+      await releaseCoupon(couponRecord, now)
+      await releasePoints(customer._id, pointsDeduction, now)
+    } catch (_e) { /* non-critical cleanup */ }
+    return error(stockResult.error)
+  }
 
-  // --- 卡券生成 ---
-  if (type === 'card_order') {
-    for (const item of built.items) {
-      const product = await getProduct(item.productId)
-      const qty = item.quantity || 1
-      for (let i = 0; i < qty; i++) {
-        const cardNo = `CV${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-        const expiresAt = new Date()
-        expiresAt.setDate(expiresAt.getDate() + (product.validDays || 365))
-        await db.collection('card_vouchers').add({
-          data: {
-            cardNo,
-            status: 'ungifted',
-            purchaseOrderId: _id,
-            purchaseOrderNo: order.orderNo,
-            productId: product._id,
-            productName: product.name,
-            productImage: getFirstImage(product),
-            redeemableCategory: product.redeemableCategory || '',
-            validDays: product.validDays || 365,
-            expiresAt: formatDateTime(expiresAt),
-            purchaserId: customer._id,
-            purchaserName: customer.nickname || customer.phone || '',
-            purchaserOpenid: openid,
-            giftHistory: [],
-            currentHolderId: null,
-            currentHolderName: '',
-            redeemedOrderId: '',
-            redeemedProductId: '',
-            redeemedProductName: '',
-            redeemedAt: '',
-            verifiedAt: '',
-            voidedAt: '',
-            voidedBy: '',
-            voidReason: '',
-            createdAt: now,
-            updatedAt: now,
-          },
-        })
-      }
+  let _id = ''
+  try {
+    const addResult = await db.collection('orders').add({ data: order })
+    _id = addResult._id
+    if (couponRecord && couponRecord.userCouponId) {
+      await db.collection('user_coupons').doc(couponRecord.userCouponId).update({
+        data: { usedOrderId: _id, updatedAt: now },
+      })
     }
+  } catch (e) {
+    for (const item of (stockResult.reserved || [])) {
+      await db.collection('products').doc(item.productId).update({
+        data: { stock: db.command.inc(item.quantity), updatedAt: now },
+      })
+    }
+    try {
+      await releaseCoupon(couponRecord, now)
+      await releasePoints(customer._id, pointsDeduction, now)
+    } catch (_e) { /* non-critical cleanup */ }
+    return error('订单创建失败，请稍后重试')
   }
 
   // 生成提成记录
   if (order.salespersonId && order.commission.amount > 0) {
     try {
+      const salesperson = await getUserIdentity(order.salespersonId)
       await db.collection('commission_records').add({
         data: {
           salespersonId: order.salespersonId,
+          salespersonOpenid: salesperson._openid || salesperson.boundOpenid || '',
           customerId: customer._id,
           orderId: _id,
           orderNo: order.orderNo,

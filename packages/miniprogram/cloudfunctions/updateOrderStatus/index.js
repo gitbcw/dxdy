@@ -3,6 +3,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const _ = db.command
 
 function formatDate(date) {
   const y = date.getFullYear()
@@ -26,6 +27,7 @@ function getStatusText(status) {
     pending_receipt: '待收货',
     completed: '已完成',
     cancelled: '已取消',
+    preparing: '备货中',
     pending_confirmation: '待确认',
     confirmed: '已确认',
     in_service: '服务中',
@@ -74,6 +76,81 @@ async function getOrder(orderId) {
   }
 }
 
+async function getSystemConfig() {
+  try {
+    const { data } = await db.collection('config').doc('system').get()
+    return data || {}
+  } catch (_e) {
+    return {}
+  }
+}
+
+function addDays(date, days) {
+  const next = new Date(date.getTime())
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+async function releaseOrderAssets(order, now) {
+  for (const item of (order.items || [])) {
+    const quantity = Number(item.quantity || 0)
+    if (item.stockManaged === false) continue
+    if (item.productId && quantity > 0) {
+      await db.collection('products').doc(item.productId).update({
+        data: { stock: db.command.inc(quantity), updatedAt: now },
+      })
+    }
+  }
+
+  const coupon = order.pricing && order.pricing.coupon
+  if (coupon && coupon.userCouponId) {
+    await db.collection('user_coupons').doc(coupon.userCouponId).update({
+      data: { status: 'available', usedAt: '', usedOrderId: '', updatedAt: now },
+    })
+  }
+
+  const points = Number(order.pricing && order.pricing.pointsDeduction || 0) * 100
+  if (points > 0 && order.customerId) {
+    await db.collection('users').doc(order.customerId).update({
+      data: {
+        'points.balance': db.command.inc(points),
+        'points.history': db.command.push({
+          id: `pts_refund_${Date.now()}`,
+          change: points,
+          reason: '订单取消返还积分',
+          createdAt: now,
+        }),
+        updatedAt: now,
+      },
+    })
+  }
+
+  if (order.type === 'card_order') {
+    const { data: cards } = await db.collection('card_vouchers').where({
+      purchaseOrderId: order._id,
+      status: _.in(['ungifted', 'gifted', 'claimed']),
+    }).get()
+    for (const card of (cards || [])) {
+      await db.collection('card_vouchers').doc(card._id).update({
+        data: {
+          status: 'voided',
+          voidedAt: now,
+          voidedBy: 'order_cancelled',
+          voidReason: '订单取消自动作废',
+          updatedAt: now,
+        },
+      })
+    }
+  }
+
+  await db.collection('commission_records').where({
+    orderId: order._id,
+    status: _.in(['pending', 'locked']),
+  }).update({
+    data: { status: 'cancelled', cancelledAt: now, updatedAt: now },
+  })
+}
+
 function isOwner(order, openid, user) {
   if (order.customerOpenid) return order.customerOpenid === openid
   if (order._openid) return order._openid === openid
@@ -84,7 +161,15 @@ function isStaff(user) {
   return ['admin', 'system_admin', 'service'].includes(user && user.role)
 }
 
+function canClerkPrepare(order, status, user) {
+  if (!user || user.role !== 'clerk') return false
+  if (status !== 'preparing') return false
+  if (!['pending_shipment', 'confirmed'].includes(order.status)) return false
+  return !order.clerkId || order.clerkId === user._id
+}
+
 function canTransition(order, status, user, openid) {
+  if (canClerkPrepare(order, status, user)) return true
   if (isOwner(order, openid, user)) {
     if (status === 'cancelled') return order.status === 'pending_payment'
     if (status === 'completed') return order.status === 'pending_receipt'
@@ -96,7 +181,8 @@ function canTransition(order, status, user, openid) {
     pending_confirmation: ['confirmed', 'cancelled'],
     confirmed: ['in_service', 'cancelled'],
     in_service: ['completed', 'cancelled'],
-    pending_shipment: ['cancelled'],
+    pending_shipment: ['preparing', 'cancelled'],
+    preparing: ['cancelled'],
     pending_receipt: ['completed'],
   }
   return (allowed[order.status] || []).includes(status)
@@ -120,17 +206,40 @@ exports.main = async (event) => {
   if (!canTransition(order, status, user, openid)) return error('当前订单状态不可执行该操作', 'INVALID_STATUS')
 
   const now = formatDateTime(new Date())
+  const config = await getSystemConfig()
+  const commissionLockDays = Math.max(0, Number(config.commissionLockDays || 0))
+  const settlementEligibleAt = status === 'completed' && commissionLockDays > 0
+    ? formatDateTime(addDays(new Date(), commissionLockDays))
+    : ''
   const updateData = { status, updatedAt: now }
   if (status === 'completed') updateData.completedAt = now
   if (status === 'completed' && order.commission) {
-    updateData['commission.status'] = 'settled'
-    updateData['commission.settledAt'] = now
+    updateData['commission.status'] = commissionLockDays > 0 ? 'locked' : 'settled'
+    if (commissionLockDays > 0) updateData['commission.settlementEligibleAt'] = settlementEligibleAt
+    else updateData['commission.settledAt'] = now
   }
 
   await db.collection('orders').doc(order._id).update({ data: updateData })
 
+  if (status === 'cancelled') {
+    try {
+      await releaseOrderAssets(order, now)
+    } catch (_e) { /* non-critical cleanup */ }
+  }
+
+  if (status === 'completed' && commissionLockDays > 0 && order.salespersonId) {
+    try {
+      await db.collection('commission_records').where({
+        orderId: order._id,
+        status: 'locked',
+      }).update({
+        data: { settlementEligibleAt, updatedAt: now },
+      })
+    } catch (_e) { /* non-critical */ }
+  }
+
   // 订单完成时结算提成入账
-  if (status === 'completed' && order.salespersonId && order.commission && order.commission.amount > 0) {
+  if (status === 'completed' && commissionLockDays <= 0 && order.salespersonId && order.commission && order.commission.amount > 0) {
     try {
       const commissionAmount = order.commission.amount
       // 更新提成记录状态为 settled

@@ -152,7 +152,7 @@ async function uploadFileToStorage(file: File): Promise<string> {
   }
 
   const app = getApp();
-  if (!app) throw new Error('CloudBase 未初始化，无法上传图片');
+  if (!app?.uploadFile) throw new Error('CloudBase 未初始化，无法上传图片');
 
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 8);
@@ -733,7 +733,6 @@ export default function ProductsPage() {
               }}
             />
             <Select
-              items={categoryFilterItems}
               value={categoryFilter}
               onValueChange={value => {
                 setCategoryFilter(value ?? 'all');
@@ -741,7 +740,7 @@ export default function ProductsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="商品分类" />
+                <SelectValue>{categoryFilterItems[categoryFilter]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部分类</SelectItem>
@@ -753,7 +752,6 @@ export default function ProductsPage() {
               </SelectContent>
             </Select>
             <Select
-              items={productStatusLabel}
               value={statusFilter}
               onValueChange={value => {
                 setStatusFilter(value as 'all' | Product['status']);
@@ -761,7 +759,7 @@ export default function ProductsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="商品状态" />
+                <SelectValue>{productStatusLabel[statusFilter]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
@@ -770,7 +768,6 @@ export default function ProductsPage() {
               </SelectContent>
             </Select>
             <Select
-              items={visibilityLabel}
               value={visibilityFilter}
               onValueChange={value => {
                 setVisibilityFilter(value as 'all' | ProductVisibility);
@@ -778,7 +775,7 @@ export default function ProductsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="可见性" />
+                <SelectValue>{visibilityLabel[visibilityFilter]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部可见</SelectItem>
@@ -787,7 +784,6 @@ export default function ProductsPage() {
               </SelectContent>
             </Select>
             <Select
-              items={stockFilterLabel}
               value={stockFilter}
               onValueChange={value => {
                 setStockFilter(value as StockFilter);
@@ -795,7 +791,7 @@ export default function ProductsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="库存筛选" />
+                <SelectValue>{stockFilterLabel[stockFilter]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部库存</SelectItem>
@@ -986,12 +982,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label htmlFor="editCat">分类</Label>
                 <Select
-                  items={catMap}
                   value={editForm.category}
                   onValueChange={value => setEditForm(form => ({ ...form, category: value ?? '' }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="选择分类" />
+                    <SelectValue>{catMap[editForm.category] ?? '选择分类'}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(category => (
@@ -1007,11 +1002,10 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label>商品类型</Label>
                 <Select
-                  items={productTypeLabel}
                   value={editForm.productType}
                   onValueChange={value => setEditForm(form => ({ ...form, productType: value as ProductType }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{productTypeLabel[editForm.productType]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="physical">实体商品</SelectItem>
                     <SelectItem value="blood_pack">血包商品</SelectItem>
@@ -1066,7 +1060,7 @@ export default function ProductsPage() {
                   <div className="space-y-1">
                     <Label className="text-xs">可兑换分类</Label>
                     <Select value={editForm.redeemableCategory} onValueChange={v => setEditForm(form => ({ ...form, redeemableCategory: v ?? '' }))}>
-                      <SelectTrigger><SelectValue placeholder="选择分类" /></SelectTrigger>
+                      <SelectTrigger><SelectValue>{editForm.redeemableCategory ? (catMap[editForm.redeemableCategory] ?? '选择分类') : '不限制'}</SelectValue></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">不限制</SelectItem>
                         {categories.map(cat => (
@@ -1146,12 +1140,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label htmlFor="editVis">可见范围</Label>
                 <Select
-                  items={visibilityLabel}
                   value={editForm.visibility}
                   onValueChange={value => setEditForm(form => ({ ...form, visibility: value as ProductVisibility }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>{visibilityLabel[editForm.visibility]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部可见</SelectItem>
@@ -1219,12 +1212,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label htmlFor="prodCat">分类</Label>
                 <Select
-                  items={catMap}
                   value={createForm.category}
                   onValueChange={value => setCreateForm(form => ({ ...form, category: value ?? '' }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="选择分类" />
+                    <SelectValue>{catMap[createForm.category] ?? '选择分类'}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(category => (
@@ -1240,12 +1232,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label>商品类型</Label>
                 <Select
-                  items={productTypeLabel}
                   value={createForm.productType}
                   onValueChange={value => setCreateForm(form => ({ ...form, productType: value as ProductType }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>{productTypeLabel[createForm.productType]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="physical">实体商品</SelectItem>
@@ -1302,12 +1293,11 @@ export default function ProductsPage() {
               <div className="space-y-2">
                 <Label htmlFor="prodVis">可见范围</Label>
                 <Select
-                  items={visibilityLabel}
                   value={createForm.visibility}
                   onValueChange={value => setCreateForm(form => ({ ...form, visibility: value as ProductVisibility }))}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{visibilityLabel[createForm.visibility]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部可见</SelectItem>

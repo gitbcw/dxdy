@@ -1,30 +1,43 @@
 'use client'
 
-import { getDb } from '@/lib/cloudbase'
+import { callFunction, getStoredAdminToken } from '@/lib/cloudbase'
 import type { AnalyticsDaily, TopProduct, AgentContribution, OrderStatusDistribution, FunnelStep } from '@/lib/types-analytics'
 
+type CloudFunctionResult<T = unknown> = { success?: boolean; error?: string; data?: T }
+
 function normalizeDoc<T extends Record<string, unknown>>(doc: T): T & { id: string } {
-  const { _id, ...rest } = doc as any
-  return { id: String(_id || ''), ...rest }
+  const { _id, ...rest } = doc as Record<string, unknown>
+  return { id: String(_id || ''), ...rest } as T & { id: string }
+}
+
+async function adminData<T>(payload: Record<string, unknown>): Promise<T> {
+  const result = await callFunction<CloudFunctionResult<T>>('adminData', {
+    token: getStoredAdminToken(),
+    ...payload,
+  })
+  if (!result.success) throw new Error(result.error || '分析数据加载失败')
+  return result.data as T
 }
 
 export async function fetchAnalyticsDaily(days = 30): Promise<AnalyticsDaily[]> {
-  const db = getDb()
-  if (!db) return []
-  const { data } = await db.collection('analytics_daily')
-    .orderBy('date', 'desc')
-    .limit(days)
-    .get()
-  return (data || []).map(normalizeDoc)
+  const data = await adminData<unknown[]>({
+    action: 'list',
+    collection: 'analytics_daily',
+    limit: days,
+    orderBy: { field: 'date', direction: 'desc' },
+  })
+  return (Array.isArray(data) ? data : [])
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && !Array.isArray(item))
+    .map(normalizeDoc) as unknown as AnalyticsDaily[]
 }
 
 export async function fetchOrderStatusDistribution(): Promise<OrderStatusDistribution[]> {
-  const db = getDb()
-  if (!db) return []
-  const { data } = await db.collection('orders')
-    .orderBy('createdAt', 'desc')
-    .limit(500)
-    .get()
+  const data = await adminData<unknown[]>({
+    action: 'list',
+    collection: 'orders',
+    limit: 500,
+    orderBy: { field: 'createdAt', direction: 'desc' },
+  })
 
   const statusLabel: Record<string, string> = {
     pending_payment: '待支付',
@@ -37,11 +50,13 @@ export async function fetchOrderStatusDistribution(): Promise<OrderStatusDistrib
   }
 
   const grouped: Record<string, { count: number; amount: number }> = {}
-  for (const order of data) {
-    const s = order.status || 'unknown'
+  for (const order of Array.isArray(data) ? data : []) {
+    if (!order || typeof order !== 'object') continue
+    const current = order as Record<string, unknown>
+    const s = String(current.status || 'unknown')
     if (!grouped[s]) grouped[s] = { count: 0, amount: 0 }
-    grouped[s].count++
-    grouped[s].amount += (order as any).pricing?.actualAmount || 0
+    grouped[s].count += 1
+    grouped[s].amount += Number((current.pricing as Record<string, unknown> | undefined)?.actualAmount || 0)
   }
 
   return Object.entries(grouped).map(([status, { count, amount }]) => ({

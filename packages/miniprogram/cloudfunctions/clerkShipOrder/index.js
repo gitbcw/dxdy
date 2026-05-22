@@ -103,7 +103,7 @@ exports.main = async (event) => {
   if (!order) return error('订单不存在', 'NOT_FOUND')
   if (!canShip(user, order)) return error('无权处理该订单', 'FORBIDDEN')
   const isModify = order.status === 'pending_receipt' || !!(order.shipping && order.shipping.trackingNo)
-  if (!['pending_shipment', 'confirmed', 'pending_receipt'].includes(order.status)) {
+  if (!['pending_shipment', 'confirmed', 'preparing', 'pending_receipt'].includes(order.status)) {
     return error('当前订单状态不可发货', 'INVALID_STATUS')
   }
   if (isModify && !modifyReason) return error('请填写修改原因')

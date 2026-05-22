@@ -69,21 +69,21 @@ export default function LogsPage() {
 
       <div className="flex flex-wrap gap-3">
         <Select value={filterOperator} onValueChange={v => setFilterOperator(v ?? 'all')}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="操作人" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue>{filterOperator === 'all' ? '全部操作人' : filterOperator}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部操作人</SelectItem>
             {operators.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterAction} onValueChange={v => setFilterAction(v ?? 'all')}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="操作类型" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue>{filterAction === 'all' ? '全部操作' : filterAction}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部操作</SelectItem>
             {actions.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterResult} onValueChange={v => setFilterResult(v ?? 'all')}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="结果" /></SelectTrigger>
+          <SelectTrigger className="w-32"><SelectValue>{filterResult === 'all' ? '全部结果' : filterResult === 'success' ? '成功' : '失败'}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部结果</SelectItem>
             <SelectItem value="success">成功</SelectItem>

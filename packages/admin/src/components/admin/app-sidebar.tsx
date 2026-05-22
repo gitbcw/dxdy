@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Sidebar,
   SidebarContent,
@@ -57,11 +57,12 @@ const navItems: { title: string; href: string; icon: typeof LayoutDashboard; rol
 
 export function AppSidebar({ user }: { user: AdminProfile }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { signOut } = useAuth();
   const filtered = navItems.filter(item => item.roles.includes(user.role));
   async function handleLogout() {
     await signOut();
-    window.location.href = '/login';
+    router.replace('/login');
   }
 
   return (

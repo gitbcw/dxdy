@@ -14,9 +14,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
-import { getDb } from '@/lib/cloudbase';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatDateTime } from '@/lib/format';
+import { fetchCardVouchers, updateCardVoucher } from '@/lib/services/database';
 import type { CardVoucher, CardVoucherStatus } from '@/lib/types';
 
 const statusLabel: Record<CardVoucherStatus, string> = {
@@ -74,11 +74,7 @@ export default function CardsPage() {
   async function loadCards() {
     setLoading(true);
     try {
-      const res = await getDb().collection('card_vouchers')
-        .orderBy('createdAt', 'desc')
-        .limit(500)
-        .get();
-      const docs: CardVoucher[] = (res.data || []).map(normalizeDoc);
+      const docs = await fetchCardVouchers();
       // 惰性过期：标记已过期的卡券
       const now = new Date().toISOString();
       const updated = docs.map(card => {
@@ -125,7 +121,7 @@ export default function CardsPage() {
     setVoiding(true);
     try {
       const now = new Date().toISOString();
-      await getDb().collection('card_vouchers').doc(voidTarget.id).update({
+      await updateCardVoucher(voidTarget.id, {
         status: 'voided',
         voidedAt: now,
         voidedBy: user?.id || '',

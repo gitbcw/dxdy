@@ -25,6 +25,12 @@ async function getCard(cardId) {
   return data || null
 }
 
+async function getOrder(orderId) {
+  if (!orderId) return null
+  const { data } = await db.collection('orders').doc(orderId).get()
+  return data || null
+}
+
 async function getUserByOpenid(openid) {
   const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
   return data?.[0] || null
@@ -64,6 +70,9 @@ async function giftCard(event, now) {
   if (!card) return err('卡券不存在')
   if (card.status !== 'ungifted') return err('仅未赠送的卡券可赠送')
   if (card.purchaserId !== operator._id) return err('只能赠送自己购买的卡券')
+
+  const purchaseOrder = await getOrder(card.purchaseOrderId)
+  if (!purchaseOrder || purchaseOrder.payment?.status !== 'paid') return err('卡券采购订单未支付，暂不可赠送')
 
   const toUser = await getUserById(toUserId)
   if (!toUser) return err('目标用户不存在')

@@ -1,20 +1,22 @@
-const { loginByPhone, registerCustomer, GENERATED_ASSETS } = require('../../services/index')
+const { loginByPhone, bindCustomerPhone, GENERATED_ASSETS } = require('../../services/index')
 const tracking = require('../../services/tracking')
 const icons = require('../../services/icons')
+
+function isDemoLoginEnabled() {
+  return true
+}
 
 Page({
   data: {
     checkingSession: true,
     phone: '',
-    isRegister: false,
-    nickname: '',
     loginHeroImage: GENERATED_ASSETS.loginHero,
     phoneIcon: icons.phone,
-    userIcon: icons.user,
     shieldIcon: icons.shield,
     wechatIcon: icons.service,
     logoIcon: icons.hospital,
     referralCode: '',
+    demoLoginEnabled: false,
     showDemoAccounts: false,
     demoAccounts: [
       { label: '普通客户', phone: '13888002233' },
@@ -25,27 +27,30 @@ Page({
   },
 
   onLoad(options: Record<string, string | undefined> = {}) {
+    const demoLoginEnabled = isDemoLoginEnabled()
+    this.setData({ demoLoginEnabled, checkingSession: false })
+
     const app = getApp()
     const cachedUser = app.globalData.userInfo
     if (cachedUser) {
       app.globalData.userRole = app.globalData.userRole || this.inferRole(cachedUser)
-      app.goRoleHome?.()
-      return
+      this.setData({
+        phone: cachedUser.phone || '',
+      })
     }
 
-    this.setData({ checkingSession: false })
-
     if (options.referralCode) {
-      this.setData({ referralCode: options.referralCode, isRegister: true })
+      this.setData({ referralCode: options.referralCode })
+      app.ensureOpenidUser?.({ referralCode: options.referralCode })
     }
 
     const demoPhone = options.demoPhone || ''
-    if (!/^1\d{10}$/.test(demoPhone)) return
+    if (!demoLoginEnabled || !/^1\d{10}$/.test(demoPhone)) return
 
-    this.setData({ phone: demoPhone, isRegister: false })
+    this.setData({ phone: demoPhone })
 
     if (options.autoLogin === '1' || options.autoLogin === 'true') {
-      this.loginWithPhone(demoPhone, { redirectHome: true, silent: true })
+      this.loginWithPhone(demoPhone, { redirectHome: true, silent: true, demo: true })
     }
   },
 
@@ -53,28 +58,16 @@ Page({
     this.setData({ phone: e.detail.value })
   },
 
-  onNicknameInput(e: any) {
-    this.setData({ nickname: e.detail.value })
-  },
-
-  toggleMode() {
-    this.setData({ isRegister: !this.data.isRegister })
-  },
-
   toggleDemoAccounts() {
+    if (!this.data.demoLoginEnabled) return
     this.setData({ showDemoAccounts: !this.data.showDemoAccounts })
   },
 
-  showLogin() {
-    this.setData({ isRegister: false })
-  },
-
-  showRegister() {
-    this.setData({ isRegister: true })
-  },
-
   useDemoAccount(e: any) {
-    this.setData({ phone: e.currentTarget.dataset.phone, isRegister: false })
+    if (!this.data.demoLoginEnabled) return
+    const phone = e.currentTarget.dataset.phone
+    this.setData({ phone })
+    this.loginWithPhone(phone, { redirectHome: true, demo: true })
   },
 
   inferRole(user: any) {
@@ -103,48 +96,37 @@ Page({
     }, 500)
   },
 
-  async loginWithPhone(phone: string, options: { redirectHome?: boolean, silent?: boolean } = {}) {
+  async loginWithPhone(phone: string, options: { redirectHome?: boolean, silent?: boolean, demo?: boolean } = {}) {
     if (!phone || phone.length !== 11) {
       wx.showToast({ title: '请输入正确手机号', icon: 'none' })
       return
     }
 
-    if (!options.silent) wx.showLoading({ title: '登录中...' })
-    const result = await loginByPhone(phone)
+    if (!options.silent) wx.showLoading({ title: '进入中...' })
+    const result = await loginByPhone(phone, { demo: options.demo === true })
     if (!options.silent) wx.hideLoading()
 
     if (result.success) {
-      this.finishLogin(result.user, '登录成功', !!options.redirectHome)
+      this.finishLogin(result.user, '进入成功', !!options.redirectHome)
     } else {
-      wx.showToast({ title: result.error || '登录失败', icon: 'none' })
+      wx.showToast({ title: result.error || '进入失败', icon: 'none' })
     }
   },
 
   async onSubmit() {
-    const { phone, isRegister, nickname } = this.data
+    const { phone } = this.data
     if (!phone || phone.length !== 11) {
       wx.showToast({ title: '请输入正确手机号', icon: 'none' })
       return
     }
 
-    wx.showLoading({ title: isRegister ? '注册中...' : '登录中...' })
-
-    let result: any
-    if (isRegister) {
-      if (!nickname) {
-        wx.hideLoading()
-        wx.showToast({ title: '请输入昵称', icon: 'none' })
-        return
-      }
-      result = await registerCustomer(phone, nickname, undefined, this.data.referralCode || undefined)
-    } else {
-      result = await loginByPhone(phone)
-    }
+    wx.showLoading({ title: '绑定中...' })
+    const result = await bindCustomerPhone(phone)
 
     wx.hideLoading()
 
     if (result.success) {
-      this.finishLogin(result.user, isRegister ? '注册成功' : '登录成功', true)
+      this.finishLogin(result.user, '绑定成功', false)
     } else {
       wx.showToast({ title: result.error || '操作失败', icon: 'none' })
     }

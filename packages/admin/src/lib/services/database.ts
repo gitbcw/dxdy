@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/cloudbase'
+import { callFunction, getStoredAdminToken } from '@/lib/cloudbase'
 import type {
   AdminRole, AdminUser, Product, ProductCategory, Order,
   ReturnRecord, OperationLog, SystemConfig, User, Customer, Salesperson, Clerk,
@@ -9,9 +9,6 @@ import { queryOrders } from '@/lib/services/functions'
 
 type CloudDoc = Record<string, unknown>
 const ADMIN_SESSION_KEY = 'dxdy_admin_profile'
-
-/** Lazy-access database — avoids top-level CloudBase init during SSR/build */
-function db() { return getDb() }
 
 const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin']
 const ROLE_PERMISSIONS_CONFIG_ID = 'role_permissions'
@@ -28,9 +25,29 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
 
 // ===== Helpers =====
 
+type AdminDataResult<T = unknown> = { success?: boolean; error?: string; data?: T }
+
+async function adminRequest<T = unknown>(action: string, collection: string, extra: Record<string, unknown> = {}): Promise<T> {
+  const result = await callFunction<AdminDataResult<T>>('adminData', {
+    token: getStoredAdminToken(),
+    action,
+    collection,
+    ...extra,
+  })
+  if (!result.success) throw new Error(result.error || '数据请求失败')
+  return result.data as T
+}
+
 function normalizeDoc<T extends CloudDoc>(doc: T): T & { id: string } {
-  const { _id, id, _openid, boundOpenid, ...rest } = doc as any
-  return { ...rest, id: String(_id || id || '') }
+  const { _id, id, ...rest } = doc as Record<string, unknown>
+  return { ...rest, id: String(_id || id || '') } as T & { id: string }
+}
+
+function normalizeDocs<T extends CloudDoc>(docs: unknown[]): (T & { id: string })[] {
+  if (!Array.isArray(docs)) return []
+  return docs
+    .filter((d): d is T => d != null && typeof d === 'object')
+    .map(normalizeDoc)
 }
 
 function sortByRecent<T extends CloudDoc>(a: T, b: T) {
@@ -60,9 +77,8 @@ function mergeRolePermissions(source?: Partial<Record<AdminRole, Record<string, 
 
 async function fetchRolePermissionTemplates() {
   try {
-    const res = await db().collection('config').doc(ROLE_PERMISSIONS_CONFIG_ID).get()
-    const data = Array.isArray(res.data) ? res.data[0] : res.data
-    const saved = (data as any)?.permissions as Partial<Record<AdminRole, Record<string, boolean>>> | undefined
+    const data = await adminRequest<Record<string, unknown>>('get', 'config', { id: ROLE_PERMISSIONS_CONFIG_ID })
+    const saved = (data as Record<string, unknown>)?.permissions as Partial<Record<AdminRole, Record<string, boolean>>> | undefined
     return mergeRolePermissions(saved)
   } catch {
     return mergeRolePermissions()
@@ -70,12 +86,11 @@ async function fetchRolePermissionTemplates() {
 }
 
 async function readCollection<T extends CloudDoc>(name: string, query?: Record<string, unknown>, projection?: Record<string, unknown>): Promise<(T & { id: string })[]> {
-  let q = db().collection(name) as any
-  if (query && Object.keys(query).length > 0) q = q.where(query)
-  if (projection && Object.keys(projection).length > 0) q = q.field(projection)
-  const res = await q.orderBy('createdAt', 'desc').limit(500).get()
-  const docs: T[] = res.data || []
-  return docs.map(normalizeDoc).sort(sortByRecent)
+  const extra: Record<string, unknown> = {}
+  if (query && Object.keys(query).length > 0) extra.query = query
+  if (projection && Object.keys(projection).length > 0) extra.field = projection
+  const docs = await adminRequest<unknown[]>('list', name, extra)
+  return normalizeDocs<T>(docs).sort(sortByRecent)
 }
 
 function normalizeAdminUser(doc: CloudDoc): AdminUser {
@@ -100,7 +115,7 @@ export async function fetchDashboardData() {
     readCollection('returns'),
     readCollection('products'),
     readCollection('users'),
-    readCollection('config', { _id: 'system' }),
+    readCollection('config'),
   ]) as any
   return {
     orders,
@@ -115,31 +130,11 @@ export async function fetchDashboardData() {
 
 export async function fetchProductsAndCategories() {
   const productProjection = {
-    _id: 1,
-    id: 1,
-    name: 1,
-    category: 1,
-    institutionPrice: 1,
-    personalPrice: 1,
-    visibility: 1,
-    stock: 1,
-    status: 1,
-    productType: 1,
-    isBloodPack: 1,
-    bookingConfig: 1,
-    purchaseLimit: 1,
-    agreementRequired: 1,
-    salesCountEnabled: 1,
-    urgentConfig: 1,
-    redeemableCategory: 1,
-    validDays: 1,
-    promotionPrice: 1,
-    promotionStart: 1,
-    promotionEnd: 1,
-    isDeleted: 1,
-    deletedAt: 1,
-    createdAt: 1,
-    updatedAt: 1,
+    _id: 1, id: 1, name: 1, category: 1, institutionPrice: 1, personalPrice: 1,
+    visibility: 1, stock: 1, status: 1, productType: 1, isBloodPack: 1, bookingConfig: 1,
+    purchaseLimit: 1, agreementRequired: 1, salesCountEnabled: 1, urgentConfig: 1,
+    redeemableCategory: 1, validDays: 1, promotionPrice: 1, promotionStart: 1, promotionEnd: 1,
+    isDeleted: 1, deletedAt: 1, createdAt: 1, updatedAt: 1,
   }
   const [products, categories] = await Promise.all([
     readCollection('products', undefined, productProjection),
@@ -152,46 +147,44 @@ export async function fetchProductsAndCategories() {
 }
 
 export async function fetchProductById(id: string) {
-  const res = await db().collection('products').doc(id).get()
-  const data = Array.isArray(res.data) ? res.data[0] : res.data
+  const data = await adminRequest<Record<string, unknown>>('get', 'products', { id })
   return data ? normalizeDoc(data as CloudDoc) : null
 }
 
 export async function fetchProductImagesByIds(ids: string[]) {
   if (ids.length === 0) return [] as Array<{ id: string; images: string[] }>
-  const records = await Promise.all(ids.map(async id => {
-    const res = await db().collection('products').doc(id).field({ images: 1 }).get()
-    const data = Array.isArray(res.data) ? res.data[0] : res.data
+  const results = await Promise.all(ids.map(async id => {
+    const data = await adminRequest<Record<string, unknown>>('get', 'products', { id, field: { images: 1 } })
     return { id, images: Array.isArray((data as any)?.images) ? (data as any).images as string[] : [] }
   }))
-  return records
+  return results
 }
 
 export async function createProduct(product: Product & { id: string }) {
   const now = new Date().toISOString()
   const doc = { ...product, createdAt: product.createdAt || now, updatedAt: now }
-  await db().collection('products').doc(product.id).set(doc)
+  await adminRequest('set', 'products', { id: product.id, data: doc })
   return doc
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Partial<Product> & { updatedAt: string }> {
   const update = { ...updates, updatedAt: new Date().toISOString() }
-  await db().collection('products').doc(id).update(update)
+  await adminRequest('update', 'products', { id, data: update })
   return update as any
 }
 
 export async function createProductCategory(category: ProductCategory) {
-  await db().collection('categories').doc(category.id).set(category)
+  await adminRequest('set', 'categories', { id: category.id, data: category })
   return category
 }
 
 export async function updateProductCategory(id: string, updates: Partial<ProductCategory>) {
-  await db().collection('categories').doc(id).update(updates)
+  await adminRequest('update', 'categories', { id, data: updates })
   return { id, ...updates } as ProductCategory
 }
 
 export async function deleteProductCategory(id: string) {
-  await db().collection('categories').doc(id).remove()
+  await adminRequest('remove', 'categories', { id })
 }
 
 // ===== Orders =====
@@ -200,18 +193,18 @@ export async function fetchOrders(id?: string, operatorId?: string): Promise<any
   const resolvedOperatorId = resolveAdminOperatorId(operatorId)
   if (id) {
     const result = await queryOrders({ action: 'getOrderById', orderId: id, operatorId: resolvedOperatorId })
-    if (!result.success) throw new Error(result.error || '璇诲彇璁㈠崟璇︽儏澶辫触')
+    if (!result.success) throw new Error(result.error || '读取订单详情失败')
     return result.order ? [result.order] as any[] : []
   }
   const result = await queryOrders({ action: 'listOrders', operatorId: resolvedOperatorId })
-  if (!result.success) throw new Error(result.error || '璇诲彇璁㈠崟鏁版嵁澶辫触')
+  if (!result.success) throw new Error(result.error || '读取订单数据失败')
   return (result.orders || []) as any[]
 }
 
 export async function fetchClerks(operatorId?: string): Promise<any[]> {
   const resolvedOperatorId = resolveAdminOperatorId(operatorId)
   const result = await queryOrders({ action: 'listClerks', operatorId: resolvedOperatorId })
-  if (!result.success) throw new Error(result.error || '璇诲彇鍒跺崟鍛樻暟鎹け璐?')
+  if (!result.success) throw new Error(result.error || '读取制单员数据失败')
   return (result.clerks || []) as any[]
 }
 
@@ -272,7 +265,7 @@ export async function createAdminAccount(input: { username: string; password: st
     createdAt: now,
     updatedAt: now,
   }
-  await db().collection('users').add(doc)
+  await adminRequest('add', 'users', { data: doc })
   return normalizeAdminUser(doc)
 }
 
@@ -290,12 +283,12 @@ export async function updateAdminAccount(id: string, updates: Partial<AdminUser>
     updateData.role = updates.role
     updateData.permissions = rolePermissions[updates.role]
   }
-  await db().collection('users').doc(id).update(updateData)
+  await adminRequest('update', 'users', { id, data: updateData })
   return updateData
 }
 
 export async function deleteAdminAccount(id: string) {
-  await db().collection('users').doc(id).remove()
+  await adminRequest('remove', 'users', { id })
 }
 
 // ===== Roles =====
@@ -324,27 +317,20 @@ export async function updateRolePermissions(role: AdminRole, perms: Record<strin
     ...rolePermissions,
     [role]: { ...defaultPermissions[role], ...perms },
   }
-  await db().collection('config').doc(ROLE_PERMISSIONS_CONFIG_ID).set({
-    permissions: nextPermissions,
-    updatedAt: now,
-  })
-  await db().collection('users').where({ role }).update({ permissions: nextPermissions[role], updatedAt: now })
+  await adminRequest('set', 'config', { id: ROLE_PERMISSIONS_CONFIG_ID, data: { permissions: nextPermissions, updatedAt: now } })
+  await adminRequest('updateWhere', 'users', { query: { role }, data: { permissions: nextPermissions[role], updatedAt: now } })
 }
 
 // ===== System =====
 
 export async function fetchSystemConfig(): Promise<SystemConfig> {
-  const docs = await readCollection('config', { _id: 'system' })
-  return (docs[0] as any) || defaultSystemConfig
+  const docs = await readCollection('config')
+  const match = docs.find((d: any) => d._id === 'system' || d.id === 'system')
+  return (match as any) || defaultSystemConfig
 }
 
 export async function saveSystemConfig(config: SystemConfig) {
-  const existing = await readCollection('config', { _id: 'system' })
-  if (existing.length > 0) {
-    await db().collection('config').doc('system').update({ ...config, updatedAt: new Date().toISOString() })
-  } else {
-    await db().collection('config').add({ _id: 'system', ...config, updatedAt: new Date().toISOString() })
-  }
+  await adminRequest('set', 'config', { id: 'system', data: { ...config, updatedAt: new Date().toISOString() } })
   return config
 }
 
@@ -377,4 +363,40 @@ export async function fetchTestReports(query?: Record<string, unknown>): Promise
 export async function fetchCommissionRecords(query?: Record<string, unknown>): Promise<any[]> {
   const docs = await readCollection('commission_records', query)
   return docs as any[]
+}
+
+// ===== Admin Status =====
+
+export async function fetchAdminStatus(id: string): Promise<{ status: string } | null> {
+  try {
+    const data = await adminRequest<{ id: string; status: string } | null>('getAdminStatus', '', { id })
+    return data
+  } catch {
+    return null
+  }
+}
+
+// ===== Card Vouchers =====
+
+export async function fetchCardVouchers(): Promise<any[]> {
+  return readCollection('card_vouchers')
+}
+
+export async function updateCardVoucher(id: string, updates: Record<string, unknown>) {
+  const update = { ...updates, updatedAt: new Date().toISOString() }
+  await adminRequest('update', 'card_vouchers', { id, data: update })
+  return update
+}
+
+// ===== Reviews =====
+
+export async function fetchProductReviews(status?: string): Promise<any[]> {
+  const query = status && status !== 'all' ? { status } : undefined
+  return readCollection('reviews', query)
+}
+
+// ===== Logs (write) =====
+
+export async function appendAdminLog(entry: Record<string, unknown>) {
+  await adminRequest('add', 'logs', { data: entry })
 }

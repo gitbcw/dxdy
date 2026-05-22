@@ -82,6 +82,7 @@ exports.main = async (event) => {
   const now = formatDateTime(new Date())
   const record = {
     salespersonId: user._id,
+    salespersonOpenid: openid,
     amount,
     bankCardId,
     bankName: bankCard.bankName,
@@ -102,7 +103,20 @@ exports.main = async (event) => {
   })
   if (!updateResult.stats || updateResult.stats.updated < 1) return error('超过可提现金额', 'INSUFFICIENT_BALANCE')
 
-  const { _id } = await db.collection('withdrawals').add({ data: record })
+  let _id = ''
+  try {
+    const addResult = await db.collection('withdrawals').add({ data: record })
+    _id = addResult._id
+  } catch (e) {
+    await db.collection('users').doc(user._id).update({
+      data: {
+        'commission.available': _.inc(amount),
+        'commission.withdrawn': _.inc(-amount),
+        updatedAt: now,
+      },
+    })
+    return error('提现记录创建失败，请稍后重试')
+  }
 
   await db.collection('logs').add({
     data: {

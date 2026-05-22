@@ -27,6 +27,8 @@ npm run prepare:mini:devtools
 
 **小程序开发**：用微信开发者工具打开 `packages/miniprogram/`，它自动编译 `.ts`，不要手动 `tsc`。
 
+**Admin 静态托管部署**：后台部署在 CloudBase 静态托管 `/cloud-admin` 路径。必须使用 `npm run build -w packages/admin`，该脚本会执行 Next.js 16 App Router RSC 静态导出兼容补丁；不要直接上传未补丁的 `next build` 产物。详见 `docs/ADMIN_STATIC_HOSTING.md`。
+
 ## Monorepo 结构
 
 ```
@@ -99,7 +101,8 @@ packages/
 - **不要手动 `tsc` 编译小程序**：微信开发者工具自动编译，手动 `tsc` 会产生 `.js` 冲突文件
 - **小程序页面不能互相 require**：会报 `module is not defined`。共享逻辑放 `services/index.ts`
 - **Next.js 16 有 breaking changes**：开发 admin 前先读 `node_modules/next/dist/docs/`，不要凭训练数据中的 Next.js API 写代码
+- **Admin CloudBase 静态托管 RSC 404**：若线上出现大量 `__next.!...txt?_rsc=` 404，优先检查 `docs/ADMIN_STATIC_HOSTING.md`。这通常是 Next.js App Router 静态导出的 RSC 文件路径别名缺失，不代表页面不存在，也不应默认改上云托管（云托管另计费）。
 
 ## 当前进度
 
-详见 **`docs/PROGRESS.md`** — 项目进度基准文档（各端完成状态、云端资源、下一步计划、文档索引）。新 AI 进入项目时先读这篇。
+详见 **`docs/PROGRESS.md`** — 项目进度基准文档（各端完成状态、云端资源、下一步计划、文档索引）。Admin 静态托管部署和 RSC 404 排障详见 **`docs/ADMIN_STATIC_HOSTING.md`**。新 AI 进入项目时先读这两篇。

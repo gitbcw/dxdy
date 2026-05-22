@@ -29,6 +29,15 @@ const statusLabel: Record<string, string> = {
   in_service: '服务中',
 };
 
+const commissionStatusLabel: Record<string, string> = {
+  pending: '待核算',
+  locked: '冻结中',
+  settled: '已入账',
+  adjusted: '已调整',
+  deducted: '已扣减',
+  none: '无提成',
+};
+
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   pending_payment: 'outline',
   pending_shipment: 'secondary',
@@ -157,7 +166,7 @@ export default function OrderDetailPage() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {order.id} · {order.customerName} · {order.type === 'booking' ? '预约订单' : '普通订单'}
+            {order.orderNo || order.id} · {order.customerName} · {order.type === 'booking' ? '预约订单' : '普通订单'}
           </p>
         </div>
         {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
@@ -237,7 +246,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">提成状态</span>
-              <span>{order.commission.status}</span>
+              <span>{commissionStatusLabel[order.commission.status] || order.commission.status}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">提成金额</span>
@@ -358,7 +367,7 @@ export default function OrderDetailPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>订单号</Label>
-              <p className="text-sm font-mono">{order.id}</p>
+              <p className="text-sm font-mono">{order.orderNo || order.id}</p>
             </div>
             <div className="space-y-2">
               <Label>当前价格</Label>

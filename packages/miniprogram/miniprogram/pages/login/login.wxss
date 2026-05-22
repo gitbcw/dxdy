@@ -77,12 +77,11 @@
 }
 
 .hero-visual {
-  position: relative;
   margin-top: 28rpx;
-  height: 286rpx;
   border-radius: 28rpx;
   background: #edf7f0;
   box-shadow: 0 14rpx 34rpx rgba(23, 48, 32, 0.10);
+  line-height: 0;
   overflow: hidden;
 }
 
@@ -110,36 +109,11 @@
   font-size: 22rpx;
 }
 
-.segmented {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0;
-  margin-top: 38rpx;
-  padding: 6rpx;
-  border: 1rpx solid #e8eee9;
-  border-radius: 16rpx;
-  background: #f7f8f7;
-}
-
-.segment {
-  height: 62rpx;
-  line-height: 62rpx;
-  border-radius: 12rpx;
-  color: #69756f;
-  font-size: 26rpx;
-  font-weight: 700;
-  text-align: center;
-}
-
-.segment.active {
-  color: #139445;
-  background: #dff4e6;
-}
-
 .field-row {
   display: flex;
   align-items: center;
   gap: 18rpx;
+  margin-top: 24rpx;
   min-height: 92rpx;
   border-bottom: 1rpx solid #edf1ee;
 }
@@ -154,16 +128,6 @@
   min-width: 0;
   color: #1d2a23;
   font-size: 26rpx;
-}
-
-.code-btn {
-  flex-shrink: 0;
-  padding: 10rpx 18rpx;
-  border-radius: 8rpx;
-  color: #169847;
-  font-size: 22rpx;
-  font-weight: 700;
-  background: #ecf8ef;
 }
 
 .agreement {
@@ -190,54 +154,6 @@
 
 .submit-btn {
   margin-top: 30rpx;
-}
-
-.switch-line {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  margin-top: 26rpx;
-  color: #8a958f;
-  font-size: 24rpx;
-}
-
-.switch {
-  color: #139445;
-  font-weight: 800;
-}
-
-.divider {
-  position: relative;
-  margin: 42rpx 0 24rpx;
-  text-align: center;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 0;
-  left: 0;
-  height: 1rpx;
-  background: #edf1ee;
-}
-
-.divider text {
-  position: relative;
-  z-index: 1;
-  padding: 0 24rpx;
-  color: #9ca6a1;
-  font-size: 22rpx;
-  background: #ffffff;
-}
-
-.wechat-login {
-  width: 72rpx;
-  height: 72rpx;
-  margin: 0 auto;
-  border-radius: 50%;
-  background: #18a34a;
 }
 
 .demo-box {

@@ -34,10 +34,11 @@ const statusLabel: Record<string, string> = {
   in_service: '服务中',
 };
 
-const typeLabel: Record<'all' | 'normal' | 'booking', string> = {
+const typeLabel: Record<'all' | 'normal' | 'booking' | 'recharge', string> = {
   all: '全部类型',
   normal: '普通订单',
   booking: '预约订单',
+  recharge: '充值订单',
 };
 
 const statusFilterLabel: Record<'all' | OrderStatus, string> = {
@@ -195,7 +196,8 @@ export default function OrdersPage() {
     const matchesSearch =
       !search ||
       order.customerName.includes(search) ||
-      order.id.includes(search);
+      order.id.includes(search) ||
+      (order.orderNo || '').includes(search);
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     const matchesType = typeFilter === 'all' || order.type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
@@ -332,12 +334,11 @@ export default function OrdersPage() {
             onChange={event => setSearch(event.target.value)}
           />
           <Select
-            items={typeLabel}
             value={typeFilter}
             onValueChange={value => setTypeFilter((value ?? 'all') as 'all' | 'normal' | 'booking' | 'recharge')}
           >
             <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="订单类型" />
+              <SelectValue>{typeLabel[typeFilter]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部类型</SelectItem>
@@ -347,12 +348,11 @@ export default function OrdersPage() {
             </SelectContent>
           </Select>
           <Select
-            items={statusFilterLabel}
             value={statusFilter}
             onValueChange={value => setStatusFilter((value ?? 'all') as 'all' | OrderStatus)}
           >
             <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="订单状态" />
+              <SelectValue>{statusFilterLabel[statusFilter]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部状态</SelectItem>
@@ -400,7 +400,7 @@ export default function OrdersPage() {
               )}
               {!loading && filteredOrders.map(order => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-mono text-sm">{order.id}</TableCell>
+                  <TableCell className="font-mono text-sm">{order.orderNo || order.id}</TableCell>
                   <TableCell>{order.customerName}</TableCell>
                   <TableCell>{order.type === 'booking' ? '预约' : '普通'}</TableCell>
                   <TableCell>
@@ -519,7 +519,7 @@ export default function OrdersPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>订单号</Label>
-              <p className="text-sm font-mono">{adjustOrder?.id}</p>
+              <p className="text-sm font-mono">{adjustOrder?.orderNo || adjustOrder?.id}</p>
             </div>
             <div className="space-y-2">
               <Label>原价</Label>
@@ -551,7 +551,7 @@ export default function OrdersPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>订单号</Label>
-              <p className="text-sm font-mono">{assignOrder?.id}</p>
+              <p className="text-sm font-mono">{assignOrder?.orderNo || assignOrder?.id}</p>
             </div>
             <div className="space-y-2">
               <Label>选择制单员</Label>
@@ -594,7 +594,7 @@ export default function OrdersPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>订单号</Label>
-              <p className="text-sm font-mono">{shipOrder?.id}</p>
+              <p className="text-sm font-mono">{shipOrder?.orderNo || shipOrder?.id}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="shipCompany">物流公司</Label>

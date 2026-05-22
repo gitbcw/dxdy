@@ -132,6 +132,7 @@ export default function ReportsPage() {
         await writeAdminLog({ operator: user, action: 'create_report', target: form.code, detail: `创建检测报告 ${form.code}` });
       }
       setEditing(null);
+      setForm(emptyForm());
       await loadReports();
     } catch (err) {
       setError(err instanceof Error ? err.message : '操作失败');
@@ -160,7 +161,10 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">检测报告管理</h1>
-        <Button onClick={startCreate}>新建报告</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" disabled>导入报告</Button>
+          <Button onClick={startCreate}>新建报告</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">

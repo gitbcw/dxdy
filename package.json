@@ -7,10 +7,17 @@
   ],
   "scripts": {
     "dev:admin": "npm run dev -w packages/admin",
-    "seed:test-data": "node scripts/seed-cloudbase-test-data.mjs"
+    "seed:test-data": "node scripts/seed-cloudbase-test-data.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "npm run test && npm run test:coverage"
   },
   "dependencies": {
     "@cloudbase/signature-nodejs": "^2.0.0",
     "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }

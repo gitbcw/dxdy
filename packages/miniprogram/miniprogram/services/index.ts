@@ -226,6 +226,115 @@ export function logout() {
   wx.removeStorageSync('current_user')
 }
 
+function inferUserRole(user: any): string {
+  if (!user) return ''
+  if (user.role === 'customer') return user.customerType === 'institution' ? 'customer_institution' : 'customer_personal'
+  return user.role || ''
+}
+
+function persistCurrentUser(user: any) {
+  const app = getApp()
+  app.globalData.userInfo = user
+  app.globalData.userRole = inferUserRole(user)
+  app.globalData.authResolved = true
+  wx.setStorageSync('current_user', JSON.stringify(user))
+  wx.setStorageSync('user_role', app.globalData.userRole)
+}
+
+export async function ensureOpenidUser(options?: { referralCode?: string }) {
+  try {
+    const openid = getCurrentOpenid()
+    if (!openid) return { success: false, error: 'openid unavailable' }
+
+    const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
+    if (data && data.length > 0) {
+      const user = normalize(data[0])
+      persistCurrentUser(user)
+      return { success: true, user }
+    }
+
+    let referredBy = ''
+    if (options?.referralCode) {
+      const { data: referrers } = await db.collection('users').where({ referralCode: options.referralCode }).limit(1).get()
+      if (referrers && referrers.length) referredBy = String(referrers[0]._id || '')
+    }
+
+    const user = {
+      phone: '',
+      nickname: '微信用户',
+      avatar: '',
+      role: 'customer',
+      customerType: 'personal',
+      verificationStatus: 'none',
+      boundSalespersonId: null,
+      wallet: { balance: 0, rechargeHistory: [] },
+      points: { balance: 0, history: [] },
+      addresses: [] as any[],
+      referralCode: '',
+      ...(referredBy ? { referredBy, referredAt: formatDate(new Date()) } : {}),
+      createdAt: formatDate(new Date()),
+    }
+    const { _id } = await db.collection('users').add({ data: user })
+    const result = { ...user, id: _id }
+    persistCurrentUser(result)
+    return { success: true, user: result }
+  } catch (err) {
+    return { success: false, error: '用户初始化失败' }
+  }
+}
+
+export async function bindCustomerPhone(phone: string) {
+  if (!/^1\d{10}$/.test(phone)) return { success: false, error: '请输入正确手机号' }
+
+  try {
+    const app = getApp()
+    const current = app.globalData.userInfo || getCurrentUser()
+    const { data: existing } = await db.collection('users').where({ phone }).limit(1).get()
+
+    if (existing && existing.length > 0) {
+      const user = normalize(existing[0])
+      persistCurrentUser(user)
+      return { success: true, user }
+    }
+
+    if (current?.id || current?._id) {
+      const userId = current.id || current._id
+      const patch = {
+        phone,
+        nickname: current.nickname || `用户${phone.slice(-4)}`,
+        role: current.role || 'customer',
+        customerType: current.customerType || 'personal',
+        updatedAt: formatDate(new Date()),
+      }
+      await db.collection('users').doc(userId).update({ data: patch })
+      const user = { ...current, ...patch, id: userId }
+      persistCurrentUser(user)
+      return { success: true, user }
+    }
+
+    return registerCustomer(phone, `用户${phone.slice(-4)}`)
+  } catch (err) {
+    return { success: false, error: '绑定手机号失败' }
+  }
+}
+
+export function requireBoundPhone(user: any): boolean {
+  if (user?.phone) return true
+
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1]
+  const route = current?.route || ''
+  wx.showToast({ title: user ? '请先绑定手机号' : '请先登录', icon: 'none' })
+
+  if (route !== 'pages/login/login') {
+    setTimeout(() => {
+      wx.navigateTo({ url: '/pages/login/login' })
+    }, 300)
+  }
+
+  return false
+}
+
 export async function registerCustomer(phone: string, nickname: string, customerType: string = 'personal', referralCode?: string) {
   try {
     const { data: existing } = await db.collection('users').where({ phone }).get()

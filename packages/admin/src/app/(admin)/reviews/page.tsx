@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import getApp, { getDb } from '@/lib/cloudbase';
+import { callFunction } from '@/lib/cloudbase';
+import { fetchProductReviews } from '@/lib/services/database';
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
@@ -41,10 +42,8 @@ export default function ReviewsPage() {
   async function loadReviews() {
     setLoading(true);
     try {
-      let query: any = getDb().collection('product_reviews');
-      if (statusFilter !== 'all') query = query.where({ status: statusFilter });
-      const { data } = await query.orderBy('createdAt', 'desc').limit(100).get();
-      setReviews((data || []).map((d: any) => ({ ...d, id: d._id })));
+      const data = await fetchProductReviews(statusFilter);
+      setReviews((data || []).map((d: any) => ({ ...d, id: d.id || d._id })));
     } catch (e) {
       console.error('Failed to load reviews:', e);
     } finally {
@@ -54,7 +53,7 @@ export default function ReviewsPage() {
 
   async function handleAction(reviewId: string, action: 'approveReview' | 'rejectReview') {
     try {
-      const { result } = await getApp().callFunction({ name: 'manageReview', data: { action, reviewId } }) as any;
+      const result = await callFunction<{ success?: boolean }>('manageReview', { action, reviewId });
       if (result?.success) {
         loadReviews();
       }
@@ -66,10 +65,11 @@ export default function ReviewsPage() {
   async function handleReply() {
     if (!replyReview || !replyText.trim()) return;
     try {
-      const { result } = await getApp().callFunction({
-        name: 'manageReview',
-        data: { action: 'replyReview', reviewId: replyReview.id, reply: replyText },
-      }) as any;
+      const result = await callFunction<{ success?: boolean }>('manageReview', {
+        action: 'replyReview',
+        reviewId: replyReview.id,
+        reply: replyText,
+      });
       if (result?.success) {
         setReplyReview(null);
         setReplyText('');

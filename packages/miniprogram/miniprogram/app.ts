@@ -1,6 +1,5 @@
 const tracking = require('./services/tracking')
 
-const LOGIN_PATH = '/pages/login/login'
 const ROLE_HOME_PATHS: Record<string, string> = {
   customer_personal: '/pages/home/home',
   customer_institution: '/pages/home/home',
@@ -39,16 +38,17 @@ App<IAppOption>({
       const openid = res.result?.openid
       if (!openid) {
         this.globalData.authResolved = true
-        this.ensureLogin?.()
         return
       }
 
       this.globalData.openid = openid
-      this.globalData.authResolved = true
-      this.ensureLogin?.()
+      if (this.globalData.userInfo) {
+        this.globalData.authResolved = true
+        return
+      }
+      this.ensureOpenidUser?.()
     }).catch(() => {
       this.globalData.authResolved = true
-      this.ensureLogin?.()
     })
   },
 
@@ -58,7 +58,6 @@ App<IAppOption>({
 
   onShow() {
     tracking.resume()
-    this.ensureLogin?.()
   },
 
   restoreCachedUser() {
@@ -68,6 +67,7 @@ App<IAppOption>({
     try {
       this.globalData.userInfo = JSON.parse(userStr)
       this.globalData.userRole = this.resolveRole?.(this.globalData.userInfo) || ''
+      tracking.setUserId(this.globalData.userInfo?.id || this.globalData.userInfo?._id || '')
     } catch {
       wx.removeStorageSync('current_user')
       wx.removeStorageSync('user_role')
@@ -83,20 +83,23 @@ App<IAppOption>({
     wx.switchTab({ url })
   },
 
-  ensureLogin() {
-    const currentPath = getCurrentPath()
-    if (!currentPath) return
+  async ensureOpenidUser(options?: { referralCode?: string }) {
+    const openid = this.globalData.openid
+    if (!openid) return null
 
-    const user = this.globalData.userInfo
-    const isLoginPage = currentPath === LOGIN_PATH
-    if (!user && !isLoginPage) {
-      wx.reLaunch({ url: LOGIN_PATH })
-      return
+    const { ensureOpenidUser } = require('./services/index')
+    const result = await ensureOpenidUser(options)
+    if (result?.success && result.user) {
+      this.globalData.userInfo = result.user
+      this.globalData.userRole = this.resolveRole?.(result.user) || ''
+      this.globalData.authResolved = true
+      tracking.setUserId(result.user.id || result.user._id || '')
+      wx.setStorageSync('current_user', JSON.stringify(result.user))
+      wx.setStorageSync('user_role', this.globalData.userRole)
+      return result.user
     }
-
-    if (user && isLoginPage) {
-      this.goRoleHome?.()
-    }
+    this.globalData.authResolved = true
+    return null
   },
 
   resolveRole(user: any): string {

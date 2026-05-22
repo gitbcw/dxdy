@@ -53,7 +53,7 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
         <CardTitle>营收趋势</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ height: 300 }}>
+        <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

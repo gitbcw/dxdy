@@ -1,4 +1,4 @@
-const { formatMoney, getProductVisualImage, canPurchase } = require('../../services/index')
+const { formatMoney, getProductVisualImage, canPurchase, requireBoundPhone } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 const tracking = require('../../services/tracking')
 
@@ -104,10 +104,7 @@ Page({
   onCheckout() {
     if (cartStore.length === 0) return
     const user = getApp().globalData.userInfo
-    if (!user) {
-      wx.navigateTo({ url: '/pages/login/login' })
-      return
-    }
+    if (!requireBoundPhone(user)) return
     // 预检购物车内所有商品
     for (const item of cartStore) {
       const check = canPurchase(item, user, { quantity: item.quantity })

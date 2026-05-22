@@ -81,7 +81,7 @@ export default function LoginPage() {
           </Button>
           {process.env.NODE_ENV === 'development' && (
             <p className="text-xs text-muted-foreground text-center">
-              测试账号：service / product_manager / system_admin
+              测试账号：dxdy_admin / dxdy_service / dxdy_product（任意密码）
             </p>
           )}
         </form>

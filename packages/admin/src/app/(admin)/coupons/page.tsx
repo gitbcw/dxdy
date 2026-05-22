@@ -86,12 +86,12 @@ export default function CouponsPage() {
   function openEditTemplate(t: CouponTemplate) {
     setEditingTemplate(t);
     setForm({
-      name: t.name, description: t.description, type: t.type, value: String(t.value),
-      minAmount: String(t.minAmount), scope: t.scope,
+      name: t.name || '', description: t.description || '', type: t.type || 'fixed', value: String(t.value ?? ''),
+      minAmount: String(t.minAmount ?? 0), scope: t.scope || 'all',
       scopeIds: Array.isArray(t.scopeIds) ? t.scopeIds.join(',') : '',
-      distributeMethod: t.distributeMethod, totalQuota: String(t.totalQuota),
-      perUserLimit: String(t.perUserLimit), validDaysAfterClaim: String(t.validDaysAfterClaim),
-      validFrom: t.validFrom, validTo: t.validTo,
+      distributeMethod: t.distributeMethod || 'admin', totalQuota: String(t.totalQuota ?? 0),
+      perUserLimit: String(t.perUserLimit ?? 1), validDaysAfterClaim: String(t.validDaysAfterClaim ?? 0),
+      validFrom: t.validFrom || '', validTo: t.validTo || '',
     });
     setShowTemplateDialog(true);
   }
@@ -211,10 +211,10 @@ export default function CouponsPage() {
                       <TableCell className="font-medium">{t.name}</TableCell>
                       <TableCell>{typeLabel[t.type]}</TableCell>
                       <TableCell>{renderValue(t)}</TableCell>
-                      <TableCell>{scopeLabel[t.scope] || t.scope}</TableCell>
+                      <TableCell>{scopeLabel[t.scope || 'all'] || t.scope || 'all'}</TableCell>
                       <TableCell>{t.claimedCount} / {t.totalQuota || '不限'}</TableCell>
                       <TableCell className="text-xs">
-                        {t.validDaysAfterClaim > 0 ? `领取后 ${t.validDaysAfterClaim} 天` : `${t.validFrom || '-'} ~ ${t.validTo || '-'}`}
+                        {Number(t.validDaysAfterClaim || 0) > 0 ? `领取后 ${t.validDaysAfterClaim} 天` : `${t.validFrom || '-'} ~ ${t.validTo || '-'}`}
                       </TableCell>
                       <TableCell><Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{statusLabel[t.status] || t.status}</Badge></TableCell>
                       <TableCell className="space-x-1">
@@ -388,7 +388,7 @@ export default function CouponsPage() {
             <div className="space-y-2">
               <Label>选择用户</Label>
               <Select value={grantUserId} onValueChange={v => setGrantUserId(v ?? '')}>
-                <SelectTrigger><SelectValue placeholder="选择用户" /></SelectTrigger>
+                <SelectTrigger><SelectValue>{grantUserId ? (customers.find((c: any) => c.id === grantUserId)?.nickname || customers.find((c: any) => c.id === grantUserId)?.phone || grantUserId) : '选择用户'}</SelectValue></SelectTrigger>
                 <SelectContent>
                   {customers.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>{c.nickname || c.phone || c.id}</SelectItem>

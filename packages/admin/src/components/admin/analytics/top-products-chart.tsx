@@ -50,7 +50,7 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
         <CardTitle>热销商品 TOP10</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ height: 300 }}>
+        <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}

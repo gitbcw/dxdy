@@ -188,6 +188,7 @@ export interface OrderCommission { status: CommissionStatus; amount: number; set
 
 export interface Order {
   id: string;
+  orderNo?: string;
   type: OrderType;
   status: OrderStatus;
   customerId: string;

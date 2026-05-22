@@ -1,4 +1,4 @@
-const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice } = require('../../services/index')
+const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice, requireBoundPhone } = require('../../services/index')
 const tracking = require('../../services/tracking')
 
 Page({
@@ -120,6 +120,7 @@ Page({
   onBuyNow() {
     if (!this._product) return
     const user = getApp().globalData.userInfo
+    if (!requireBoundPhone(user)) return
     const check = canPurchase(this._product, user)
     if (!check.allowed) { wx.showToast({ title: check.reason, icon: 'none' }); return }
     wx.navigateTo({ url: `/pages/orders/create/create?productId=${this._product.id}` })

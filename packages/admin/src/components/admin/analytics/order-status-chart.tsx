@@ -68,7 +68,7 @@ export function OrderStatusChart({ data }: OrderStatusChartProps) {
         <CardTitle>订单状态分布</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ height: 300 }}>
+        <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

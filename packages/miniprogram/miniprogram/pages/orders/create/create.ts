@@ -1,4 +1,4 @@
-const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry } = require('../../../services/index')
+const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry, requireBoundPhone } = require('../../../services/index')
 const tracking = require('../../../services/tracking')
 
 const CART_KEY = 'cart_items'
@@ -74,10 +74,7 @@ Page({
 
   async onLoad(options: any) {
     const user = getApp().globalData.userInfo
-    if (!user) {
-      wx.navigateTo({ url: '/pages/login/login' })
-      return
-    }
+    if (!requireBoundPhone(user)) return
 
     const isInstitution = user.customerType === 'institution'
     const addresses = user.addresses || []
@@ -181,6 +178,7 @@ Page({
   _loadPoints() {
     const user = getApp().globalData.userInfo
     if (!user) return
+    if (!requireBoundPhone(user)) return
     const checked = checkPointsExpiry(user)
     this.setData({
       availablePoints: checked.balance,

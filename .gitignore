@@ -6,6 +6,7 @@ dist/
 .next/
 out/
 build/
+coverage/
 
 # misc
 .DS_Store

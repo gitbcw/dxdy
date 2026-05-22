@@ -26,9 +26,11 @@
     "baseUrl": "."
   },
   "include": [
-    "./**/*.ts"
+    "./miniprogram/**/*.ts",
+    "./typings/**/*.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "tests"
   ]
 }

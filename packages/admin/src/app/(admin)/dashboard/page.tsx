@@ -273,12 +273,14 @@ export default function DashboardPage() {
       value: `¥${formatMoney(pendingPaymentAmount)}`,
       desc: `${pendingPaymentOrders.length} 单待支付，${overduePendingPaymentOrders.length} 单超时`,
       icon: ShoppingCart,
+      href: '/orders',
     },
     {
       title: '待结算提成',
       value: `¥${formatMoney(pendingCommissionAmount)}`,
       desc: `${pendingCommissionOrders.length} 单待锁定或结算`,
       icon: Handshake,
+      href: '/commissions',
     },
   ];
 
@@ -363,46 +365,53 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border bg-slate-50 p-3">
+            <Link href="/users" className="rounded-2xl border bg-slate-50 p-3 transition hover:border-teal-700/30">
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">客户结构</p>
               <p className="mt-1.5 text-xl font-semibold">{customers.length}</p>
               <p className="mt-1 text-xs text-slate-600">
                 机构 {institutionCustomers.length} 家 / 个人 {personalCustomers.length} 位
               </p>
-            </div>
-            <div className="rounded-2xl border bg-slate-50 p-3">
+            </Link>
+            <Link href="/users" className="rounded-2xl border bg-slate-50 p-3 transition hover:border-teal-700/30">
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">机构审核</p>
               <p className="mt-1.5 text-xl font-semibold">{verifiedInstitutions.length}</p>
               <p className="mt-1 text-xs text-slate-600">
                 待审核 {pendingVerification.length} 家 / 驳回 {rejectedVerification.length} 家
               </p>
-            </div>
-            <div className="rounded-2xl border bg-slate-50 p-3">
+            </Link>
+            <Link href="/products" className="rounded-2xl border bg-slate-50 p-3 transition hover:border-teal-700/30">
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">库存风险</p>
               <p className="mt-1.5 text-xl font-semibold">{lowStockProducts.length}</p>
               <p className="mt-1 text-xs text-slate-600">
                 血液制品 {lowStockBloodProducts.length} 个 / 预警阈值 {stockWarningThreshold}
               </p>
-            </div>
+            </Link>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {kpis.map(item => (
-          <Card key={item.title} className="border-teal-950/10 bg-white/90 shadow-sm">
-            <CardContent className="flex items-start gap-3 p-4">
-              <div className="rounded-2xl bg-teal-700/10 p-2.5 text-teal-800">
-                <item.icon className="size-4" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{item.title}</p>
-                <p className="mt-1 text-xl font-semibold tracking-tight">{item.value}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {kpis.map(item => {
+          const card = (
+            <Card className="border-teal-950/10 bg-white/90 shadow-sm transition hover:shadow-md">
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="rounded-2xl bg-teal-700/10 p-2.5 text-teal-800">
+                  <item.icon className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{item.title}</p>
+                  <p className="mt-1 text-xl font-semibold tracking-tight">{item.value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )
+          return item.href ? (
+            <Link key={item.title} href={item.href}>{card}</Link>
+          ) : (
+            <div key={item.title}>{card}</div>
+          )
+        })}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-4">

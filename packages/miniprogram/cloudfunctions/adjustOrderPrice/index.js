@@ -160,9 +160,11 @@ exports.main = async (event) => {
     if (records && records.length > 0 && order.salespersonId) {
       const diff = newCommission - (order.commission && order.commission.amount || 0)
       if (diff !== 0) {
+        const { data: salesperson } = await db.collection('users').doc(order.salespersonId).get()
         await db.collection('commission_records').add({
           data: {
             salespersonId: order.salespersonId,
+            salespersonOpenid: salesperson?._openid || salesperson?.boundOpenid || '',
             customerId: order.customerId || '',
             orderId: order._id,
             orderNo: order.orderNo || '',

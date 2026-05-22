@@ -1,0 +1,9 @@
+{
+  "name": "registerCustomer",
+  "version": "1.0.0",
+  "description": "注册客户并绑定当前微信 OpenID",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

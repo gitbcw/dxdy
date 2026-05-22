@@ -3,7 +3,7 @@
     "permission": "CUSTOM",
     "securityRule": {
       "read": "auth.openid != null && doc._openid == auth.openid",
-      "create": "auth.openid != null",
+      "create": "false",
       "update": "auth.openid != null && doc._openid == auth.openid",
       "delete": "false"
     }
@@ -12,8 +12,8 @@
     "permission": "CUSTOM",
     "securityRule": {
       "read": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
-      "create": "auth.openid != null",
-      "update": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "create": "false",
+      "update": "false",
       "delete": "false"
     }
   },
@@ -21,8 +21,8 @@
     "permission": "CUSTOM",
     "securityRule": {
       "read": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
-      "create": "auth.openid != null",
-      "update": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
+      "create": "false",
+      "update": "false",
       "delete": "false"
     }
   },
@@ -30,7 +30,7 @@
     "permission": "CUSTOM",
     "securityRule": {
       "read": "auth.openid != null && (doc._openid == auth.openid || doc.customerOpenid == auth.openid)",
-      "create": "auth.openid != null",
+      "create": "false",
       "update": "false",
       "delete": "false"
     }
@@ -65,7 +65,7 @@
   "commission_records": {
     "permission": "CUSTOM",
     "securityRule": {
-      "read": "auth.openid != null && (doc._openid == auth.openid || doc.salespersonId == auth.uid)",
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.salespersonOpenid == auth.openid)",
       "create": "false",
       "update": "false",
       "delete": "false"
@@ -74,8 +74,8 @@
   "withdrawals": {
     "permission": "CUSTOM",
     "securityRule": {
-      "read": "auth.openid != null && (doc._openid == auth.openid || doc.salespersonId == auth.uid)",
-      "create": "auth.openid != null",
+      "read": "auth.openid != null && (doc._openid == auth.openid || doc.salespersonOpenid == auth.openid)",
+      "create": "false",
       "update": "false",
       "delete": "false"
     }

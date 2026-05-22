@@ -217,7 +217,7 @@ export default function AccountsPage() {
             <div className="space-y-2">
               <Label>角色</Label>
               <Select value={form.role} onValueChange={v => setForm({ ...form, role: (v ?? 'service') as AdminRole })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{roleLabel[form.role]}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="service">客服</SelectItem>
                   <SelectItem value="product_manager">商品管理员</SelectItem>
@@ -229,7 +229,7 @@ export default function AccountsPage() {
               <div className="space-y-2">
                 <Label>状态</Label>
                 <Select value={form.status} onValueChange={v => setForm({ ...form, status: (v ?? 'active') as 'active' | 'disabled' })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{statusLabel[form.status]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">正常</SelectItem>
                     <SelectItem value="disabled">禁用</SelectItem>

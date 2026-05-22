@@ -1,11 +1,11 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
-import { getDb } from '@/lib/cloudbase'
+import { callFunction } from '@/lib/cloudbase'
 import type { AdminRole } from '@/lib/types'
 import { writeAdminLog } from '@/lib/admin-log'
+import { hasUsableToken } from './auth-helpers'
 
-const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin']
 const ADMIN_SESSION_KEY = 'dxdy_admin_profile'
 
 export interface AdminProfile {
@@ -15,28 +15,10 @@ export interface AdminProfile {
   role: AdminRole
   permissions: Record<string, boolean>
   status: 'active' | 'disabled'
-}
-
-type CloudUser = Record<string, unknown> & {
-  _id?: string
-  username?: string
-  role?: string
-  status?: string
+  token?: string
 }
 
 const allowAnyPassword = process.env.NEXT_PUBLIC_ADMIN_ALLOW_ANY_PASSWORD === 'true'
-
-function normalizeProfile(doc: CloudUser, fallbackId = ''): AdminProfile | null {
-  if (!doc || !ADMIN_ROLES.includes(doc.role as AdminRole) || doc.status === 'disabled') return null
-  return {
-    id: String(doc._id || fallbackId),
-    username: String(doc.username || ''),
-    realName: String((doc as any).realName || doc.username || fallbackId),
-    role: doc.role as AdminRole,
-    permissions: typeof doc.permissions === 'object' && doc.permissions ? doc.permissions as Record<string, boolean> : {},
-    status: doc.status === 'disabled' ? 'disabled' : 'active',
-  }
-}
 
 interface AuthContextValue {
   user: AdminProfile | null
@@ -59,7 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(ADMIN_SESSION_KEY)
-      if (stored) setUser(JSON.parse(stored) as AdminProfile)
+      if (stored) {
+        const profile = JSON.parse(stored) as AdminProfile
+        if (hasUsableToken(profile)) {
+          setUser(profile)
+        } else {
+          window.localStorage.removeItem(ADMIN_SESSION_KEY)
+        }
+      }
     } catch {
       window.localStorage.removeItem(ADMIN_SESSION_KEY)
     } finally {
@@ -68,14 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (username: string, password: string) => {
-    const res = await getDb().collection('users').where({ username }).limit(1).get()
-    const doc = (res.data as CloudUser[])?.[0]
-    const profile = doc ? normalizeProfile(doc) : null
-    const storedPassword = String((doc as any)?.password || '')
-    const passwordMatched = allowAnyPassword || !storedPassword || storedPassword === '***' || storedPassword === password
-    if (!profile || !passwordMatched) {
-      throw new Error('账号或密码错误')
-    }
+    const result = await callFunction<{ success?: boolean; error?: string; profile?: AdminProfile; token?: string }>('adminLogin', {
+      username,
+      password,
+      allowAnyPassword,
+    })
+    if (!result.success || !result.profile || !result.token) throw new Error(result.error || '账号或密码错误')
+    const profile = { ...result.profile, token: result.token }
     setUser(profile)
     window.localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(profile))
     writeAdminLog({ operator: profile, action: 'login', target: profile.id, detail: `管理员 ${profile.realName} 登录` }).catch(() => {})
