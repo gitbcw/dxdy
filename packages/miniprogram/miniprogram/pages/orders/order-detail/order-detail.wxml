@@ -79,6 +79,10 @@
         <text>预约信息</text>
         <text>{{selectedOrder.booking.date}} · {{selectedOrder.booking.location}}</text>
       </view>
+      <view wx:if="{{selectedOrder.booking && selectedOrder.booking.bloodBooking}}" class="order-meta">
+        <text>用血需求</text>
+        <text>{{selectedOrder.booking.speciesLabel}} · {{selectedOrder.booking.bloodType}} · {{selectedOrder.booking.volumeMl}}ml</text>
+      </view>
     </view>
 
     <view class="card">
@@ -105,6 +109,10 @@
         <text>实付款</text>
         <text>¥{{selectedOrder.totalText}}</text>
       </view>
+      <view wx:if="{{selectedOrder.payment && selectedOrder.payment.status === 'paid'}}" class="amount-row">
+        <text>付款方式</text>
+        <text>{{selectedOrder.paymentMethodText}}</text>
+      </view>
     </view>
 
     <view class="card">
@@ -115,6 +123,45 @@
       <view class="order-meta" bindtap="onLogisticsTap">
         <text>物流信息</text>
         <text>{{selectedOrder.logisticsText}} ></text>
+      </view>
+    </view>
+
+    <view wx:if="{{selectedOrder.status === 'pending_payment'}}" class="card">
+      <text class="card-title">支付方式</text>
+      <view class="pay-list">
+        <view class="pay-item {{selectedPayMethod === 'wechat' ? 'active' : ''}}" data-method="wechat" bindtap="onPayMethodTap">
+          <text>微信支付</text>
+          <text>推荐</text>
+        </view>
+        <view class="pay-item {{selectedPayMethod === 'wallet' ? 'active' : ''}}" data-method="wallet" bindtap="onPayMethodTap">
+          <text>钱包余额</text>
+          <text>余额 ¥{{walletBalanceText}}</text>
+        </view>
+      </view>
+      <view wx:if="{{selectedOrder.type === 'booking'}}" class="voucher-pay">
+        <view class="voucher-head">
+          <text>卡券抵扣</text>
+          <text>{{availableCardVouchers.length ? '请选择一张可用卡券' : '暂无可用卡券'}}</text>
+        </view>
+        <view wx:if="{{availableCardVouchers.length}}" class="voucher-list">
+          <view
+            wx:for="{{availableCardVouchers}}"
+            wx:key="id"
+            class="voucher-item {{selectedCardVoucherId === item.id ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onCardVoucherTap"
+          >
+            <view>
+              <text class="voucher-title">{{item.productName}}</text>
+              <text class="voucher-no">{{item.cardNo}}</text>
+            </view>
+            <text class="voucher-amount">-¥{{item.discountText}}</text>
+          </view>
+        </view>
+        <view wx:if="{{selectedCardVoucherId}}" class="voucher-summary">
+          <text>已抵扣 ¥{{cardDiscountText}}</text>
+          <text>还需支付 ¥{{payableAmountText}}</text>
+        </view>
       </view>
     </view>
 
@@ -140,7 +187,7 @@
         <text>申请售后</text>
         <text>{{selectedOrder.returnRecord ? selectedOrder.returnStatusText : '可申请' }} ></text>
       </view>
-      <view class="link-row">
+      <view class="link-row" bindtap="onServiceTap">
         <text>联系客服</text>
         <text>></text>
       </view>

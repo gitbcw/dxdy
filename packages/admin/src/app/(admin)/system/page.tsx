@@ -168,7 +168,7 @@ export default function SystemPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>推荐奖励积分（被推荐人首单完成后奖励给推荐人）</Label>
-              <Input type="number" value={config.referralRewardPoints} onChange={e => setConfig({ ...config, referralRewardPoints: parseInt(e.target.value) || 0 })} />
+              <Input type="number" value={config.referralRewardPoints ?? 0} onChange={e => setConfig({ ...config, referralRewardPoints: parseInt(e.target.value) || 0 })} />
             </div>
           </CardContent>
         </Card>

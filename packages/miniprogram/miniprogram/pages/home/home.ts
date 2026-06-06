@@ -176,7 +176,7 @@ Page({
       if (!isVerified) {
         const bannerStatus = data.user?.verificationStatus || 'none'
         const bannerTextMap: Record<string, string> = {
-          none: '完成医院认证，解锁机构专属商品与价格',
+          none: '完成门店认证，解锁机构专属商品与价格',
           pending: '认证审核中，请耐心等待',
           rejected: '认证被驳回，请重新提交',
         }
@@ -200,7 +200,6 @@ Page({
             actionText: '看订单',
           }] : [],
           quickActions: [
-            { icon: '览', title: '浏览商品', action: 'catalog' },
             { icon: '单', title: '我的订单', action: 'orders' },
             { icon: '证', title: '去认证', action: 'verify' },
             { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
@@ -251,12 +250,10 @@ Page({
         identityTagClass: 'verified',
         taskCards,
         quickActions: [
-          { icon: '购', title: '商品采购', action: 'catalog' },
-          { icon: '血', title: '预约用血', action: 'blood' },
-          { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
+          { icon: '血', title: '门店预约', action: 'blood' },
+          { iconKey: 'transfusionAssistant', icon: '配', title: '门店帮手', action: 'transfusionAssistant' },
           { icon: '单', title: '我的订单', action: 'orders' },
           { icon: '券', title: '我的卡券', action: 'cardWallet' },
-          { icon: '检', title: '检测查询', action: 'testQuery' },
         ],
         boardTitle: '常购商品',
         boardMoreText: '进入采购',
@@ -382,7 +379,6 @@ Page({
         actionText: '看订单',
       }] : [],
       quickActions: [
-        { icon: '购', title: '商品浏览', action: 'catalog' },
         { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
         { icon: '单', title: '我的订单', action: 'orders' },
         { icon: '代', title: data.user?.agentStatus ? '代理状态' : '申请代理', action: data.user?.agentStatus ? 'agentStatus' : 'agentApply' },

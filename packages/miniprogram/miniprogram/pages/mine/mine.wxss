@@ -147,6 +147,14 @@
   text-align: center;
 }
 
+.profile-stat.tappable {
+  cursor: pointer;
+}
+
+.profile-stat.tappable:active {
+  opacity: 0.72;
+}
+
 .profile-stat + .profile-stat {
   border-left: 1rpx solid #e5efe8;
 }

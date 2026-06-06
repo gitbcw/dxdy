@@ -11,7 +11,6 @@
     <view wx:for="{{visibleCards}}" wx:key="id" class="card-item" bindtap="onCardTap" data-id="{{item.id}}">
       <view class="card-left">
         <text class="card-product">{{item.productName}}</text>
-        <text class="card-meta">有效期至 {{item.expiresAt}}</text>
       </view>
       <view class="card-right">
         <text class="card-status status-{{item.status}}">{{item.status === 'gifted' ? '待认领' : item.status === 'claimed' ? '可使用' : item.status === 'redeemed' ? '已兑换' : item.status === 'verified' ? '已核销' : item.status === 'expired' ? '已过期' : '已作废'}}</text>

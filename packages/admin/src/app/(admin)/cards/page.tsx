@@ -12,12 +12,21 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { writeAdminLog } from '@/lib/admin-log';
+import { getApp } from '@/lib/cloudbase';
 import { formatDateTime } from '@/lib/format';
-import { fetchCardVouchers, updateCardVoucher } from '@/lib/services/database';
-import type { CardVoucher, CardVoucherStatus } from '@/lib/types';
+import {
+  createCardVoucher,
+  fetchCardVouchers,
+  fetchUsers,
+  updateCardVoucher,
+} from '@/lib/services/database';
+import type { CardVoucher, CardVoucherStatus, Customer, Salesperson } from '@/lib/types';
 
 const statusLabel: Record<CardVoucherStatus, string> = {
   ungifted: '未赠送',
@@ -41,6 +50,20 @@ const statusVariant: Record<CardVoucherStatus, 'default' | 'secondary' | 'destru
 
 type StatusFilter = 'all' | CardVoucherStatus;
 
+type CardCreateForm = {
+  productName: string;
+  count: string;
+  deductionAmount: string;
+  productImage: string;
+};
+
+type GiftTarget = {
+  id: string;
+  name: string;
+  phone: string;
+  type: 'salesperson' | 'institution';
+};
+
 const tabs: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: '全部' },
   { value: 'ungifted', label: '未赠送' },
@@ -57,6 +80,98 @@ function normalizeDoc(doc: Record<string, unknown>): CardVoucher {
   return { id: String(_id || (doc as Record<string, unknown>).id || ''), ...rest } as CardVoucher;
 }
 
+const emptyCreateForm = (): CardCreateForm => ({
+  productName: '',
+  count: '1',
+  deductionAmount: '',
+  productImage: '',
+});
+
+const CARD_COVER_MAX_SIZE = 2 * 1024 * 1024;
+const CARD_COVER_PUBLIC_BASE_URL = 'https://636c-cloud1-d7g7ctn4m86bada89-1433980811.tcb.qcloud.la';
+const CARD_COVER_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function buildCardNo(index: number) {
+  const now = new Date();
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('');
+  const stamp = Date.now().toString(36).toUpperCase();
+  return `DXCARD${date}${stamp}${String(index + 1).padStart(3, '0')}`;
+}
+
+function getSafeCoverFileName(file: File) {
+  const name = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') || 'cover';
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  return `${name}.${ext}`;
+}
+
+function getUserDisplayName(input: object) {
+  const user = input as Record<string, unknown>;
+  const verificationInfo = user.verificationInfo && typeof user.verificationInfo === 'object'
+    ? user.verificationInfo as Record<string, unknown>
+    : {};
+  const agentApplication = user.agentApplication && typeof user.agentApplication === 'object'
+    ? user.agentApplication as Record<string, unknown>
+    : {};
+  return String(
+    verificationInfo.hospitalName ||
+    agentApplication.companyName ||
+    user.nickname ||
+    verificationInfo.realName ||
+    verificationInfo.contactName ||
+    agentApplication.realName ||
+    agentApplication.contactName ||
+    user.nickname ||
+    user.phone ||
+    user.id ||
+    ''
+  );
+}
+
+function buildGiftTargets(customers: Customer[], salespersons: Salesperson[]): GiftTarget[] {
+  const agentTargets = salespersons
+    .filter(person => person.verificationStatus === 'approved' || (person as unknown as { agentStatus?: string }).agentStatus === 'approved')
+    .map(person => ({
+      id: person.id,
+      name: getUserDisplayName(person),
+      phone: person.phone || '',
+      type: 'salesperson' as const,
+    }));
+  const hospitalTargets = customers
+    .filter(customer => customer.customerType === 'institution')
+    .map(customer => ({
+      id: customer.id,
+      name: getUserDisplayName(customer),
+      phone: customer.phone || '',
+      type: 'institution' as const,
+    }));
+  return [...agentTargets, ...hospitalTargets].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'));
+}
+
+async function uploadCardCover(file: File): Promise<string> {
+  if (!CARD_COVER_ALLOWED_TYPES.has(file.type)) {
+    throw new Error('仅支持 JPG、PNG、WebP 格式的卡券封面');
+  }
+  if (file.size > CARD_COVER_MAX_SIZE) {
+    throw new Error('卡券封面不能超过 2MB');
+  }
+
+  const app = getApp();
+  if (!app?.uploadFile) throw new Error('CloudBase 未初始化，无法上传卡券封面');
+
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  const cloudPath = `card-vouchers/${timestamp}-${random}-${getSafeCoverFileName(file)}`;
+  await app.uploadFile({
+    cloudPath,
+    filePath: file,
+  });
+  return `${CARD_COVER_PUBLIC_BASE_URL}/${cloudPath}`;
+}
+
 export default function CardsPage() {
   const { user } = useAuth();
   const [cards, setCards] = useState<CardVoucher[]>([]);
@@ -65,6 +180,13 @@ export default function CardsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState<CardCreateForm>(emptyCreateForm());
+  const [creating, setCreating] = useState(false);
+  const [giftTargets, setGiftTargets] = useState<GiftTarget[]>([]);
+  const [giftTarget, setGiftTarget] = useState<CardVoucher | null>(null);
+  const [giftTargetId, setGiftTargetId] = useState('');
+  const [gifting, setGifting] = useState(false);
 
   // 作废对话框
   const [voidTarget, setVoidTarget] = useState<CardVoucher | null>(null);
@@ -74,7 +196,11 @@ export default function CardsPage() {
   async function loadCards() {
     setLoading(true);
     try {
-      const docs = await fetchCardVouchers();
+      const [docs, users] = await Promise.all([
+        fetchCardVouchers(),
+        fetchUsers(),
+      ]);
+      setGiftTargets(buildGiftTargets(users.customers || [], users.salespersons || []));
       // 惰性过期：标记已过期的卡券
       const now = new Date().toISOString();
       const updated = docs.map(card => {
@@ -115,6 +241,8 @@ export default function CardsPage() {
     claimed: cards.filter(c => c.status === 'claimed').length,
     redeemed: cards.filter(c => c.status === 'redeemed').length,
   };
+  const canAdminGiftCards = user?.role === 'system_admin';
+  const selectedGiftTarget = giftTargets.find(item => item.id === giftTargetId);
 
   async function handleVoid() {
     if (!voidTarget || !voidReason.trim()) return;
@@ -144,10 +272,139 @@ export default function CardsPage() {
     }
   }
 
+  function openGiftDialog(card: CardVoucher) {
+    setGiftTarget(card);
+    setGiftTargetId('');
+  }
+
+  async function handleGiftCard() {
+    if (!giftTarget || !giftTargetId) return;
+    const target = giftTargets.find(item => item.id === giftTargetId);
+    if (!target) {
+      alert('请选择赠送对象');
+      return;
+    }
+    setGifting(true);
+    try {
+      const now = new Date().toISOString();
+      const giftEntry = {
+        fromUserId: user?.id || '',
+        fromUserName: user?.realName || user?.username || '系统管理员',
+        toUserId: target.id,
+        toUserName: target.name,
+        action: 'admin_gift',
+        at: now,
+      };
+      await updateCardVoucher(giftTarget.id, {
+        status: 'gifted',
+        currentHolderId: target.id,
+        currentHolderName: target.name,
+        giftHistory: [...(giftTarget.giftHistory || []), giftEntry],
+        updatedAt: now,
+      });
+      await writeAdminLog({
+        operator: user,
+        action: 'gift_card',
+        target: giftTarget.cardNo,
+        detail: `系统管理员赠送卡券 ${giftTarget.cardNo} 给 ${target.name}`,
+      });
+      setGiftTarget(null);
+      setGiftTargetId('');
+      loadCards();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : '赠送卡券失败');
+    } finally {
+      setGifting(false);
+    }
+  }
+
+  function openCreateDialog() {
+    setCreateForm(emptyCreateForm());
+    setShowCreateDialog(true);
+  }
+
+  async function handleCoverUpload(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    try {
+      const imageUrl = await uploadCardCover(file);
+      setCreateForm(form => ({ ...form, productImage: imageUrl }));
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : '上传卡券封面失败');
+    }
+  }
+
+  async function handleCreateCards() {
+    const count = Math.min(Math.max(parseInt(createForm.count, 10) || 1, 1), 200);
+    const deductionAmount = Math.round((Number(createForm.deductionAmount) || 0) * 100) / 100;
+    const productName = createForm.productName.trim();
+    if (!productName) {
+      alert('请输入卡券名称');
+      return;
+    }
+    if (deductionAmount <= 0) {
+      alert('请输入有效的卡券抵扣金额');
+      return;
+    }
+    if (!createForm.productImage) {
+      alert('请上传卡券封面');
+      return;
+    }
+    setCreating(true);
+    try {
+      const now = new Date().toISOString();
+      for (let index = 0; index < count; index += 1) {
+        await createCardVoucher({
+          cardNo: buildCardNo(index),
+          status: 'ungifted',
+          purchaseOrderId: '',
+          purchaseOrderNo: '',
+          productId: '',
+          productName,
+          productImage: createForm.productImage,
+          redeemableCategory: '',
+          validDays: 0,
+          expiresAt: '',
+          deductionAmount,
+          discountAmount: deductionAmount,
+          purchaserId: '',
+          purchaserName: '',
+          purchaserOpenid: '',
+          currentHolderId: null,
+          currentHolderName: '',
+          giftHistory: [],
+          redeemedOrderId: '',
+          redeemedProductId: '',
+          redeemedProductName: '',
+          redeemedAt: '',
+          verifiedAt: '',
+          voidedAt: '',
+          voidedBy: '',
+          voidReason: '',
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      await writeAdminLog({
+        operator: user,
+        action: 'create_card_voucher',
+        target: productName,
+        detail: `新增卡券 ${productName}，数量 ${count}`,
+      });
+      setShowCreateDialog(false);
+      loadCards();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : '新增卡券失败');
+    } finally {
+      setCreating(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">卡券管理</h1>
+        <Button onClick={openCreateDialog}>新增卡券</Button>
       </div>
 
       {/* 汇总卡片 */}
@@ -229,6 +486,16 @@ export default function CardsPage() {
                       <TableCell className="text-xs">{card.expiresAt ? formatDateTime(card.expiresAt) : '-'}</TableCell>
                       <TableCell className="text-xs">{card.createdAt ? formatDateTime(card.createdAt) : '-'}</TableCell>
                       <TableCell>
+                        {canAdminGiftCards && card.status === 'ungifted' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mr-2"
+                            onClick={() => openGiftDialog(card)}
+                          >
+                            赠送
+                          </Button>
+                        )}
                         {['ungifted', 'gifted', 'claimed'].includes(card.status) && (
                           <Button
                             size="sm"
@@ -275,7 +542,121 @@ export default function CardsPage() {
         </TabsContent>
       </Tabs>
 
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>新增卡券</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>卡券名称</Label>
+              <Input
+                value={createForm.productName}
+                onChange={e => setCreateForm(form => ({ ...form, productName: e.target.value }))}
+                placeholder="请输入卡券名称"
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>生成数量</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={createForm.count}
+                  onChange={e => setCreateForm(form => ({ ...form, count: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>卡券抵扣金额</Label>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={createForm.deductionAmount}
+                  onChange={e => setCreateForm(form => ({ ...form, deductionAmount: e.target.value }))}
+                  placeholder="请输入抵扣金额"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>卡券封面</Label>
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={e => handleCoverUpload(e.target.files)}
+              />
+              {createForm.productImage && (
+                <div className="flex items-center gap-3 rounded-md border p-2">
+                  <img
+                    src={createForm.productImage}
+                    alt="卡券封面"
+                    className="h-16 w-24 rounded object-cover"
+                  />
+                  <span className="text-sm text-muted-foreground">已上传卡券封面</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>取消</Button>
+            <Button
+              onClick={handleCreateCards}
+              disabled={creating || !createForm.productName.trim() || !createForm.deductionAmount || !createForm.productImage}
+            >
+              {creating ? '创建中...' : '确认创建'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* 作废对话框 */}
+      <Dialog open={!!giftTarget} onOpenChange={open => { if (!open) setGiftTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>赠送卡券</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>
+                卡号：<span className="font-mono font-medium text-foreground">{giftTarget?.cardNo}</span>
+              </p>
+              <p>
+                卡券：<span className="font-medium text-foreground">{giftTarget?.productName}</span>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>赠送对象</Label>
+              <Select value={giftTargetId} onValueChange={value => setGiftTargetId(value || '')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {selectedGiftTarget
+                      ? `${selectedGiftTarget.name} · ${selectedGiftTarget.type === 'salesperson' ? '实名代理商' : '医院客户'}${selectedGiftTarget.phone ? ` · ${selectedGiftTarget.phone}` : ''}`
+                      : '选择实名代理商或医院客户'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  {giftTargets.map(target => (
+                    <SelectItem key={target.id} value={target.id}>
+                      {target.name} · {target.type === 'salesperson' ? '实名代理商' : '医院客户'}{target.phone ? ` · ${target.phone}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {giftTargets.length === 0 && (
+                <p className="text-xs text-muted-foreground">暂无可赠送对象：需要实名代理商或医院客户。</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGiftTarget(null)}>取消</Button>
+            <Button onClick={handleGiftCard} disabled={gifting || !giftTargetId}>
+              {gifting ? '赠送中...' : '确认赠送'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!voidTarget} onOpenChange={open => { if (!open) setVoidTarget(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>

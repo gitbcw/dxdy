@@ -1,4 +1,4 @@
-const { getAgentOrders, formatMoney, getOrderStatusText, getProductVisualImage } = require('../../../services/index')
+const { getAgentOrders, getSystemConfig, formatMoney, getOrderStatusText, getProductVisualImage } = require('../../../services/index')
 const icons = require('../../../services/icons')
 
 Page({
@@ -28,8 +28,12 @@ Page({
   },
 
   async loadOrders() {
-    const orders = await getAgentOrders({ customerId: this.data.customerId })
-    const mapped = orders.map((order: any) => this.mapOrder(order))
+    const [orders, config] = await Promise.all([
+      getAgentOrders({ customerId: this.data.customerId }),
+      getSystemConfig(),
+    ])
+    const commissionRate = Math.max(0, Number(config?.commissionRate || 0))
+    const mapped = orders.map((order: any) => this.mapOrder(order, commissionRate))
     this.setData({
       orders: mapped,
       visibleOrders: this.filterOrders(mapped, this.data.activeTab),
@@ -38,15 +42,17 @@ Page({
     })
   },
 
-  mapOrder(order: any) {
+  mapOrder(order: any, commissionRate: number) {
     const firstItem = order.items?.[0] || {}
     const amount = order.pricing?.actualAmount || 0
     const commission = order.commission || {}
+    const computedCommissionAmount = Math.round(amount * commissionRate * 100) / 100
     return {
       ...order,
       statusText: getOrderStatusText(order.status),
       amountText: formatMoney(amount),
-      commissionText: `${this.getCommissionStatusText(commission.status)} ¥${formatMoney(commission.amount || 0)}`,
+      computedCommissionAmount,
+      commissionText: `${this.getCommissionStatusText(commission.status)} ¥${formatMoney(computedCommissionAmount)}`,
       itemText: `${firstItem.productName || '订单商品'} · ${firstItem.spec || ''}`,
       productImage: firstItem.productImage || getProductVisualImage(firstItem.productName),
       itemCount: (order.items || []).reduce((sum: number, item: any) => sum + (item.quantity || 0), 0),
@@ -69,7 +75,7 @@ Page({
 
   getSummaryCards(orders: any[]) {
     const totalAmount = orders.reduce((sum: number, order: any) => sum + (order.pricing?.actualAmount || 0), 0)
-    const commissionAmount = orders.reduce((sum: number, order: any) => sum + (order.commission?.amount || 0), 0)
+    const commissionAmount = orders.reduce((sum: number, order: any) => sum + (order.computedCommissionAmount || 0), 0)
     return [
       { value: String(orders.length), label: '客户订单' },
       { value: `¥${formatMoney(totalAmount)}`, label: '订单金额' },

@@ -4,11 +4,12 @@ const crypto = require('crypto')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
-const ADMIN_ROLES = ['service', 'product_manager', 'system_admin']
+const ADMIN_ROLES = ['service', 'product_manager', 'system_admin', 'clerk']
 
 const defaultPermissions = {
   service: { view_dashboard: true, manage_orders: true, manage_returns: true },
   product_manager: { view_dashboard: true, manage_products: true },
+  clerk: { manage_orders: true, manage_returns: true },
   system_admin: {
     view_dashboard: true,
     manage_products: true,

@@ -23,7 +23,13 @@
         <text wx:if="{{showVerifyState}}" class="verify-state">{{userInfo.verificationStatus === 'approved' ? '已认证' : '去认证'}}</text>
       </view>
       <view class="profile-stats" wx:if="{{stats.length > 0}}">
-        <view wx:for="{{stats}}" wx:key="label" class="profile-stat">
+        <view
+          wx:for="{{stats}}"
+          wx:key="label"
+          class="profile-stat {{item.action ? 'tappable' : ''}}"
+          data-action="{{item.action}}"
+          bindtap="onProfileStatTap"
+        >
           <text class="profile-stat-label">{{item.label}}</text>
           <text class="profile-stat-value">{{item.value}}</text>
         </view>
@@ -63,8 +69,8 @@
     <view class="cert-row" wx:if="{{showOrderBar}}" bindtap="onVerifyTap">
       <image class="cert-icon" src="{{certIcon}}" mode="aspectFit" />
       <view class="cert-copy">
-        <text class="cert-title">医院认证</text>
-        <text class="cert-desc">认证通过后可购买血包并享受医院价</text>
+        <text class="cert-title">门店认证</text>
+        <text class="cert-desc">认证通过后可享受医院采购价</text>
       </view>
       <text class="cert-status">{{userInfo.verificationStatus === 'approved' ? '已认证' : '去认证'}} ›</text>
     </view>

@@ -35,7 +35,7 @@ export function canPurchase(product: PurchaseCheckProduct, user: PurchaseCheckUs
   const isBloodPack = product.productType === 'blood_pack' || product.isBloodPack
   if (isBloodPack) {
     if (customerType !== 'institution') return { allowed: false, reason: '血包商品仅限医院客户', code: 'blood_pack_auth' }
-    if (user.verificationStatus !== 'approved') return { allowed: false, reason: '请先完成医院认证', code: 'blood_pack_auth' }
+    if (user.verificationStatus !== 'approved') return { allowed: false, reason: '请先完成门店认证', code: 'blood_pack_auth' }
   }
 
   const isCardVoucher = product.productType === 'card_voucher'

@@ -26,6 +26,58 @@
   font-weight: 900;
 }
 
+.points-card {
+  margin: 0 22rpx 22rpx;
+  padding: 24rpx 26rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  border: 2rpx solid #e8ebe8;
+}
+
+.points-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.points-label,
+.points-worth-label {
+  display: block;
+  color: #6b7671;
+  font-size: 22rpx;
+}
+
+.points-value {
+  display: block;
+  margin-top: 6rpx;
+  color: #17231f;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.points-worth {
+  min-width: 180rpx;
+  padding-left: 24rpx;
+  border-left: 2rpx solid #eef1ef;
+}
+
+.points-worth-value {
+  display: block;
+  margin-top: 6rpx;
+  color: #ff5a00;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.points-rule {
+  display: block;
+  margin-top: 18rpx;
+  color: #89948f;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
 .section-title {
   margin: 26rpx 22rpx 14rpx;
   color: #17231f;

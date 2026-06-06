@@ -69,7 +69,6 @@ Page({
     bookingDate: getDefaultBookingDate(),
     minBookingDate: formatDate(new Date()),
     bookingLocation: '上海宠物血液中心',
-    payMethod: 'wechat',
     addressText: '',
     addressName: '请选择收货人',
     addressPhone: '',
@@ -270,10 +269,6 @@ Page({
 
   onBookingDateChange(e: any) {
     this.setData({ bookingDate: e.detail.value })
-  },
-
-  onPayMethodChange(e: any) {
-    this.setData({ payMethod: e.currentTarget.dataset.method })
   },
 
   onUrgentToggle(e: any) {

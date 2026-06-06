@@ -4,6 +4,20 @@
     <text class="balance-value">¥{{balance}}</text>
   </view>
 
+  <view class="points-card">
+    <view class="points-main">
+      <view>
+        <text class="points-label">当前积分</text>
+        <text class="points-value">{{pointsBalance}}</text>
+      </view>
+      <view class="points-worth">
+        <text class="points-worth-label">可抵扣</text>
+        <text class="points-worth-value">¥{{pointsValueText}}</text>
+      </view>
+    </view>
+    <text class="points-rule">{{pointsRuleText}}</text>
+  </view>
+
   <view class="section-title">选择充值档位</view>
 
   <view class="tiers">

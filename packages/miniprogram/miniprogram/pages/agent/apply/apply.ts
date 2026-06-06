@@ -1,4 +1,4 @@
-const { submitAgentApplication } = require('../../../services/index')
+const { submitAgentApplication, isApprovedAgent } = require('../../../services/index')
 const icons = require('../../../services/icons')
 
 Page({
@@ -31,6 +31,11 @@ Page({
     if (!user) {
       wx.showToast({ title: '请先登录', icon: 'none' })
       setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 500)
+      return
+    }
+    if (isApprovedAgent(user)) {
+      wx.showToast({ title: '代理商审核已通过', icon: 'none' })
+      setTimeout(() => wx.redirectTo({ url: '/pages/agent/verify-status/verify-status' }), 500)
       return
     }
     const appInfo = user.agentApplication || {}
@@ -130,6 +135,12 @@ Page({
     wx.showLoading({ title: '提交中...' })
     const app = getApp()
     const user = app.globalData.userInfo
+    if (isApprovedAgent(user)) {
+      wx.hideLoading()
+      wx.showToast({ title: '代理商审核已通过，无需重复提交', icon: 'none' })
+      setTimeout(() => wx.redirectTo({ url: '/pages/agent/verify-status/verify-status' }), 500)
+      return
+    }
     const result = await submitAgentApplication(user.id, {
       companyName: companyName.trim(),
       realName: realName.trim(),

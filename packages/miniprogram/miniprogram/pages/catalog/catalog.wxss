@@ -155,13 +155,16 @@
 
 .product-list {
   margin-top: 18rpx;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
 }
 
 .product-card {
   display: flex;
-  gap: 20rpx;
-  margin-bottom: 18rpx;
-  padding: 18rpx;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14rpx;
   border-radius: 18rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
@@ -175,8 +178,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 150rpx;
-  height: 150rpx;
+  width: 100%;
+  height: 316rpx;
   border-radius: 16rpx;
   color: #139445;
   font-size: 24rpx;
@@ -197,7 +200,10 @@
 }
 
 .product-info {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  padding-top: 14rpx;
   min-width: 0;
 }
 
@@ -211,9 +217,15 @@
 .product-name {
   flex: 1;
   color: #17231f;
-  font-size: 27rpx;
+  font-size: 25rpx;
   line-height: 1.4;
   font-weight: 900;
+  display: -webkit-box;
+  min-height: 70rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .lock {
@@ -228,6 +240,17 @@
   color: #7e8984;
   font-size: 21rpx;
   line-height: 1.45;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.product-sales {
+  display: block;
+  margin-top: 4rpx;
+  color: #8b9691;
+  font-size: 20rpx;
+  line-height: 1.35;
 }
 
 .tag-row {
@@ -263,20 +286,27 @@
 .product-bottom {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12rpx;
-  margin-top: 14rpx;
+  margin-top: auto;
+  padding-top: 14rpx;
 }
 
 .price-group {
   display: flex;
-  align-items: baseline;
-  gap: 8rpx;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2rpx;
 }
 
 .price {
   color: #ff5a00;
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 900;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .original-price {
@@ -286,7 +316,7 @@
 }
 
 .stock {
-  flex: 1;
+  flex-shrink: 0;
   color: #139445;
   font-size: 20rpx;
 }
@@ -311,6 +341,7 @@
 }
 
 .empty {
+  grid-column: 1 / -1;
   padding: 160rpx 0;
   color: #8b9994;
   font-size: 26rpx;

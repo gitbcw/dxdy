@@ -1,70 +1,37 @@
 <view class="page" wx:if="{{card}}">
-  <!-- 卡券卡片 -->
   <view class="card-banner status-{{card.status}}">
     <text class="card-no">{{card.cardNo}}</text>
     <text class="card-status">{{statusText}}</text>
     <text class="card-product">{{card.productName}}</text>
-    <text class="card-expire">有效期至 {{card.expiresAt}}</text>
   </view>
 
-  <!-- 转赠历史 -->
   <view wx:if="{{card.giftHistory.length > 0}}" class="section">
     <text class="section-title">流转记录</text>
     <view wx:for="{{card.giftHistory}}" wx:key="at" class="history-item">
-      <text class="history-action">{{item.action === 'gift' ? '赠送' : '转赠'}}</text>
+      <text class="history-action">{{item.action === 'gift' || item.action === 'admin_gift' ? '赠送' : item.action === 'share_claim' ? '扫码认领' : '转赠'}}</text>
       <text class="history-names">{{item.fromUserName}} → {{item.toUserName}}</text>
       <text class="history-time">{{item.at}}</text>
     </view>
   </view>
 
-  <!-- 兑换信息 -->
-  <view wx:if="{{card.redeemedProductName}}" class="section">
-    <text class="section-title">兑换信息</text>
-    <text class="info-row">兑换商品：{{card.redeemedProductName}}</text>
-    <text class="info-row">兑换时间：{{card.redeemedAt}}</text>
-  </view>
-
-  <!-- 操作按钮 -->
   <view class="actions">
     <button wx:if="{{canClaim}}" class="btn-primary" bindtap="onClaimTap" loading="{{loading}}">认领卡券</button>
-    <button wx:if="{{canRegift}}" class="btn-secondary" bindtap="onShowRegiftPanel">转赠他人</button>
-    <button wx:if="{{canRedeem}}" class="btn-primary" bindtap="onShowRedeemPanel">兑换血包</button>
+    <button wx:if="{{canRegift}}" class="btn-secondary" bindtap="onShowRegiftPanel" loading="{{loading}}">转赠他人</button>
   </view>
 
-  <!-- 转赠面板 -->
   <view wx:if="{{showRegiftPanel}}" class="panel-overlay" bindtap="onCloseRegiftPanel">
-    <view class="panel" catchtap="">
+    <view class="panel share-panel" catchtap="">
       <text class="panel-title">转赠卡券</text>
-      <input class="panel-search" placeholder="搜索机构客户名称或手机号" bindinput="onRegiftSearch" />
-      <view class="panel-list">
-        <view wx:for="{{regiftResults}}" wx:key="id"
-          class="panel-item {{regiftSelectedId === item.id ? 'selected' : ''}}"
-          data-id="{{item.id}}" data-name="{{item.name}}" bindtap="onSelectRegiftTarget">
-          <text>{{item.name}}</text>
-          <text class="phone">{{item.phone}}</text>
-        </view>
+      <text class="panel-desc">将二维码或链接发给对方。对方扫码进入小程序后，未注册会先引导注册，已注册用户可直接认领。</text>
+      <view class="qrcode-box">
+        <image wx:if="{{shareQrcodeUrl}}" class="share-qrcode" src="{{shareQrcodeUrl}}" mode="aspectFit" />
+        <view wx:else class="qrcode-loading">二维码生成中</view>
       </view>
-      <button class="btn-primary" bindtap="onConfirmRegift" disabled="{{!regiftSelectedId}}" loading="{{loading}}">
-        确认转赠给 {{regiftSelectedName}}
-      </button>
-    </view>
-  </view>
-
-  <!-- 兑换面板 -->
-  <view wx:if="{{showRedeemPanel}}" class="panel-overlay" bindtap="onCloseRedeemPanel">
-    <view class="panel" catchtap="">
-      <text class="panel-title">选择兑换商品</text>
-      <view class="panel-list">
-        <view wx:for="{{redeemProducts}}" wx:key="id"
-          class="panel-item {{selectedProductId === item.id ? 'selected' : ''}}"
-          data-id="{{item.id}}" data-name="{{item.name}}" bindtap="onSelectProduct">
-          <text class="product-name">{{item.name}}</text>
-          <text class="product-price">¥{{item.institutionPrice || item.personalPrice}}</text>
-        </view>
+      <view class="share-link-row">
+        <text class="share-link">{{shareLink}}</text>
+        <button class="copy-link-btn" bindtap="onCopyShareLink">复制链接</button>
       </view>
-      <button class="btn-primary" bindtap="onConfirmRedeem" disabled="{{!selectedProductId}}" loading="{{loading}}">
-        确认兑换 {{selectedProductName}}
-      </button>
+      <button class="btn-primary share-mini-btn" open-type="share">分享给微信好友</button>
     </view>
   </view>
 </view>

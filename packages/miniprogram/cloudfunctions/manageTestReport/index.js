@@ -4,6 +4,17 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
 
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
+
 function formatDateTime(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -109,7 +120,7 @@ exports.main = async (event) => {
         operatorId: user._id, operatorName, operatorRole: user.role,
         action: '创建检测报告', target: _id,
         detail: `创建血包编号 ${code} 的检测报告`,
-        result: 'success', createdAt: now,
+        result: 'success', createdAt: formatBeijingLogTime(),
       },
     })
     return { success: true, report: { ...report, id: _id } }
@@ -148,7 +159,7 @@ exports.main = async (event) => {
         operatorId: user._id, operatorName, operatorRole: user.role,
         action: '更新检测报告', target: reportId,
         detail: `更新血包编号 ${existing.code} 的检测报告`,
-        result: 'success', createdAt: now,
+        result: 'success', createdAt: formatBeijingLogTime(),
       },
     })
     return { success: true }
@@ -168,7 +179,7 @@ exports.main = async (event) => {
         operatorId: user._id, operatorName, operatorRole: user.role,
         action: '删除检测报告', target: reportId,
         detail: `删除血包编号 ${existing.code} 的检测报告`,
-        result: 'success', createdAt: now,
+        result: 'success', createdAt: formatBeijingLogTime(),
       },
     })
     return { success: true }

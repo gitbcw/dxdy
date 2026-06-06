@@ -3,6 +3,17 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
 const _ = db.command
 
 function formatDate(date) {
@@ -33,6 +44,10 @@ function getStatusText(status) {
     in_service: '服务中',
   }
   return map[status] || status
+}
+
+function roundMoney(value) {
+  return Math.round(Number(value || 0) * 100) / 100
 }
 
 async function getCurrentUser(openid, operatorId) {
@@ -109,7 +124,10 @@ async function releaseOrderAssets(order, now) {
     })
   }
 
-  const points = Number(order.pricing && order.pricing.pointsDeduction || 0) * 100
+  const pricing = order.pricing || {}
+  const points = pricing.pointsDeductedAt
+    ? Number(pricing.pointsConsumed || 0) || Number(pricing.pointsDeduction || 0) * 100
+    : 0
   if (points > 0 && order.customerId) {
     await db.collection('users').doc(order.customerId).update({
       data: {
@@ -120,6 +138,12 @@ async function releaseOrderAssets(order, now) {
           reason: '订单取消返还积分',
           createdAt: now,
         }),
+        updatedAt: now,
+      },
+    })
+    await db.collection('orders').doc(order._id).update({
+      data: {
+        'pricing.pointsDeductedAt': '',
         updatedAt: now,
       },
     })
@@ -179,8 +203,7 @@ function canTransition(order, status, user, openid) {
   const allowed = {
     pending_payment: ['cancelled'],
     pending_confirmation: ['confirmed', 'cancelled'],
-    confirmed: ['in_service', 'cancelled'],
-    in_service: ['completed', 'cancelled'],
+    confirmed: ['cancelled'],
     pending_shipment: ['preparing', 'cancelled'],
     preparing: ['cancelled'],
     pending_receipt: ['completed'],
@@ -212,6 +235,56 @@ exports.main = async (event) => {
     ? formatDateTime(addDays(new Date(), commissionLockDays))
     : ''
   const updateData = { status, updatedAt: now }
+
+  if (order.type === 'booking' && order.status === 'pending_confirmation' && status === 'confirmed') {
+    const alreadyPaid = order.payment?.status === 'paid'
+    const hasConfirmedAmount = roundMoney(order.pricing?.actualAmount) > 0
+    if (alreadyPaid && hasConfirmedAmount) {
+      updateData.serviceConfirmedAt = now
+      updateData.serviceConfirmedBy = user._id
+    } else {
+    const bookingAmount = roundMoney(event.bookingAmount)
+    const urgentFee = order.booking?.urgent || order.shipping?.urgent ? roundMoney(event.urgentFee) : 0
+    if (!Number.isFinite(bookingAmount) || bookingAmount <= 0) return error('请输入预约订单金额')
+    if ((order.booking?.urgent || order.shipping?.urgent) && (!Number.isFinite(urgentFee) || urgentFee < 0)) {
+      return error('请输入有效的加急费用')
+    }
+    const actualAmount = roundMoney(bookingAmount + urgentFee)
+    updateData.status = 'pending_payment'
+    updateData.confirmedAt = now
+    updateData.confirmedBy = user._id
+    updateData['pricing.originalAmount'] = actualAmount
+    updateData['pricing.actualAmount'] = actualAmount
+    updateData['pricing.urgentFee'] = urgentFee
+    updateData['pricing.breakdown'] = {
+      goodsAmount: bookingAmount,
+      couponDiscount: 0,
+      pointsDeduction: 0,
+      shippingFee: 0,
+      urgentFee,
+      actualAmount,
+    }
+    updateData['pricing.priceLog'] = db.command.push({
+      originalPrice: order.pricing?.actualAmount || 0,
+      modifiedPrice: actualAmount,
+      operatorId: user._id,
+      operatorName: String(event.operatorName || '').trim() || user.realName || user.nickname || user.name || user.username || '后台管理员',
+      operatedAt: now,
+      reason: '确认预约录入金额',
+      bookingAmount,
+      urgentFee,
+    })
+    updateData['payment.status'] = 'unpaid'
+    updateData['payment.method'] = ''
+    updateData['payment.amount'] = actualAmount
+    updateData['commission.amount'] = roundMoney(actualAmount * Number(config.commissionRate || 0.2))
+    if (order.booking?.urgent || order.shipping?.urgent) {
+      updateData['shipping.urgent'] = true
+      updateData['booking.urgent'] = true
+    }
+    }
+  }
+
   if (status === 'completed') updateData.completedAt = now
   if (status === 'completed' && order.commission) {
     updateData['commission.status'] = commissionLockDays > 0 ? 'locked' : 'settled'
@@ -220,6 +293,35 @@ exports.main = async (event) => {
   }
 
   await db.collection('orders').doc(order._id).update({ data: updateData })
+
+  if (order.type === 'booking' && order.status === 'pending_confirmation' && status === 'confirmed' && order.salespersonId) {
+    const commissionAmount = updateData['commission.amount'] || 0
+    if (commissionAmount > 0) {
+      try {
+        const { total } = await db.collection('commission_records').where({ orderId: order._id }).count()
+        if (total === 0) {
+          await db.collection('commission_records').add({
+            data: {
+              salespersonId: order.salespersonId,
+              customerId: order.customerId,
+              orderId: order._id,
+              orderNo: order.orderNo,
+              amount: commissionAmount,
+              status: 'pending',
+              sourceType: 'order',
+              description: `预约订单 ${order.orderNo || order._id} 提成 ¥${commissionAmount}`,
+              createdAt: now,
+              updatedAt: now,
+            },
+          })
+        } else {
+          await db.collection('commission_records').where({ orderId: order._id }).update({
+            data: { amount: commissionAmount, updatedAt: now },
+          })
+        }
+      } catch (_e) { /* non-critical */ }
+    }
+  }
 
   if (status === 'cancelled') {
     try {
@@ -327,7 +429,7 @@ exports.main = async (event) => {
       target: order._id,
       detail: `订单状态从「${getStatusText(order.status)}」变更为「${getStatusText(status)}」`,
       result: 'success',
-      createdAt: now,
+      createdAt: formatBeijingLogTime(),
     },
   })
 

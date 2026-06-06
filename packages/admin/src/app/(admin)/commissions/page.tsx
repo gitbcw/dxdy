@@ -90,7 +90,9 @@ export default function CommissionsPage() {
       <div className="flex gap-4">
         <Input placeholder="搜索代理商姓名 / 订单号" value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
         <Select value={statusFilter} onValueChange={v => setStatusFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue>{statusFilter === 'all' ? '全部状态' : (statusMap[statusFilter]?.label ?? statusFilter)}</SelectValue>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部状态</SelectItem>
             <SelectItem value="pending">待结算</SelectItem>

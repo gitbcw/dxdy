@@ -3,6 +3,9 @@ const { formatMoney, getSystemConfig } = require('../../../services/index')
 Page({
   data: {
     balance: 0,
+    pointsBalance: 0,
+    pointsValueText: '0.00',
+    pointsRuleText: '100积分=1元，下单时可用于抵扣订单金额',
     tiers: [] as any[],
     selectedIndex: -1,
     loading: false,
@@ -31,6 +34,9 @@ Page({
 
     this.setData({
       balance: user.wallet?.balance || 0,
+      pointsBalance: user.points?.balance || 0,
+      pointsValueText: formatMoney(Math.floor((user.points?.balance || 0) / 100)),
+      pointsRuleText: `100积分=1元，下单时可用于抵扣订单金额；订单完成后按实付金额×${config?.pointsRate || 1}赠送积分`,
       tiers,
     })
   },
@@ -51,33 +57,21 @@ Page({
     this.setData({ loading: true })
 
     try {
-      // 创建充值订单
-      const { result: createResult } = await wx.cloud.callFunction({
+      const { result } = await wx.cloud.callFunction({
         name: 'createRechargeOrder',
         data: { tierIndex: selectedIndex, operatorId: getApp().globalData.userInfo?.id },
       }) as any
 
-      if (!createResult?.success) {
-        wx.showToast({ title: createResult?.error || '创建失败', icon: 'none' })
+      if (!result?.success) {
+        wx.showToast({ title: result?.error || '充值失败', icon: 'none' })
         return
       }
 
-      // 模拟支付
-      const { result: payResult } = await wx.cloud.callFunction({
-        name: 'payOrder',
-        data: { orderId: createResult.order.id, method: 'wechat' },
-      }) as any
-
-      if (!payResult?.success) {
-        wx.showToast({ title: payResult?.error || '支付失败', icon: 'none' })
-        return
-      }
-
-      if (payResult.user) {
+      if (result.user) {
         const app = getApp()
-        app.globalData.userInfo = payResult.user
-        app.globalData.userRole = app.resolveRole?.(payResult.user) || app.globalData.userRole
-        wx.setStorageSync('current_user', JSON.stringify(payResult.user))
+        app.globalData.userInfo = result.user
+        app.globalData.userRole = app.resolveRole?.(result.user) || app.globalData.userRole
+        wx.setStorageSync('current_user', JSON.stringify(result.user))
       }
 
       const tier = tiers[selectedIndex]

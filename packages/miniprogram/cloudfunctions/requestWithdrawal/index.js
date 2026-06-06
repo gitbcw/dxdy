@@ -3,6 +3,17 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
 const _ = db.command
 
 function formatDate(date) {
@@ -127,7 +138,7 @@ exports.main = async (event) => {
       target: _id,
       detail: `申请提现 ¥${amount} 至 ${bankCard.bankName}（${String(bankCard.cardNo || '').slice(-4)}）`,
       result: 'success',
-      createdAt: now,
+      createdAt: formatBeijingLogTime(),
     },
   })
 

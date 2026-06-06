@@ -1,6 +1,14 @@
 const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice, requireBoundPhone } = require('../../services/index')
 const tracking = require('../../services/tracking')
 
+function getProductImages(product: any): string[] {
+  const images = Array.isArray(product?.images)
+    ? product.images.filter((image: any) => typeof image === 'string' && image.trim())
+    : []
+  const fallback = getProductVisualImage(product)
+  return Array.from(new Set([...(images as string[]), fallback].filter(Boolean)))
+}
+
 Page({
   _product: null as any,
   _countdownTimer: null as any,
@@ -17,6 +25,8 @@ Page({
     isCardVoucher: false,
     bloodType: '按商品标注',
     productImageUrl: '',
+    productImages: [] as string[],
+    currentImageIndex: 0,
     reviews: [] as any[],
     averageRating: 0,
     reviewCount: 0,
@@ -55,11 +65,17 @@ Page({
       isCardVoucher: product.productType === 'card_voucher',
       bloodType: product.specs?.find((item: any) => item.name === '血型')?.value || (product.isBloodPack ? '需指定' : '不适用'),
       productImageUrl: getProductVisualImage(product),
+      productImages: getProductImages(product),
+      currentImageIndex: 0,
     })
 
     if (onPromo) this.startCountdown(product.promotionEnd)
     this._loadReviews(product.id || product._id)
     tracking.trackProductView(product.id || product._id, product.name, price, product.isBloodPack ? 'blood' : 'normal')
+  },
+
+  onImageSwiperChange(e: any) {
+    this.setData({ currentImageIndex: e.detail.current || 0 })
   },
 
   async _loadReviews(productId: string) {

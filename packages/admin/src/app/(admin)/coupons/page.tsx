@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,16 +16,21 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
-import { fetchCouponTemplates, fetchUserCoupons, fetchUsers } from '@/lib/services/database';
+import {
+  fetchCouponTemplates, fetchProductsAndCategories, fetchUserCoupons, fetchUsers,
+} from '@/lib/services/database';
 import { manageCoupon } from '@/lib/services/functions';
-import { formatMoney } from '@/lib/format';
-import type { CouponTemplate, UserCoupon, CouponType } from '@/lib/types';
+import type { CouponTemplate, Product, ProductCategory, UserCoupon, CouponType, Customer } from '@/lib/types';
 
 const typeLabel: Record<CouponType, string> = { fixed: '固定金额', discount: '折扣', full_reduction: '满减' };
 const scopeLabel: Record<string, string> = { all: '全场通用', products: '指定商品', categories: '指定分类' };
 const statusLabel: Record<string, string> = { active: '进行中', disabled: '已停用', expired: '已过期' };
 const sourceLabel: Record<string, string> = { admin_grant: '后台发放', user_claim: '用户领取', auto_new_user: '新用户自动' };
+const distributeMethodLabel: Record<string, string> = { admin: '后台发放', user_claim: '用户领取', auto_new_user: '新用户自动' };
 const ucStatusLabel: Record<string, string> = { available: '可用', used: '已使用', expired: '已过期', disabled: '已停用' };
 
 type TemplateForm = {
@@ -39,6 +44,78 @@ const emptyForm = (): TemplateForm => ({
   scope: 'all', scopeIds: '', distributeMethod: 'admin', totalQuota: '0',
   perUserLimit: '1', validDaysAfterClaim: '30', validFrom: '', validTo: '',
 });
+
+type MultiSelectOption = {
+  value: string;
+  label: string;
+};
+
+function parseSelectedIds(value: string) {
+  return value.split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function formatSelectedText(selectedIds: string[], options: MultiSelectOption[], placeholder: string) {
+  if (selectedIds.length === 0) return placeholder;
+  const labels = selectedIds.map(id => options.find(option => option.value === id)?.label || id);
+  if (labels.length <= 2) return labels.join('、');
+  return `${labels.slice(0, 2).join('、')} 等 ${labels.length} 项`;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function MultiSelectMenu({
+  options,
+  selectedIds,
+  placeholder,
+  onChange,
+  disabled,
+}: {
+  options: MultiSelectOption[];
+  selectedIds: string[];
+  placeholder: string;
+  onChange: (nextIds: string[]) => void;
+  disabled?: boolean;
+}) {
+  function toggleOption(value: string) {
+    const next = selectedIds.includes(value)
+      ? selectedIds.filter(id => id !== value)
+      : [...selectedIds, value];
+    onChange(next);
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={disabled}
+        render={(
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-between overflow-hidden font-normal"
+          />
+        )}
+      >
+        <span className="truncate">{formatSelectedText(selectedIds, options, placeholder)}</span>
+        <span className="ml-2 text-muted-foreground">{selectedIds.length > 0 ? `${selectedIds.length} 项` : ''}</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="max-h-72 min-w-72">
+        {options.length === 0 ? (
+          <div className="px-2 py-2 text-sm text-muted-foreground">暂无可选项</div>
+        ) : options.map(option => (
+          <DropdownMenuCheckboxItem
+            key={option.value}
+            checked={selectedIds.includes(option.value)}
+            onCheckedChange={() => toggleOption(option.value)}
+          >
+            <span className="truncate">{option.label}</span>
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default function CouponsPage() {
   const { user } = useAuth();
@@ -59,17 +136,21 @@ export default function CouponsPage() {
   const [grantUserId, setGrantUserId] = useState('');
   const [grantCount, setGrantCount] = useState('1');
   const [granting, setGranting] = useState(false);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
 
   async function loadData() {
     setLoading(true);
     try {
-      const [tmplRes, ucRes, usersRes] = await Promise.all([
-        fetchCouponTemplates(), fetchUserCoupons(), fetchUsers(),
+      const [tmplRes, ucRes, usersRes, productData] = await Promise.all([
+        fetchCouponTemplates(), fetchUserCoupons(), fetchUsers(), fetchProductsAndCategories(),
       ]);
       setTemplates(tmplRes);
       setUserCoupons(ucRes);
       setCustomers(usersRes.customers || []);
+      setProducts(productData.products || []);
+      setCategories(productData.categories || []);
     } finally {
       setLoading(false);
     }
@@ -123,8 +204,8 @@ export default function CouponsPage() {
       }
       setShowTemplateDialog(false);
       loadData();
-    } catch (e: any) {
-      alert(e.message || '保存失败');
+    } catch (e) {
+      alert(getErrorMessage(e, '保存失败'));
     } finally {
       setSaving(false);
     }
@@ -153,8 +234,8 @@ export default function CouponsPage() {
       });
       setShowGrantDialog(false);
       loadData();
-    } catch (e: any) {
-      alert(e.message || '发放失败');
+    } catch (e) {
+      alert(getErrorMessage(e, '发放失败'));
     } finally {
       setGranting(false);
     }
@@ -171,6 +252,16 @@ export default function CouponsPage() {
     if (t.type === 'discount') return `${t.value} 折`;
     return `满 ¥${t.minAmount} 减 ¥${t.value}`;
   }
+
+  const productOptions = products.map(product => ({
+    value: product.id,
+    label: product.name,
+  }));
+  const categoryOptions = categories.map(category => ({
+    value: category.id,
+    label: category.name,
+  }));
+  const selectedScopeIds = parseSelectedIds(form.scopeIds);
 
   return (
     <div className="space-y-6">
@@ -276,7 +367,7 @@ export default function CouponsPage() {
 
       {/* 创建/编辑模板对话框 */}
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:!max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? '编辑优惠券' : '创建优惠券'}</DialogTitle>
           </DialogHeader>
@@ -293,7 +384,7 @@ export default function CouponsPage() {
               <div className="space-y-2">
                 <Label>类型</Label>
                 <Select value={form.type} onValueChange={v => setForm({ ...form, type: v as CouponType })} disabled={!!editingTemplate}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{typeLabel[form.type]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="fixed">固定金额</SelectItem>
                     <SelectItem value="discount">折扣</SelectItem>
@@ -315,8 +406,12 @@ export default function CouponsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>适用范围</Label>
-                <Select value={form.scope} onValueChange={v => setForm({ ...form, scope: v ?? 'all' })} disabled={!!editingTemplate}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.scope}
+                  onValueChange={v => setForm({ ...form, scope: v ?? 'all', scopeIds: '' })}
+                  disabled={!!editingTemplate}
+                >
+                  <SelectTrigger><SelectValue>{scopeLabel[form.scope] || form.scope}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全场通用</SelectItem>
                     <SelectItem value="products">指定商品</SelectItem>
@@ -326,8 +421,14 @@ export default function CouponsPage() {
               </div>
               {form.scope !== 'all' && (
                 <div className="space-y-2">
-                  <Label>{form.scope === 'products' ? '商品 ID（逗号分隔）' : '分类 ID（逗号分隔）'}</Label>
-                  <Input value={form.scopeIds} onChange={e => setForm({ ...form, scopeIds: e.target.value })} disabled={!!editingTemplate} />
+                  <Label>{form.scope === 'products' ? '选择商品' : '选择分类'}</Label>
+                  <MultiSelectMenu
+                    options={form.scope === 'products' ? productOptions : categoryOptions}
+                    selectedIds={selectedScopeIds}
+                    placeholder={form.scope === 'products' ? '选择适用商品' : '选择适用分类'}
+                    disabled={!!editingTemplate}
+                    onChange={nextIds => setForm({ ...form, scopeIds: nextIds.join(',') })}
+                  />
                 </div>
               )}
             </div>
@@ -335,7 +436,7 @@ export default function CouponsPage() {
               <div className="space-y-2">
                 <Label>发放方式</Label>
                 <Select value={form.distributeMethod} onValueChange={v => setForm({ ...form, distributeMethod: v ?? 'admin' })} disabled={!!editingTemplate}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{distributeMethodLabel[form.distributeMethod] || form.distributeMethod}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">后台发放</SelectItem>
                     <SelectItem value="user_claim">用户领取</SelectItem>
@@ -388,9 +489,9 @@ export default function CouponsPage() {
             <div className="space-y-2">
               <Label>选择用户</Label>
               <Select value={grantUserId} onValueChange={v => setGrantUserId(v ?? '')}>
-                <SelectTrigger><SelectValue>{grantUserId ? (customers.find((c: any) => c.id === grantUserId)?.nickname || customers.find((c: any) => c.id === grantUserId)?.phone || grantUserId) : '选择用户'}</SelectValue></SelectTrigger>
+                <SelectTrigger><SelectValue>{grantUserId ? (customers.find(c => c.id === grantUserId)?.nickname || customers.find(c => c.id === grantUserId)?.phone || grantUserId) : '选择用户'}</SelectValue></SelectTrigger>
                 <SelectContent>
-                  {customers.map((c: any) => (
+                  {customers.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.nickname || c.phone || c.id}</SelectItem>
                   ))}
                 </SelectContent>

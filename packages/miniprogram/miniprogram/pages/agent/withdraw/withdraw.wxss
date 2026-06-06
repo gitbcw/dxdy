@@ -94,6 +94,19 @@
   opacity: 0.8;
 }
 
+.bank-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22rpx;
+}
+
+.delete-bank {
+  padding: 10rpx 0 4rpx;
+  color: #ffb4a6;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
 .empty-bank,
 .empty-record {
   padding: 36rpx 0 12rpx;
@@ -105,6 +118,32 @@
 .bank-form {
   margin-top: 20rpx;
   border-top: 1rpx solid #edf0ee;
+}
+
+.bank-warning {
+  margin-top: 20rpx;
+  padding: 18rpx 20rpx;
+  border: 1rpx solid #ffd2a8;
+  border-radius: 14rpx;
+  background: #fff7ed;
+}
+
+.bank-warning-title,
+.bank-warning-desc {
+  display: block;
+}
+
+.bank-warning-title {
+  color: #c2410c;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.bank-warning-desc {
+  margin-top: 8rpx;
+  color: #9a3412;
+  font-size: 22rpx;
+  line-height: 1.45;
 }
 
 .field-row {

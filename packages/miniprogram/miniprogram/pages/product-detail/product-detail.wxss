@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding-bottom: 136rpx;
+  padding-bottom: 240rpx;
   background: #f6f7f6;
   box-sizing: border-box;
 }
@@ -36,9 +36,21 @@
   background: linear-gradient(180deg, #fff 0%, #fff5f3 100%);
 }
 
+.product-swiper,
+.product-swiper-item {
+  width: 100%;
+  height: 100%;
+}
+
+.product-swiper-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .product-main-image {
-  width: 78%;
-  height: 78%;
+  width: 100%;
+  height: 100%;
 }
 
 .image-count {

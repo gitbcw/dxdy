@@ -97,7 +97,7 @@
         bindtap="onBoardItemTap"
       >
         <view class="product-img">
-          <image wx:if="{{item.imageUrl}}" class="product-card-image" src="{{item.imageUrl}}" mode="aspectFit" />
+          <image wx:if="{{item.imageUrl}}" class="product-card-image" src="{{item.imageUrl}}" mode="aspectFill" />
           <text wx:else>{{item.badge}}</text>
         </view>
         <text class="product-name">{{item.title}}</text>

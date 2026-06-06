@@ -12,6 +12,8 @@ Page({
     searchKeyword: '',
     quickFilters: [] as any[],
     activeQuickFilter: 'all',
+    sortKey: 'comprehensive',
+    sortOrder: 'desc',
     emptyText: '当前分类暂无商品',
     isInstitution: false,
     actionSheetVisible: false,
@@ -90,11 +92,13 @@ Page({
       keyword: keyword || undefined,
     })
     this.setData({ isInstitution })
-    const mappedProducts = products.map((product: any) => {
+    const mappedProducts = products.map((product: any, index: number) => {
       const onPromo = isOnPromotion(product)
       const effectivePrice = onPromo ? product.promotionPrice : getEffectivePrice(product, isInstitution ? 'institution' : 'personal')
       return {
         ...product,
+        _catalogIndex: index,
+        effectivePrice,
         priceText: formatMoney(effectivePrice),
         originalPriceText: onPromo ? formatMoney(getEffectivePrice(product, isInstitution ? 'institution' : 'personal')) : '',
         isPromo: onPromo,
@@ -102,6 +106,7 @@ Page({
         tagText: product.visibility === 'institution_only' ? '机构专属' : product.isBloodPack ? '预约服务' : '可采购',
         lowStock: product.stock <= 5,
         leadText: product.isBloodPack ? '可预约' : product.stock <= 5 ? '库存紧张' : '',
+        salesText: `销量 ${this.getSalesValue(product)}`,
         imageUrl: getProductVisualImage(product),
       }
     })
@@ -115,7 +120,7 @@ Page({
       quickFilters,
       activeQuickFilter,
       allProducts: mappedProducts,
-      products: this.filterWithSearch(mappedProducts, activeQuickFilter, this.data.searchKeyword),
+      products: this.applyProductView(mappedProducts, activeQuickFilter, this.data.searchKeyword, this.data.sortKey, this.data.sortOrder),
       emptyText: this.getEmptyText(activeQuickFilter, this.data.searchKeyword),
     })
 
@@ -162,6 +167,45 @@ Page({
       result = result.filter((item: any) => item.name.toLowerCase().includes(kw))
     }
     return result
+  },
+
+  getSalesValue(product: any) {
+    return Number(
+      product.salesCount ??
+      product.soldCount ??
+      product.sales ??
+      product.sold ??
+      product.monthlySales ??
+      0
+    )
+  },
+
+  getComprehensiveValue(product: any) {
+    const sortValue = Number(product.sortOrder ?? product.displayOrder ?? product.priority ?? 0)
+    if (sortValue) return sortValue
+    const time = new Date(String(product.createdAt || product.updatedAt || '').replace(/-/g, '/')).getTime()
+    return Number.isFinite(time) ? time : 0
+  },
+
+  sortProducts(products: any[], sortKey: string, sortOrder: string) {
+    const direction = sortOrder === 'asc' ? 1 : -1
+    return [...products].sort((a: any, b: any) => {
+      if (sortKey === 'sales') {
+        const diff = this.getSalesValue(a) - this.getSalesValue(b)
+        if (diff !== 0) return diff * direction
+      } else if (sortKey === 'price') {
+        const diff = Number(a.effectivePrice || 0) - Number(b.effectivePrice || 0)
+        if (diff !== 0) return diff * direction
+      } else {
+        const diff = this.getComprehensiveValue(a) - this.getComprehensiveValue(b)
+        if (diff !== 0) return diff * direction
+      }
+      return Number(a._catalogIndex || 0) - Number(b._catalogIndex || 0)
+    })
+  },
+
+  applyProductView(products: any[], filterKey: string, keyword: string, sortKey: string, sortOrder: string) {
+    return this.sortProducts(this.filterWithSearch(products, filterKey, keyword), sortKey, sortOrder)
   },
 
   getEmptyText(filterKey: string, keyword: string) {
@@ -220,8 +264,40 @@ Page({
     const filterKey = e.currentTarget.dataset.key
     this.setData({
       activeQuickFilter: filterKey,
-      products: this.filterWithSearch(this.data.allProducts, filterKey, this.data.searchKeyword),
+      products: this.applyProductView(this.data.allProducts, filterKey, this.data.searchKeyword, this.data.sortKey, this.data.sortOrder),
       emptyText: this.getEmptyText(filterKey, this.data.searchKeyword),
+    })
+  },
+
+  onSortTap(e: any) {
+    const sortKey = e.currentTarget.dataset.key || 'comprehensive'
+    const nextOrder = sortKey === 'price' && this.data.sortKey === 'price' && this.data.sortOrder === 'asc'
+      ? 'desc'
+      : sortKey === 'price'
+        ? 'asc'
+        : 'desc'
+    this.setData({
+      sortKey,
+      sortOrder: nextOrder,
+      products: this.applyProductView(this.data.allProducts, this.data.activeQuickFilter, this.data.searchKeyword, sortKey, nextOrder),
+    })
+  },
+
+  onFilterTap() {
+    const filters = this.data.quickFilters || []
+    if (!filters.length) return
+    wx.showActionSheet({
+      itemList: filters.map((item: any) => item.label),
+      success: (res) => {
+        const selected = filters[res.tapIndex]
+        if (!selected) return
+        const filterKey = selected.key
+        this.setData({
+          activeQuickFilter: filterKey,
+          products: this.applyProductView(this.data.allProducts, filterKey, this.data.searchKeyword, this.data.sortKey, this.data.sortOrder),
+          emptyText: this.getEmptyText(filterKey, this.data.searchKeyword),
+        })
+      },
     })
   },
 

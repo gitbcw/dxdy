@@ -18,23 +18,30 @@
       <text class="bank-name">{{activeBankCard.bankName}}</text>
       <text class="bank-no">**** **** **** {{activeBankCard.tailNo}}</text>
       <text class="bank-holder">{{activeBankCard.holderName}}</text>
+      <view class="bank-card-actions">
+        <text class="delete-bank" bindtap="onDeleteBankCard">删除银行卡</text>
+      </view>
     </view>
     <view wx:else class="empty-bank">暂无银行卡，请先添加</view>
 
     <view wx:if="{{showBankForm}}" class="bank-form">
+      <view class="bank-warning">
+        <text class="bank-warning-title">请务必核对银行卡信息</text>
+        <text class="bank-warning-desc">开户行、银行卡号、持卡人姓名填写错误可能导致提现失败、延迟或打款至错误账户，由用户自行负责。</text>
+      </view>
       <view class="field-row">
         <text class="field-label">开户行</text>
         <input class="field-input" placeholder="如：招商银行" value="{{form.bankName}}" data-field="bankName" bindinput="onFormInput" />
       </view>
       <view class="field-row">
         <text class="field-label">银行卡号</text>
-        <input class="field-input" type="number" placeholder="请输入银行卡号" value="{{form.cardNo}}" data-field="cardNo" bindinput="onFormInput" />
+        <input class="field-input" type="number" maxlength="19" placeholder="请输入银行卡号" value="{{form.cardNo}}" data-field="cardNo" bindinput="onFormInput" />
       </view>
       <view class="field-row">
         <text class="field-label">持卡人</text>
         <input class="field-input" placeholder="请输入持卡人姓名" value="{{form.holderName}}" data-field="holderName" bindinput="onFormInput" />
       </view>
-      <view class="save-btn" bindtap="onSaveBankCard">保存银行卡</view>
+      <view class="save-btn" bindtap="onSaveBankCard">{{form.id ? '保存更换' : '保存银行卡'}}</view>
     </view>
   </view>
 

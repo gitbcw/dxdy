@@ -56,7 +56,10 @@ export default function OrderDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [newPrice, setNewPrice] = useState('');
+  const [bookingAmount, setBookingAmount] = useState('');
+  const [bookingUrgentFee, setBookingUrgentFee] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -92,6 +95,8 @@ export default function OrderDetailPage() {
     action: 'adjust_price' | 'status';
     status?: OrderStatus;
     newPrice?: number;
+    bookingAmount?: number;
+    urgentFee?: number;
   }) {
     if (!order) return false;
     setSubmitting(true);
@@ -102,7 +107,13 @@ export default function OrderDetailPage() {
       if (params.action === 'adjust_price' && params.newPrice !== undefined) {
         result = await adjustOrderPrice({ orderId: order.id, newPrice: params.newPrice, ...op });
       } else if (params.action === 'status' && params.status) {
-        result = await updateOrderStatus({ orderId: order.id, status: params.status, ...op });
+        result = await updateOrderStatus({
+          orderId: order.id,
+          status: params.status,
+          ...(params.bookingAmount !== undefined ? { bookingAmount: params.bookingAmount } : {}),
+          ...(params.urgentFee !== undefined ? { urgentFee: params.urgentFee } : {}),
+          ...op,
+        });
       } else {
         throw new Error('无效的操作参数');
       }
@@ -139,6 +150,40 @@ export default function OrderDetailPage() {
   async function handleStatusChange(nextStatus: OrderStatus) {
     if (!order || !user) return;
     await submitOrderAction({ action: 'status', status: nextStatus });
+  }
+
+  function openConfirmBooking() {
+    if (!order) return;
+    setConfirmOpen(true);
+    setBookingAmount(order.pricing.actualAmount > 0 ? String(order.pricing.actualAmount) : '');
+    setBookingUrgentFee(String(order.pricing.urgentFee || 0));
+    setErrorMsg('');
+  }
+
+  async function handleConfirmBooking() {
+    if (!order || !user) return;
+    const amount = Number(bookingAmount);
+    const urgentFee = Number(bookingUrgentFee || 0);
+    const isUrgent = !!(order.booking?.urgent || order.shipping?.urgent);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setErrorMsg('请输入订单金额');
+      return;
+    }
+    if (isUrgent && (!Number.isFinite(urgentFee) || urgentFee < 0)) {
+      setErrorMsg('请输入有效的加急费用');
+      return;
+    }
+    const ok = await submitOrderAction({
+      action: 'status',
+      status: 'confirmed',
+      bookingAmount: amount,
+      urgentFee: isUrgent ? urgentFee : 0,
+    });
+    if (ok) {
+      setConfirmOpen(false);
+      setBookingAmount('');
+      setBookingUrgentFee('');
+    }
   }
 
   if (loading) {
@@ -187,13 +232,18 @@ export default function OrderDetailPage() {
             </Button>
           )}
           {order.type === 'booking' && order.status === 'pending_confirmation' && (
-            <Button onClick={() => handleStatusChange('confirmed')} disabled={submitting}>确认预约</Button>
-          )}
-          {order.type === 'booking' && order.status === 'confirmed' && (
-            <Button onClick={() => handleStatusChange('in_service')} disabled={submitting}>开始服务</Button>
-          )}
-          {order.type === 'booking' && order.status === 'in_service' && (
-            <Button onClick={() => handleStatusChange('completed')} disabled={submitting}>完成服务</Button>
+            <Button
+              onClick={() => {
+                if (order.payment?.status === 'paid' && order.pricing.actualAmount > 0) {
+                  handleStatusChange('confirmed');
+                  return;
+                }
+                openConfirmBooking();
+              }}
+              disabled={submitting}
+            >
+              确认预约
+            </Button>
           )}
           {order.status === 'pending_payment' && (
             <Button variant="destructive" onClick={() => handleStatusChange('cancelled')} disabled={submitting}>
@@ -299,6 +349,17 @@ export default function OrderDetailPage() {
             )}
             {order.booking && (
               <>
+                {order.booking.bloodBooking && (
+                  <div>
+                    <p className="text-muted-foreground">用血需求</p>
+                    <p>
+                      {order.booking.speciesLabel || '用血预约'}
+                      {' · '}
+                      {order.booking.bloodType || '-'}
+                      {order.booking.volumeMl ? ` · ${order.booking.volumeMl}ml` : ''}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-muted-foreground">预约时间</p>
                   <p>{order.booking.date}</p>
@@ -387,6 +448,82 @@ export default function OrderDetailPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustOpen(false)}>取消</Button>
             <Button onClick={handleAdjustPrice} disabled={submitting}>确认改价</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认预约并录入金额</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 text-sm sm:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">订单号</p>
+                <p className="font-mono">{order.orderNo || order.id}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">客户</p>
+                <p>{order.customerName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">用血需求</p>
+                <p>
+                  {order.booking?.speciesLabel || order.items?.[0]?.productName || '预约'}
+                  {' · '}
+                  {order.booking?.bloodType || order.items?.[0]?.spec || '-'}
+                  {order.booking?.volumeMl ? ` · ${order.booking.volumeMl}ml` : ''}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">预约时间</p>
+                <p>{order.booking?.date || '-'}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="text-muted-foreground">收货地址</p>
+                <p>{order.shipping?.address?.full || order.booking?.location || '-'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">联系人</p>
+                <p>{order.booking?.contactName || order.shipping?.address?.name || '-'} · {order.booking?.contactPhone || order.shipping?.address?.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">加急</p>
+                <p>{order.booking?.urgent || order.shipping?.urgent ? '是' : '否'}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="detailBookingAmount">订单金额</Label>
+              <Input
+                id="detailBookingAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="请输入预约订单基础金额"
+                value={bookingAmount}
+                onChange={e => setBookingAmount(e.target.value)}
+              />
+            </div>
+            {(order.booking?.urgent || order.shipping?.urgent) && (
+              <div className="space-y-2">
+                <Label htmlFor="detailBookingUrgentFee">加急费用</Label>
+                <Input
+                  id="detailBookingUrgentFee"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="请输入加急费用"
+                  value={bookingUrgentFee}
+                  onChange={e => setBookingUrgentFee(e.target.value)}
+                />
+              </div>
+            )}
+            {errorMsg && <p className="text-sm text-red-500">{errorMsg}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>取消</Button>
+            <Button onClick={handleConfirmBooking} disabled={submitting}>确认预约</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

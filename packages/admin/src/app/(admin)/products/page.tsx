@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { CalendarDays } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -87,17 +88,66 @@ const stockFilterLabel: Record<StockFilter, string> = {
   empty: '库存为 0',
 };
 
-const productTypeLabel: Record<ProductType, string> = {
-  physical: '实体商品',
-  blood_pack: '血包商品',
-  test_service: '检测服务',
-  card_voucher: '卡券',
-};
-
 const STOCK_WARNING_THRESHOLD = 10;
 const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
 const PRODUCT_IMAGE_PUBLIC_BASE_URL = 'https://636c-cloud1-d7g7ctn4m86bada89-1433980811.tcb.qcloud.la';
 const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function RequiredMark() {
+  return <span className="ml-0.5 text-destructive">*</span>;
+}
+
+function toDateInputValue(value: string) {
+  return value ? value.slice(0, 10) : '';
+}
+
+function DateTimePickerDisplay({
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  required?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function openPicker() {
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className="relative flex h-8 w-full items-center rounded-lg border border-input bg-background px-2.5 py-1 text-left text-sm"
+      onClick={openPicker}
+    >
+      <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
+        {toDateInputValue(value) || placeholder}
+      </span>
+      <CalendarDays className="ml-auto size-4 text-muted-foreground" />
+      <input
+        ref={inputRef}
+        type="date"
+        className="pointer-events-none absolute inset-0 opacity-0"
+        value={toDateInputValue(value)}
+        required={required}
+        onChange={event => onChange(toDateInputValue(event.target.value))}
+        title={placeholder}
+        tabIndex={-1}
+      />
+    </button>
+  );
+}
 
 const emptyProductForm = (): ProductFormState => ({
   name: '',
@@ -240,6 +290,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [categoryForm, setCategoryForm] = useState({ id: '', name: '', sort: '' });
+  const [categoryConfigOpen, setCategoryConfigOpen] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -349,7 +400,7 @@ export default function ProductsPage() {
         stock: String(target.stock),
         specs: productSpecsToText(target.specs || []),
         images: target.images ?? [],
-        productType: target.productType || (target.isBloodPack ? 'blood_pack' : 'physical'),
+        productType: 'physical',
         bookingEnabled: bc?.enabled || false,
         bookingLeadDays: String(bc?.leadDays || 2),
         bookingLocations: (bc?.locations || []).join(','),
@@ -376,8 +427,8 @@ export default function ProductsPage() {
   }
 
   function buildExtendedFields(form: ProductFormState) {
-    const productType = form.productType;
-    const isBloodPack = productType === 'blood_pack';
+    const productType: ProductType = 'physical';
+    const isBloodPack = false;
     return {
       productType,
       isBloodPack,
@@ -402,12 +453,12 @@ export default function ProductsPage() {
         extraFee: parseFloat(form.urgentFee) || 0,
         description: form.urgentDescription,
       } : undefined,
-      redeemableCategory: productType === 'card_voucher' ? form.redeemableCategory : undefined,
-      validDays: productType === 'card_voucher' ? (parseInt(form.validDays, 10) || 365) : undefined,
+      redeemableCategory: undefined,
+      validDays: undefined,
       ...(form.promotionEnabled && form.promotionPrice ? {
         promotionPrice: parseFloat(form.promotionPrice) || 0,
-        promotionStart: form.promotionStart,
-        promotionEnd: form.promotionEnd,
+        promotionStart: toDateInputValue(form.promotionStart),
+        promotionEnd: toDateInputValue(form.promotionEnd),
       } : { promotionPrice: 0, promotionStart: '', promotionEnd: '' }),
     };
   }
@@ -512,8 +563,23 @@ export default function ProductsPage() {
   }
 
   async function handleCreate() {
-    if (!createForm.name || !createForm.category) {
-      alert('请填写名称和分类');
+    const requiredChecks = [
+      { valid: createForm.name.trim(), message: '请填写商品名称' },
+      { valid: createForm.category, message: '请选择分类' },
+      { valid: createForm.institutionPrice.trim(), message: '请填写医院价' },
+      { valid: createForm.personalPrice.trim(), message: '请填写个人价' },
+      { valid: createForm.visibility, message: '请选择可见范围' },
+      { valid: createForm.stock.trim(), message: '请填写初始库存' },
+      { valid: createForm.specs.trim(), message: '请填写规格' },
+      { valid: createForm.images.length > 0, message: '请上传商品图片' },
+      { valid: createForm.description.trim(), message: '请填写商品详情' },
+      { valid: !createForm.promotionEnabled || createForm.promotionPrice.trim(), message: '请填写促销价' },
+      { valid: !createForm.promotionEnabled || createForm.promotionStart, message: '请选择促销开始时间' },
+      { valid: !createForm.promotionEnabled || createForm.promotionEnd, message: '请选择促销结束时间' },
+    ];
+    const invalid = requiredChecks.find(item => !item.valid);
+    if (invalid) {
+      alert(invalid.message);
       return;
     }
 
@@ -676,48 +742,62 @@ export default function ProductsPage() {
       )}
 
       <Card>
-        <CardContent className="space-y-4 p-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-base font-semibold">商品分类配置</h2>
-            <p className="text-sm text-muted-foreground">分类保存后会同步用于小程序商品分类页和商品编辑表单。</p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
-            <Input
-              placeholder="分类名称"
-              value={categoryForm.name}
-              onChange={event => setCategoryForm(form => ({ ...form, name: event.target.value }))}
-            />
-            <Input
-              placeholder="排序"
-              type="number"
-              value={categoryForm.sort}
-              onChange={event => setCategoryForm(form => ({ ...form, sort: event.target.value }))}
-            />
-            <Button onClick={handleSaveCategory}>保存分类</Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[...categories].sort((a, b) => a.sort - b.sort).map(category => (
-              <div key={category.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <span className="font-medium">{category.name}</span>
-                <span className="text-xs text-muted-foreground">排序 {category.sort}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCategoryForm({ id: category.id, name: category.name, sort: String(category.sort) })}
-                >
-                  编辑
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteCategory(category)}
-                  disabled={products.some(product => product.category === category.id)}
-                >
-                  删除
-                </Button>
+        <CardContent className={categoryConfigOpen ? 'space-y-4 p-4' : 'p-3'}>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 text-left"
+            onClick={() => setCategoryConfigOpen(open => !open)}
+            aria-expanded={categoryConfigOpen}
+          >
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-semibold">商品分类配置</h2>
+              <p className="text-sm text-muted-foreground">分类保存后会同步用于小程序商品分类页和商品编辑表单。</p>
+            </div>
+            <span className="shrink-0 text-sm text-muted-foreground">
+              {categoryConfigOpen ? '收起' : '展开'}
+            </span>
+          </button>
+          {categoryConfigOpen && (
+            <>
+              <div className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
+                <Input
+                  placeholder="分类名称"
+                  value={categoryForm.name}
+                  onChange={event => setCategoryForm(form => ({ ...form, name: event.target.value }))}
+                />
+                <Input
+                  placeholder="排序"
+                  type="number"
+                  value={categoryForm.sort}
+                  onChange={event => setCategoryForm(form => ({ ...form, sort: event.target.value }))}
+                />
+                <Button onClick={handleSaveCategory}>保存分类</Button>
               </div>
-            ))}
-          </div>
+              <div className="flex flex-wrap gap-2">
+                {[...categories].sort((a, b) => a.sort - b.sort).map(category => (
+                  <div key={category.id} className="flex items-center gap-2 rounded-md border px-3 text-sm">
+                    <span className="font-medium">{category.name}</span>
+                    <span className="text-xs text-muted-foreground">排序 {category.sort}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCategoryForm({ id: category.id, name: category.name, sort: String(category.sort) })}
+                    >
+                      编辑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteCategory(category)}
+                      disabled={products.some(product => product.category === category.id)}
+                    >
+                      删除
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -927,6 +1007,11 @@ export default function ProductsPage() {
               <span className="font-medium text-foreground">{pageSize}</span>
               {' '}
               条
+              ，总商品数
+              {' '}
+              <span className="font-medium text-foreground">{products.length}</span>
+              {' '}
+              个
             </p>
             <div className="flex gap-2">
               <Select
@@ -965,7 +1050,7 @@ export default function ProductsPage() {
       </Card>
 
       <Dialog open={!!editProduct} onOpenChange={() => setEditProduct(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="!w-[min(92vw,50rem)] !max-w-[min(92vw,50rem)]">
           <DialogHeader>
             <DialogTitle>编辑商品</DialogTitle>
           </DialogHeader>
@@ -999,18 +1084,15 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="hidden">
                 <Label>商品类型</Label>
                 <Select
                   value={editForm.productType}
                   onValueChange={value => setEditForm(form => ({ ...form, productType: value as ProductType }))}
                 >
-                  <SelectTrigger><SelectValue>{productTypeLabel[editForm.productType]}</SelectValue></SelectTrigger>
+                  <SelectTrigger><SelectValue>实体商品</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="physical">实体商品</SelectItem>
-                    <SelectItem value="blood_pack">血包商品</SelectItem>
-                    <SelectItem value="test_service">检测服务</SelectItem>
-                    <SelectItem value="card_voucher">卡券</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1109,11 +1191,19 @@ export default function ProductsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>开始时间</Label>
-                    <Input type="datetime-local" value={editForm.promotionStart} onChange={e => setEditForm(form => ({ ...form, promotionStart: e.target.value }))} />
+                    <DateTimePickerDisplay
+                      value={editForm.promotionStart}
+                      placeholder="开始时间"
+                      onChange={value => setEditForm(form => ({ ...form, promotionStart: value }))}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>结束时间</Label>
-                    <Input type="datetime-local" value={editForm.promotionEnd} onChange={e => setEditForm(form => ({ ...form, promotionEnd: e.target.value }))} />
+                    <DateTimePickerDisplay
+                      value={editForm.promotionEnd}
+                      placeholder="结束时间"
+                      onChange={value => setEditForm(form => ({ ...form, promotionEnd: value }))}
+                    />
                   </div>
                 </div>
               )}
@@ -1194,28 +1284,29 @@ export default function ProductsPage() {
       </Dialog>
 
       <Dialog open={createOpen} onOpenChange={open => !open && setCreateOpen(false)}>
-        <DialogContent className="w-[min(92vw,960px)] min-w-[33vw] max-w-none">
+        <DialogContent className="!w-[min(92vw,50rem)] !max-w-[min(92vw,50rem)]">
           <DialogHeader>
             <DialogTitle>新增商品</DialogTitle>
           </DialogHeader>
           <div className="max-h-[80vh] space-y-4 overflow-y-auto py-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="prodName">商品名称</Label>
+                <Label htmlFor="prodName">商品名称<RequiredMark /></Label>
                 <Input
                   id="prodName"
+                  required
                   value={createForm.name}
                   onChange={event => setCreateForm(form => ({ ...form, name: event.target.value }))}
                   placeholder="请输入商品名称"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prodCat">分类</Label>
+                <Label htmlFor="prodCat">分类<RequiredMark /></Label>
                 <Select
                   value={createForm.category}
                   onValueChange={value => setCreateForm(form => ({ ...form, category: value ?? '' }))}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" aria-required="true">
                     <SelectValue>{catMap[createForm.category] ?? '选择分类'}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -1229,39 +1320,38 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>商品类型</Label>
+              <div className="hidden">
+                <Label>商品类型<RequiredMark /></Label>
                 <Select
                   value={createForm.productType}
                   onValueChange={value => setCreateForm(form => ({ ...form, productType: value as ProductType }))}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>{productTypeLabel[createForm.productType]}</SelectValue>
+                  <SelectTrigger className="w-full" aria-required="true">
+                    <SelectValue>实体商品</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="physical">实体商品</SelectItem>
-                    <SelectItem value="blood_pack">血包商品</SelectItem>
-                    <SelectItem value="test_service">检测服务</SelectItem>
-                    <SelectItem value="card_voucher">卡券</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="prodInstPrice">医院价</Label>
+                <Label htmlFor="prodInstPrice">医院价<RequiredMark /></Label>
                 <Input
                   id="prodInstPrice"
                   type="number"
+                  required
                   value={createForm.institutionPrice}
                   onChange={event => setCreateForm(form => ({ ...form, institutionPrice: event.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prodPersPrice">个人价</Label>
+                <Label htmlFor="prodPersPrice">个人价<RequiredMark /></Label>
                 <Input
                   id="prodPersPrice"
                   type="number"
+                  required
                   value={createForm.personalPrice}
                   onChange={event => setCreateForm(form => ({ ...form, personalPrice: event.target.value }))}
                 />
@@ -1275,28 +1365,38 @@ export default function ProductsPage() {
               {createForm.promotionEnabled && (
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label>促销价</Label>
-                    <Input type="number" value={createForm.promotionPrice} onChange={e => setCreateForm(form => ({ ...form, promotionPrice: e.target.value }))} placeholder="0.01" />
+                    <Label>促销价<RequiredMark /></Label>
+                    <Input required type="number" value={createForm.promotionPrice} onChange={e => setCreateForm(form => ({ ...form, promotionPrice: e.target.value }))} placeholder="0.01" />
                   </div>
                   <div className="space-y-2">
-                    <Label>开始时间</Label>
-                    <Input type="datetime-local" value={createForm.promotionStart} onChange={e => setCreateForm(form => ({ ...form, promotionStart: e.target.value }))} />
+                    <Label>开始时间<RequiredMark /></Label>
+                    <DateTimePickerDisplay
+                      required
+                      value={createForm.promotionStart}
+                      placeholder="开始时间"
+                      onChange={value => setCreateForm(form => ({ ...form, promotionStart: value }))}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>结束时间</Label>
-                    <Input type="datetime-local" value={createForm.promotionEnd} onChange={e => setCreateForm(form => ({ ...form, promotionEnd: e.target.value }))} />
+                    <Label>结束时间<RequiredMark /></Label>
+                    <DateTimePickerDisplay
+                      required
+                      value={createForm.promotionEnd}
+                      placeholder="结束时间"
+                      onChange={value => setCreateForm(form => ({ ...form, promotionEnd: value }))}
+                    />
                   </div>
                 </div>
               )}
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="prodVis">可见范围</Label>
+                <Label htmlFor="prodVis">可见范围<RequiredMark /></Label>
                 <Select
                   value={createForm.visibility}
                   onValueChange={value => setCreateForm(form => ({ ...form, visibility: value as ProductVisibility }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-required="true">
                     <SelectValue>{visibilityLabel[createForm.visibility]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -1307,18 +1407,20 @@ export default function ProductsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prodStock">初始库存</Label>
+                <Label htmlFor="prodStock">初始库存<RequiredMark /></Label>
                 <Input
                   id="prodStock"
                   type="number"
+                  required
                   value={createForm.stock}
                   onChange={event => setCreateForm(form => ({ ...form, stock: event.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prodSpecs">规格</Label>
+                <Label htmlFor="prodSpecs">规格<RequiredMark /></Label>
                 <Input
                   id="prodSpecs"
+                  required
                   value={createForm.specs}
                   onChange={event => setCreateForm(form => ({ ...form, specs: event.target.value }))}
                   placeholder="5mL/支,10mL/支"
@@ -1326,12 +1428,13 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="space-y-3">
-              <Label htmlFor="prodImages">商品图片</Label>
+              <Label htmlFor="prodImages">商品图片<RequiredMark /></Label>
               <Input
                 id="prodImages"
                 type="file"
                 accept="image/*"
                 multiple
+                required={createForm.images.length === 0}
                 onChange={async event => {
                   await handleCreateImageUpload(event.target.files);
                   event.target.value = '';
@@ -1349,7 +1452,7 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>商品详情</Label>
+              <Label>商品详情<RequiredMark /></Label>
               <RichTextEditor
                 value={createForm.description}
                 onChange={value => setCreateForm(form => ({ ...form, description: value }))}

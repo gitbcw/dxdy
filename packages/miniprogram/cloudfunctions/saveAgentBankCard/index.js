@@ -4,6 +4,17 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
 
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
+
 function formatDate(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -27,6 +38,27 @@ function normalize(doc) {
 
 function generateId(prefix) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
+}
+
+function normalizeCardNo(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function isValidBankCardNo(value) {
+  const cardNo = normalizeCardNo(value)
+  if (!/^\d{13,19}$/.test(cardNo)) return false
+  let sum = 0
+  let shouldDouble = false
+  for (let i = cardNo.length - 1; i >= 0; i -= 1) {
+    let digit = Number(cardNo[i])
+    if (shouldDouble) {
+      digit *= 2
+      if (digit > 9) digit -= 9
+    }
+    sum += digit
+    shouldDouble = !shouldDouble
+  }
+  return sum % 10 === 0
 }
 
 async function getCurrentUser(openid, userId) {
@@ -62,19 +94,49 @@ exports.main = async (event) => {
   const user = await getCurrentUser(openid, String(event.userId || '').trim())
   if (!user) return error('当前账号未绑定用户', 'FORBIDDEN')
 
-  const card = event.card || {}
   const now = formatDateTime(new Date())
+  if (event.action === 'delete') {
+    const cardId = String(event.cardId || '').trim()
+    if (!cardId) return error('请选择要删除的银行卡')
+
+    const cards = Array.isArray(user.bankCards) ? user.bankCards.slice() : []
+    const target = cards.find((item) => item.id === cardId)
+    if (!target) return error('银行卡不存在')
+
+    const nextCards = cards.filter((item) => item.id !== cardId)
+    await db.collection('users').doc(user._id).update({
+      data: { bankCards: nextCards, updatedAt: now },
+    })
+
+    await db.collection('logs').add({
+      data: {
+        operatorId: user._id,
+        operatorName: user.nickname || user.realName || user.phone || target.holderName,
+        operatorRole: user.role || 'customer',
+        action: '删除代理商银行卡',
+        target: user._id,
+        detail: `${target.bankName || '银行卡'}（${String(target.cardNo || '').slice(-4)}）`,
+        result: 'success',
+        createdAt: formatBeijingLogTime(),
+      },
+    })
+
+    const { data: updated } = await db.collection('users').doc(user._id).get()
+    return { success: true, user: normalize(updated), deletedCardId: cardId }
+  }
+
+  const card = event.card || {}
   const bankCard = {
     id: String(card.id || '').trim() || generateId('bank'),
     bankName: String(card.bankName || '').trim(),
-    cardNo: String(card.cardNo || '').replace(/\s/g, ''),
+    cardNo: normalizeCardNo(card.cardNo),
     holderName: String(card.holderName || '').trim(),
     updatedAt: now,
     createdAt: card.createdAt || now,
   }
 
   if (!bankCard.bankName || !bankCard.cardNo || !bankCard.holderName) return error('请完善银行卡信息')
-  if (!/^\d{12,24}$/.test(bankCard.cardNo)) return error('请输入正确银行卡号')
+  if (!isValidBankCardNo(bankCard.cardNo)) return error('银行卡号校验未通过，请核对后重新输入')
 
   const cards = Array.isArray(user.bankCards) ? user.bankCards.slice() : []
   const index = cards.findIndex((item) => item.id === bankCard.id)
@@ -94,7 +156,7 @@ exports.main = async (event) => {
       target: user._id,
       detail: `${bankCard.bankName}（${bankCard.cardNo.slice(-4)}）`,
       result: 'success',
-      createdAt: now,
+      createdAt: formatBeijingLogTime(),
     },
   })
 

@@ -61,7 +61,7 @@ export interface Clerk extends User {
   assignedOrderIds: string[];
 }
 
-export type AdminRole = 'service' | 'product_manager' | 'system_admin';
+export type AdminRole = 'service' | 'product_manager' | 'system_admin' | 'clerk';
 
 export interface AdminUser {
   id: string;
@@ -170,7 +170,11 @@ export interface OrderItem {
 
 export interface PriceLog { originalPrice: number; modifiedPrice: number; operatorId: string; operatorName: string; operatedAt: string; }
 export interface LogisticsInfo { time: string; description: string; location?: string; }
-export interface BookingInfo { date: string; location: string; contactName: string; contactPhone: string; }
+export interface BookingInfo {
+  date: string; location: string; contactName: string; contactPhone: string
+  bloodBooking?: boolean; species?: 'dog' | 'cat'; speciesLabel?: string
+  bloodType?: string; volumeMl?: number; urgent?: boolean; address?: string
+}
 export interface OrderPricing {
   originalAmount: number; actualAmount: number; priceLog: PriceLog[]
   coupon?: { userCouponId: string; couponName: string; couponType: CouponType; discountAmount: number }
@@ -185,6 +189,13 @@ export interface OrderShipping {
 
 export type CommissionStatus = 'pending' | 'locked' | 'settled' | 'adjusted' | 'deducted';
 export interface OrderCommission { status: CommissionStatus; amount: number; settledAt: string | null; }
+export interface OrderPayment {
+  status?: 'unpaid' | 'pending' | 'paid' | 'refunded' | string;
+  method?: string;
+  paidAt?: string;
+  transactionId?: string;
+  amount?: number;
+}
 
 export interface Order {
   id: string;
@@ -199,6 +210,7 @@ export interface Order {
   pricing: OrderPricing;
   shipping: OrderShipping;
   booking?: BookingInfo;
+  payment?: OrderPayment;
   returnRecordId: string | null;
   commission: OrderCommission;
   remark?: string;

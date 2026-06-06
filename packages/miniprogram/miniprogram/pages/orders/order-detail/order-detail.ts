@@ -4,6 +4,7 @@ const {
   deleteOrder,
   updateOrderStatus,
   payOrder,
+  getMyCards,
   getReturns,
   formatMoney,
   formatDateTime,
@@ -33,6 +34,13 @@ Page({
     flowSteps: [] as any[],
     detailActions: [] as any[],
     queryCustomerId: '',
+    selectedPayMethod: 'wechat',
+    walletBalanceText: '0.00',
+    availableCardVouchers: [] as any[],
+    selectedCardVoucherId: '',
+    selectedCardVoucher: null as any,
+    cardDiscountText: '0.00',
+    payableAmountText: '0.00',
   },
 
   onLoad(options: any) {
@@ -84,7 +92,37 @@ Page({
       isDetailMode: true,
       flowSteps: this.getFlowSteps(mapped),
       detailActions: this.getDetailActions(mapped),
+      selectedPayMethod: mapped.payment?.method === 'wallet' ? 'wallet' : 'wechat',
+      walletBalanceText: formatMoney(getApp().globalData.userInfo?.wallet?.balance || 0),
+      availableCardVouchers: [],
+      selectedCardVoucherId: '',
+      selectedCardVoucher: null,
+      cardDiscountText: '0.00',
+      payableAmountText: mapped.totalText,
     })
+    this.loadCardVouchersForOrder(mapped)
+  },
+
+  async loadCardVouchersForOrder(order: any) {
+    if (!order || order.type !== 'booking' || order.status !== 'pending_payment') return
+    try {
+      const cards = await getMyCards()
+      const available = (cards || [])
+        .filter((card: any) => card.status === 'claimed')
+        .map((card: any) => {
+          const discountAmount = Number(card.deductionAmount || card.discountAmount || card.amount || 0)
+          return {
+            ...card,
+            discountAmount,
+            discountText: formatMoney(discountAmount),
+          }
+        })
+        .filter((card: any) => card.discountAmount > 0)
+      this.setData({ availableCardVouchers: available })
+      this.refreshPayablePreview()
+    } catch (_e) {
+      this.setData({ availableCardVouchers: [] })
+    }
   },
 
   async mapOrder(order: any) {
@@ -100,6 +138,7 @@ Page({
       originalText: formatMoney(order.pricing.originalAmount),
       savedText: formatMoney(Math.max(0, order.pricing.originalAmount - order.pricing.actualAmount)),
       dateText: formatDateTime(order.createdAt),
+      paymentMethodText: this.getPaymentMethodText(order.payment?.method),
       firstProductName: firstItem.productName,
       firstProductSpec: firstItem.spec,
       firstProductImage: firstItem.productImage || getProductVisualImage(firstItem.productName),
@@ -129,9 +168,11 @@ Page({
       returnStatusText: returnRecord ? this.getReturnStatusText(returnRecord.status) : '',
       canDelete: order.status === 'completed' || order.status === 'cancelled',
       commissionText: this.getCommissionText(order, returnRecord),
-      logisticsText: order.shipping?.trackingNo
-        ? `${order.shipping.company} ${order.shipping.trackingNo}`
-        : '等待制单员录入快递单号',
+      logisticsText: order.shipping?.deliveryMode === 'direct' || order.shipping?.directDelivery?.status === 'departed'
+        ? `制单员已出发，预计 ${order.shipping?.directDelivery?.estimatedArrivalAt || order.shipping?.eta || '待更新'} 到达`
+        : order.shipping?.trackingNo
+          ? `${order.shipping.company} ${order.shipping.trackingNo}`
+          : '等待制单员录入快递单号',
     }
   },
 
@@ -156,6 +197,16 @@ Page({
       exchange_completed: '换货完成',
     }
     return map[status] || status
+  },
+
+  getPaymentMethodText(method: string) {
+    const map: Record<string, string> = {
+      wechat: '微信支付',
+      wallet: '钱包余额',
+      offline: '线下支付',
+      card_voucher: '卡券支付',
+    }
+    return map[method] || (method ? method : '未支付')
   },
 
   getCommissionText(order: any, returnRecord: any) {
@@ -184,7 +235,7 @@ Page({
       { key: 'pending_payment', label: '提交预约' },
       { key: 'pending_confirmation', label: '客服确认' },
       { key: 'confirmed', label: '预约确认' },
-      { key: 'in_service', label: '服务履约' },
+      { key: 'pending_receipt', label: '制单配送' },
       { key: 'completed', label: '完成归档' },
     ]
     const steps = order.type === 'booking' ? bookingSteps : normalSteps
@@ -287,6 +338,53 @@ Page({
     wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${orderId}` })
   },
 
+  onServiceTap() {
+    wx.makePhoneCall({ phoneNumber: '02022043433' })
+  },
+
+  onPayMethodTap(e: any) {
+    const method = e.currentTarget.dataset.method || 'wechat'
+    this.setData({ selectedPayMethod: method })
+  },
+
+  onCardVoucherTap(e: any) {
+    const id = e.currentTarget.dataset.id || ''
+    const nextId = this.data.selectedCardVoucherId === id ? '' : id
+    const selectedCardVoucher = nextId
+      ? this.data.availableCardVouchers.find((card: any) => card.id === nextId) || null
+      : null
+    const total = Number(this.data.selectedOrder?.pricing?.actualAmount || 0)
+    const discount = Math.min(total, Number(selectedCardVoucher?.discountAmount || 0))
+    const payable = Math.max(0, Math.round((total - discount) * 100) / 100)
+    this.setData({
+      selectedCardVoucherId: nextId,
+      selectedCardVoucher,
+      cardDiscountText: formatMoney(discount),
+      payableAmountText: formatMoney(payable),
+    })
+  },
+
+  refreshPayablePreview() {
+    const order = this.data.selectedOrder
+    if (!order) return
+    const total = Number(order.pricing?.actualAmount || 0)
+    const discount = Math.min(total, Number(this.data.selectedCardVoucher?.discountAmount || 0))
+    const payable = Math.max(0, Math.round((total - discount) * 100) / 100)
+    this.setData({
+      cardDiscountText: formatMoney(discount),
+      payableAmountText: formatMoney(payable),
+    })
+  },
+
+  async waitForPaymentResult(orderId: string) {
+    for (let i = 0; i < 6; i += 1) {
+      const latest = await getOrderById(orderId)
+      if (latest?.payment?.status === 'paid' || latest?.status !== 'pending_payment') return latest
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+    return null
+  },
+
   onDeleteFromList(e: any) {
     const orderId = e.currentTarget.dataset.id
     if (!orderId) return
@@ -329,11 +427,45 @@ Page({
     if (!order) return
 
     if (key === 'pay') {
-      const result = await payOrder(order.id, 'wechat')
-      if (result.success) {
+      const method = this.data.selectedPayMethod || 'wechat'
+      const cardVoucherId = this.data.selectedCardVoucherId || ''
+      wx.showLoading({ title: method === 'wechat' ? '正在拉起支付' : '正在支付', mask: true })
+      try {
+        const result = await payOrder(order.id, method, cardVoucherId ? { cardVoucherId } : undefined)
+        wx.hideLoading()
+
+        if (!result.success) {
+          wx.showToast({ title: result.error || '支付失败', icon: 'none' })
+          return
+        }
+
+        if (method === 'wechat') {
+          if (!result.payment && result.order?.payment?.status !== 'paid') {
+            wx.showToast({ title: '微信支付参数缺失', icon: 'none' })
+            return
+          }
+          if (result.payment) {
+            await new Promise<void>((resolve, reject) => {
+              wx.requestPayment({
+                ...result.payment,
+                success: () => resolve(),
+                fail: (err: WechatMiniprogram.GeneralCallbackResult) => reject(err),
+              })
+            })
+            wx.showLoading({ title: '确认支付结果', mask: true })
+            await this.waitForPaymentResult(order.id)
+            wx.hideLoading()
+          }
+        }
+
         wx.redirectTo({ url: `/pages/orders/pay-result/pay-result?id=${order.id}` })
-      } else {
-        wx.showToast({ title: result.error || '支付失败', icon: 'none' })
+      } catch (err: any) {
+        wx.hideLoading()
+        const message = String(err?.errMsg || err?.message || '')
+        wx.showToast({
+          title: message.includes('cancel') ? '已取消支付' : '支付失败，请重试',
+          icon: 'none',
+        })
       }
       return
     }

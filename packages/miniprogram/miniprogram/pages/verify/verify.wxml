@@ -39,8 +39,8 @@
   </view>
 
   <view wx:else class="form">
-    <view class="top-tip">认证通过后可购买血包并享受医院价</view>
-    <text class="form-title">医院认证</text>
+    <view class="top-tip">认证通过后可享受医院采购价</view>
+    <text class="form-title">门店认证</text>
     <text class="form-subtitle">{{isPersonalCustomer ? '提交机构资质后进入审核流程' : '请补充医院资质信息'}}</text>
 
     <view wx:if="{{status === 'rejected'}}" class="reject-notice">

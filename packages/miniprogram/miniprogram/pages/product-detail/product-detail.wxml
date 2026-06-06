@@ -1,8 +1,12 @@
 <view class="page">
   <view class="product-image">
-    <image wx:if="{{productImageUrl}}" class="product-main-image" src="{{productImageUrl}}" mode="aspectFit" />
+    <swiper wx:if="{{productImages.length}}" class="product-swiper" circular="{{productImages.length > 1}}" bindchange="onImageSwiperChange">
+      <swiper-item wx:for="{{productImages}}" wx:key="*this" class="product-swiper-item">
+        <image class="product-main-image" src="{{item}}" mode="aspectFit" />
+      </swiper-item>
+    </swiper>
     <view wx:else class="blood-pack {{isBloodProduct ? 'blood' : ''}}">{{isBloodProduct ? '血包' : '商品'}}</view>
-    <view class="image-count">1/4</view>
+    <view wx:if="{{productImages.length > 1}}" class="image-count">{{currentImageIndex + 1}}/{{productImages.length}}</view>
   </view>
 
   <view class="content-card">
@@ -50,7 +54,7 @@
     </view>
 
     <view wx:elif="{{isBloodProduct}}" class="permission-card">
-      <text class="permission-title">本商品仅限通过医院认证的客户购买</text>
+      <text class="permission-title">本商品仅限通过门店认证的客户购买</text>
       <text class="permission-desc">认证通过后可查看机构价并提交预约购买需求。</text>
       <view class="test-link" bindtap="onTestQuery">血包检测信息查询 ></view>
     </view>

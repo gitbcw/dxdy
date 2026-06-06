@@ -8,6 +8,19 @@ function normalizeDateInput(date: string | Date): Date {
   return new Date(normalized);
 }
 
+function getLiteralDateParts(date: string | Date) {
+  if (typeof date !== 'string') return null;
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if (!match) return null;
+  return {
+    y: match[1],
+    m: match[2],
+    day: match[3],
+    h: match[4],
+    min: match[5],
+  };
+}
+
 /** 格式化金额（保留两位小数，千分位逗号） */
 export function formatMoney(amount: number): string {
   return amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -15,6 +28,9 @@ export function formatMoney(amount: number): string {
 
 /** 格式化日期为 YYYY-MM-DD */
 export function formatDate(date: string | Date): string {
+  const literal = getLiteralDateParts(date);
+  if (literal) return `${literal.y}-${literal.m}-${literal.day}`;
+
   const d = normalizeDateInput(date);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -24,6 +40,9 @@ export function formatDate(date: string | Date): string {
 
 /** 格式化日期时间为 YYYY-MM-DD HH:mm */
 export function formatDateTime(date: string | Date): string {
+  const literal = getLiteralDateParts(date);
+  if (literal) return `${literal.y}-${literal.m}-${literal.day} ${literal.h}:${literal.min}`;
+
   const d = normalizeDateInput(date);
   const h = String(d.getHours()).padStart(2, '0');
   const min = String(d.getMinutes()).padStart(2, '0');

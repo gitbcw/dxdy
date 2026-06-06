@@ -23,12 +23,16 @@
   </view>
 
   <view class="form dx-card">
-    <text class="title">绑定手机号</text>
-    <text class="subtitle">用于订单通知、售后联系和账号安全验证</text>
+    <text class="title">手机号登录</text>
 
     <view class="field-row">
       <image class="field-icon" src="{{phoneIcon}}" mode="aspectFit" />
       <input class="field-input" placeholder="请输入手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
+    </view>
+
+    <view class="field-row">
+      <image class="field-icon" src="{{shieldIcon}}" mode="aspectFit" />
+      <input class="field-input" placeholder="请输入密码" password value="{{password}}" bindinput="onPasswordInput" />
     </view>
 
     <view class="agreement">
@@ -39,7 +43,7 @@
       <text class="link">《隐私政策》</text>
     </view>
 
-    <view class="submit-btn dx-orange-btn" bindtap="onSubmit">完成绑定</view>
+    <view class="submit-btn dx-orange-btn" bindtap="onSubmit">登录</view>
 
     <view wx:if="{{demoLoginEnabled}}" class="demo-box">
       <view class="demo-head" bindtap="toggleDemoAccounts">
@@ -50,6 +54,7 @@
         <view wx:for="{{demoAccounts}}" wx:key="phone" class="demo-item" data-phone="{{item.phone}}" bindtap="useDemoAccount">
           <text class="demo-label">{{item.label}}</text>
           <text class="demo-phone">{{item.phone}}</text>
+          <text class="demo-password">密码 123456</text>
         </view>
       </view>
     </view>

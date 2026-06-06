@@ -30,6 +30,7 @@ export async function clerkShipOrder(params: {
 
 export async function updateOrderStatus(params: {
   orderId: string; status: string; operatorId: string; operatorName: string
+  bookingAmount?: number; urgentFee?: number
 }) {
   return callFunction<CloudFunctionResult>('updateOrderStatus', params)
 }

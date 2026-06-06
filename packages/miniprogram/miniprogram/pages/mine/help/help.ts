@@ -126,9 +126,9 @@ Page({
     roleCountLabel: '普通客户',
     faqs: [] as any[],
     contacts: [
-      { type: '客服热线', value: '400-888-6688', icon: '电', action: 'call' },
+      { type: '客服热线', value: '02022043433', icon: '电', action: 'call' },
       { type: '工作时间', value: '周一至周六 9:00-18:00', icon: '时', action: '' },
-      { type: '服务邮箱', value: 'service@dxdy-lab.com', icon: '邮', action: 'copy' },
+      { type: '服务邮箱', value: 'daxiongdongyipet@163.com', icon: '邮', action: 'copy' },
     ] as any[],
   },
 
@@ -162,22 +162,22 @@ Page({
   onContactAction(e: any) {
     const action = e.currentTarget.dataset.action
     if (action === 'call') {
-      wx.makePhoneCall({ phoneNumber: '400-888-6688' })
+      wx.makePhoneCall({ phoneNumber: '02022043433' })
     } else if (action === 'copy') {
       wx.setClipboardData({
-        data: 'service@dxdy-lab.com',
+        data: 'daxiongdongyipet@163.com',
         success: () => wx.showToast({ title: '邮箱已复制', icon: 'success' }),
       })
     }
   },
 
   onCallService() {
-    wx.makePhoneCall({ phoneNumber: '400-888-6688' })
+    wx.makePhoneCall({ phoneNumber: '02022043433' })
   },
 
   onCopyEmail() {
     wx.setClipboardData({
-      data: 'service@dxdy-lab.com',
+      data: 'daxiongdongyipet@163.com',
       success: () => wx.showToast({ title: '邮箱已复制', icon: 'success' }),
     })
   },

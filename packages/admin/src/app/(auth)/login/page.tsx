@@ -51,7 +51,7 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle className="text-2xl">大熊动医华南医学检验实验室管理后台</CardTitle>
+        <CardTitle className="text-2xl">大熊动医管理后台</CardTitle>
         <CardDescription>请输入账号密码登录</CardDescription>
       </CardHeader>
       <CardContent>

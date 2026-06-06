@@ -1,12 +1,29 @@
 const icons = require('../../../services/icons')
 const { getClerkOrderById, clerkShipOrder, markOrderPreparing, getProductVisualImage } = require('../../../services/index')
 
+function pad2(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+function formatDate(date: Date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+}
+
+function formatTime(date: Date) {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+}
+
 Page({
   data: {
     order: null as any,
+    isLoading: true,
+    loadError: '',
     showExpressPanel: false,
+    showDirectPanel: false,
     selectedCompany: '',
     expressNo: '',
+    etaDate: '',
+    etaTime: '',
     packageType: '冷藏箱',
     coldChainMethod: '冰袋（2-6°C）',
     packageWeight: '',
@@ -19,20 +36,35 @@ Page({
   },
 
   onLoad(e: any) {
-    if (e.id) this.loadOrder(e.id)
+    if (e.id) {
+      this.loadOrder(e.id)
+    } else {
+      this.setData({ isLoading: false, loadError: '订单参数缺失' })
+    }
   },
 
   async loadOrder(id: string) {
-    const order = await getClerkOrderById(id)
-    this.setData({
-      order: order ? {
-        ...order,
-        items: (order.items || []).map((item: any) => ({
-          ...item,
-          imageUrl: item.productImage || getProductVisualImage(item.name || item.productName),
-        })),
-      } : order,
-    })
+    this.setData({ isLoading: true, loadError: '' })
+    try {
+      const order = await getClerkOrderById(id)
+      this.setData({
+        order: order ? {
+          ...order,
+          items: (order.items || []).map((item: any) => ({
+            ...item,
+            imageUrl: item.productImage || getProductVisualImage(item.name || item.productName),
+          })),
+        } : null,
+        isLoading: false,
+        loadError: order ? '' : '订单不存在或无权查看',
+      })
+    } catch (e: any) {
+      this.setData({
+        order: null,
+        isLoading: false,
+        loadError: e?.message || '订单加载失败',
+      })
+    }
   },
 
   async onStartPreparing() {
@@ -49,6 +81,15 @@ Page({
   },
 
   onInputExpress() {
+    if (this.data.order?.isUrgentBooking) {
+      const eta = new Date(Date.now() + 60 * 60 * 1000)
+      this.setData({
+        showDirectPanel: true,
+        etaDate: this.data.etaDate || formatDate(eta),
+        etaTime: this.data.etaTime || formatTime(eta),
+      })
+      return
+    }
     this.setData({ showExpressPanel: true })
   },
 
@@ -71,6 +112,36 @@ Page({
   onColdFieldInput(e: any) {
     const field = e.currentTarget.dataset.field
     this.setData({ [field]: e.detail.value })
+  },
+
+  onEtaDateChange(e: any) {
+    this.setData({ etaDate: e.detail.value })
+  },
+
+  onEtaTimeChange(e: any) {
+    this.setData({ etaTime: e.detail.value })
+  },
+
+  async onSubmitDirectDelivery() {
+    if (!this.data.etaDate || !this.data.etaTime) {
+      wx.showToast({ title: '请选择预计到达时间', icon: 'none' })
+      return
+    }
+    wx.showLoading({ title: '提交中...' })
+    try {
+      await clerkShipOrder({
+        orderId: this.data.order.id,
+        deliveryMode: 'direct',
+        estimatedArrivalAt: `${this.data.etaDate} ${this.data.etaTime}`,
+      })
+      wx.hideLoading()
+      wx.showToast({ title: '已记录出发', icon: 'success' })
+      this.setData({ showDirectPanel: false })
+      this.loadOrder(this.data.order.id)
+    } catch (e: any) {
+      wx.hideLoading()
+      wx.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    }
   },
 
   async onSubmitExpress() {
@@ -132,6 +203,7 @@ Page({
   onClosePanel() {
     this.setData({
       showExpressPanel: false,
+      showDirectPanel: false,
       selectedCompany: '',
       expressNo: '',
       packageType: '冷藏箱',

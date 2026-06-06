@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,22 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchReturns } from '@/lib/services/database';
 import { reviewReturn } from '@/lib/services/functions';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney, formatDateTime } from '@/lib/format';
 import type { ReturnRecord } from '@/lib/types';
+
+const typeLabel: Record<string, string> = {
+  return: '退货退款',
+  refund_return: '退货退款',
+  refund_only: '仅退款',
+  exchange: '换货',
+};
 
 const statusLabel: Record<string, string> = {
   pending_review: '待审核',
@@ -34,6 +45,62 @@ const statusLabel: Record<string, string> = {
   exchange_completed: '换货完成',
 };
 
+const actionLabel: Record<string, string> = {
+  review: '审核',
+  wait_customer_shipping: '等待寄回',
+  receive_and_verify: '确认收货验货',
+  refunding: '验货合格',
+  reject: '不合格',
+  confirm_refund: '确认退款',
+  exchange_shipping: '换货发货',
+  confirm_receipt: '确认收货',
+  none: '无可用操作',
+};
+
+function getReturnTypeText(type: string) {
+  return typeLabel[type] ?? type;
+}
+
+function DateFilterInput({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="relative flex h-8 w-full items-center rounded-lg border border-input bg-background px-2.5 text-sm">
+      <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
+        {value || title}
+      </span>
+      <CalendarDays className="ml-auto size-4 text-muted-foreground" />
+      <input
+        type="date"
+        className="absolute inset-0 cursor-pointer opacity-0"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        title={title}
+      />
+    </div>
+  );
+}
+
+function getAvailableActions(record: ReturnRecord) {
+  const actions: string[] = [];
+  if (record.status === 'pending_review') actions.push('review');
+  if (record.status === 'approved') actions.push('wait_customer_shipping');
+  if (['customer_shipping', 'returned'].includes(record.status)) actions.push('receive_and_verify');
+  if (record.type !== 'exchange' && ['received', 'verifying'].includes(record.status)) {
+    actions.push('refunding', 'reject');
+  }
+  if (record.status === 'refunding') actions.push('confirm_refund');
+  if (record.type === 'exchange' && ['received', 'verifying'].includes(record.status)) actions.push('exchange_shipping');
+  if (record.type === 'exchange' && record.status === 'exchange_shipping') actions.push('confirm_receipt');
+  return actions.length > 0 ? actions : ['none'];
+}
+
 export default function ReturnsPage() {
   const { user } = useAuth();
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
@@ -42,6 +109,11 @@ export default function ReturnsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submittingId, setSubmittingId] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     loadReturns();
@@ -111,6 +183,35 @@ export default function ReturnsPage() {
     }
   }
 
+  const availableStatuses = useMemo(
+    () => [...new Set(returns.map(record => record.status))],
+    [returns],
+  );
+
+  const availableActions = useMemo(
+    () => [...new Set(returns.flatMap(record => getAvailableActions(record)))],
+    [returns],
+  );
+
+  const filteredReturns = useMemo(() => {
+    return returns.filter(record => {
+      if (typeFilter !== 'all' && record.type !== typeFilter) return false;
+      if (statusFilter !== 'all' && record.status !== statusFilter) return false;
+      if (actionFilter !== 'all' && !getAvailableActions(record).includes(actionFilter)) return false;
+      if (dateFrom && record.createdAt < dateFrom) return false;
+      if (dateTo && record.createdAt > `${dateTo}T23:59:59`) return false;
+      return true;
+    });
+  }, [returns, typeFilter, statusFilter, actionFilter, dateFrom, dateTo]);
+
+  function clearFilters() {
+    setTypeFilter('all');
+    setStatusFilter('all');
+    setActionFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">退换货管理</h1>
@@ -121,11 +222,56 @@ export default function ReturnsPage() {
       )}
 
       <Card>
+        <CardContent className="p-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+            <Select value={typeFilter} onValueChange={value => setTypeFilter(value ?? 'all')}>
+              <SelectTrigger className="w-full">
+                <SelectValue>{typeFilter === 'all' ? '全部类型' : getReturnTypeText(typeFilter)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部类型</SelectItem>
+                <SelectItem value="return">退货退款</SelectItem>
+                <SelectItem value="refund_return">退货退款</SelectItem>
+                <SelectItem value="refund_only">仅退款</SelectItem>
+                <SelectItem value="exchange">换货</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={value => setStatusFilter(value ?? 'all')}>
+              <SelectTrigger className="w-full">
+                <SelectValue>{statusFilter === 'all' ? '全部状态' : statusLabel[statusFilter]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                {availableStatuses.map(status => (
+                  <SelectItem key={status} value={status}>{statusLabel[status] ?? status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? 'all')}>
+              <SelectTrigger className="w-full">
+                <SelectValue>{actionFilter === 'all' ? '全部操作' : actionLabel[actionFilter]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部操作</SelectItem>
+                {availableActions.map(action => (
+                  <SelectItem key={action} value={action}>{actionLabel[action] ?? action}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <DateFilterInput title="开始时间" value={dateFrom} onChange={setDateFrom} />
+            <DateFilterInput title="结束时间" value={dateTo} onChange={setDateTo} />
+            <Button type="button" variant="outline" onClick={clearFilters}>
+              清空筛选
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>订单号</TableHead>
                 <TableHead>类型</TableHead>
                 <TableHead>状态</TableHead>
@@ -138,23 +284,29 @@ export default function ReturnsPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                     加载售后数据中...
                   </TableCell>
                 </TableRow>
               )}
               {!loading && returns.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                     暂无售后记录
                   </TableCell>
                 </TableRow>
               )}
-              {!loading && returns.map(record => (
+              {!loading && returns.length > 0 && filteredReturns.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    没有符合当前筛选条件的售后记录
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && filteredReturns.map(record => (
                 <TableRow key={record.id}>
-                  <TableCell className="font-mono text-sm">{record.id}</TableCell>
                   <TableCell className="font-mono text-sm">{record.orderId}</TableCell>
-                  <TableCell>{record.type === 'exchange' ? '换货' : record.type === 'refund_only' ? '仅退款' : '退货退款'}</TableCell>
+                  <TableCell>{getReturnTypeText(record.type)}</TableCell>
                   <TableCell>
                     <Badge variant={record.status === 'pending_review' ? 'outline' : 'default'}>
                       {statusLabel[record.status] ?? record.status}

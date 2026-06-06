@@ -10,12 +10,14 @@ Page({
   data: {
     checkingSession: true,
     phone: '',
+    password: '',
     loginHeroImage: GENERATED_ASSETS.loginHero,
     phoneIcon: icons.phone,
     shieldIcon: icons.shield,
     wechatIcon: icons.service,
     logoIcon: icons.hospital,
     referralCode: '',
+    redirect: '',
     demoLoginEnabled: false,
     showDemoAccounts: false,
     demoAccounts: [
@@ -44,18 +46,26 @@ Page({
       app.ensureOpenidUser?.({ referralCode: options.referralCode })
     }
 
+    if (options.redirect) {
+      this.setData({ redirect: decodeURIComponent(options.redirect) })
+    }
+
     const demoPhone = options.demoPhone || ''
     if (!demoLoginEnabled || !/^1\d{10}$/.test(demoPhone)) return
 
-    this.setData({ phone: demoPhone })
+    this.setData({ phone: demoPhone, password: '123456' })
 
     if (options.autoLogin === '1' || options.autoLogin === 'true') {
-      this.loginWithPhone(demoPhone, { redirectHome: true, silent: true, demo: true })
+      this.loginWithPhone(demoPhone, '123456', { redirectHome: true, silent: true, demo: true })
     }
   },
 
   onPhoneInput(e: any) {
     this.setData({ phone: e.detail.value })
+  },
+
+  onPasswordInput(e: any) {
+    this.setData({ password: e.detail.value })
   },
 
   toggleDemoAccounts() {
@@ -66,8 +76,9 @@ Page({
   useDemoAccount(e: any) {
     if (!this.data.demoLoginEnabled) return
     const phone = e.currentTarget.dataset.phone
-    this.setData({ phone })
-    this.loginWithPhone(phone, { redirectHome: true, demo: true })
+    const password = '123456'
+    this.setData({ phone, password })
+    this.loginWithPhone(phone, password, { redirectHome: true, demo: true })
   },
 
   inferRole(user: any) {
@@ -88,6 +99,10 @@ Page({
     wx.showToast({ title, icon: 'success' })
 
     setTimeout(() => {
+      if (this.data.redirect) {
+        wx.redirectTo({ url: this.data.redirect })
+        return
+      }
       if (redirectHome || getCurrentPages().length <= 1) {
         app.goRoleHome?.()
         return
@@ -96,24 +111,42 @@ Page({
     }, 500)
   },
 
-  async loginWithPhone(phone: string, options: { redirectHome?: boolean, silent?: boolean, demo?: boolean } = {}) {
+  async loginWithPhone(phone: string, password: string, options: { redirectHome?: boolean, silent?: boolean, demo?: boolean } = {}) {
     if (!phone || phone.length !== 11) {
       wx.showToast({ title: '请输入正确手机号', icon: 'none' })
       return
     }
+    if (!password || password.length < 6) {
+      wx.showToast({ title: '请输入至少6位密码', icon: 'none' })
+      return
+    }
 
-    if (!options.silent) wx.showLoading({ title: '进入中...' })
-    const result = await loginByPhone(phone, { demo: options.demo === true })
+    if (!options.silent) wx.showLoading({ title: '登录中...' })
+    const result = await loginByPhone(phone, { password, demo: options.demo === true })
     if (!options.silent) wx.hideLoading()
 
     if (result.success) {
-      this.finishLogin(result.user, '进入成功', !!options.redirectHome)
+      this.finishLogin(result.user, '登录成功', !!options.redirectHome)
     } else {
-      wx.showToast({ title: result.error || '进入失败', icon: 'none' })
+      wx.showToast({ title: result.error || '登录失败', icon: 'none' })
     }
   },
 
   async onSubmit() {
+    const { phone, password } = this.data
+    if (!phone || phone.length !== 11) {
+      wx.showToast({ title: '请输入正确手机号', icon: 'none' })
+      return
+    }
+    if (!password || password.length < 6) {
+      wx.showToast({ title: '请输入至少6位密码', icon: 'none' })
+      return
+    }
+
+    await this.loginWithPhone(phone, password, { redirectHome: true })
+  },
+
+  async onBindPhoneSubmit() {
     const { phone } = this.data
     if (!phone || phone.length !== 11) {
       wx.showToast({ title: '请输入正确手机号', icon: 'none' })

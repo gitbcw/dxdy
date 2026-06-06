@@ -1,7 +1,7 @@
 import type { AdminProfile } from '@/hooks/use-auth'
 import type { AdminRole } from '@/lib/types'
 
-const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin']
+const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin', 'clerk']
 
 export type CloudUser = Record<string, unknown> & {
   _id?: string

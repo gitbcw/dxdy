@@ -11,6 +11,17 @@ function formatDateTime(date) {
   return `${y}-${m}-${d} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
+
 function error(message, code = 'BAD_REQUEST') {
   return { success: false, code, error: message }
 }
@@ -84,7 +95,7 @@ exports.main = async (event) => {
         target: productId,
         detail: `Update product ${product.name || productId} status to ${status}`,
         result: 'success',
-        createdAt: now,
+        createdAt: formatBeijingLogTime(),
       },
     }).catch(() => {})
 
@@ -117,7 +128,7 @@ exports.main = async (event) => {
       target: productId,
       detail: `Delete product ${product.name || productId}`,
       result: 'success',
-      createdAt: now,
+      createdAt: formatBeijingLogTime(),
     },
   }).catch(() => {})
 

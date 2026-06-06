@@ -12,6 +12,7 @@ import type { AdminRole } from '@/lib/types';
 const roleLabel: Record<AdminRole, string> = {
   service: '客服',
   product_manager: '商品管理员',
+  clerk: '制单员',
   system_admin: '系统管理员',
 };
 
@@ -39,6 +40,10 @@ const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
     view_dashboard: true,
     manage_products: true,
   },
+  clerk: {
+    manage_orders: true,
+    manage_returns: true,
+  },
   system_admin: {
     view_dashboard: true,
     manage_products: true,
@@ -63,7 +68,7 @@ export default function RolesPage() {
     return result;
   });
   const [saving, setSaving] = useState<AdminRole | null>(null);
-  const [counts, setCounts] = useState<Record<AdminRole, number>>({ service: 0, product_manager: 0, system_admin: 0 });
+  const [counts, setCounts] = useState<Record<AdminRole, number>>({ service: 0, product_manager: 0, system_admin: 0, clerk: 0 });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -115,7 +120,7 @@ export default function RolesPage() {
     }));
   }
 
-  const roles: AdminRole[] = ['service', 'system_admin'];
+  const roles: AdminRole[] = ['service', 'clerk', 'system_admin'];
 
   return (
     <div className="space-y-6">
@@ -123,7 +128,7 @@ export default function RolesPage() {
       {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
       {message && <div className="rounded-md border border-emerald-700/20 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-3">
         {roles.map(role => (
           <Card key={role}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -16,7 +16,7 @@ function getTargetStatus(event) {
 function canReview(user) {
   if (!user) return false
   if (['admin', 'system_admin'].includes(user.role)) return true
-  if (user.role !== 'service') return false
+  if (!['service', 'clerk'].includes(user.role)) return false
   return !user.permissions || user.permissions.return_review === true || user.permissions.manage_returns === true
 }
 

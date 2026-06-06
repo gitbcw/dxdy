@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
   padding: 22rpx;
-  padding-bottom: 138rpx;
+  padding-bottom: 240rpx;
   background: #f6f7f6;
   box-sizing: border-box;
 }
@@ -278,6 +278,99 @@
   color: #ff5a00;
 }
 
+.voucher-pay {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #eef2ef;
+}
+
+.voucher-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 16rpx;
+}
+
+.voucher-head text:first-child {
+  color: #17231f;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.voucher-head text:last-child {
+  color: #7d8983;
+  font-size: 22rpx;
+}
+
+.voucher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.voucher-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 20rpx;
+  border: 2rpx solid #edf2ef;
+  border-radius: 14rpx;
+  background: #fafcfb;
+}
+
+.voucher-item.active {
+  border-color: #ff6a00;
+  background: #fff7ed;
+}
+
+.voucher-title,
+.voucher-no {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voucher-title {
+  max-width: 420rpx;
+  color: #17231f;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.voucher-no {
+  max-width: 420rpx;
+  margin-top: 6rpx;
+  color: #7d8983;
+  font-size: 21rpx;
+}
+
+.voucher-amount {
+  flex: 0 0 auto;
+  color: #ff5a00;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.voucher-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 18rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 12rpx;
+  background: #fff7ed;
+}
+
+.voucher-summary text {
+  color: #ff5a00;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
 .card-title {
   display: block;
   margin-bottom: 10rpx;
@@ -289,6 +382,43 @@
 .highlight {
   border: 1rpx solid rgba(255, 106, 0, 0.18);
   background: #fffaf6;
+}
+
+.pay-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+}
+
+.pay-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  min-width: 0;
+  padding: 18rpx;
+  border: 1rpx solid #eef2ef;
+  border-radius: 14rpx;
+  color: #6e7973;
+  font-size: 23rpx;
+  background: #f8faf8;
+}
+
+.pay-item text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pay-item text:first-child {
+  flex-shrink: 0;
+}
+
+.pay-item.active {
+  color: #139445;
+  border-color: rgba(22, 163, 74, 0.3);
+  background: #edf8f0;
 }
 
 .price-log text {

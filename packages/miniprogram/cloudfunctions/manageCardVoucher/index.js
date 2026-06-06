@@ -3,6 +3,17 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
 const _ = db.command
 
 function formatDate(date) {
@@ -23,6 +34,12 @@ function err(message) {
 async function getCard(cardId) {
   const { data } = await db.collection('card_vouchers').doc(cardId).get()
   return data || null
+}
+
+function normalizeCard(card) {
+  if (!card) return card
+  const { _id, ...rest } = card
+  return { id: _id, ...rest }
 }
 
 async function getOrder(orderId) {
@@ -49,10 +66,128 @@ async function writeLog(action, operatorId, detail) {
         action,
         operatorId: operatorId || '',
         detail: detail || '',
-        createdAt: formatDateTime(new Date()),
+        createdAt: formatBeijingLogTime(),
       },
     })
   } catch (_e) { /* non-critical */ }
+}
+
+async function listMyCards(event, now) {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid)
+  if (!user) return err('用户不存在')
+
+  const query = { currentHolderId: user._id }
+  if (event.status) query.status = event.status
+  const { data } = await db.collection('card_vouchers')
+    .where(query)
+    .orderBy('updatedAt', 'desc')
+    .limit(100)
+    .get()
+  const cards = data || []
+  for (const card of cards) {
+    if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
+      await db.collection('card_vouchers').doc(card._id).update({ data: { status: 'expired', updatedAt: now } })
+      card.status = 'expired'
+    }
+  }
+  return { success: true, cards: cards.map(normalizeCard) }
+}
+
+async function getMyCard(event, now) {
+  const { cardId } = event
+  if (!cardId) return err('缺少卡券 ID')
+
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid)
+  if (!user) return err('用户不存在')
+
+  const card = await getCard(cardId)
+  if (!card) return err('卡券不存在')
+  if (card.currentHolderId !== user._id && card.purchaserId !== user._id) return err('无权查看该卡券')
+
+  if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
+    await db.collection('card_vouchers').doc(cardId).update({ data: { status: 'expired', updatedAt: now } })
+    card.status = 'expired'
+  }
+  return { success: true, card: normalizeCard(card) }
+}
+
+async function createShareCode(event) {
+  const { cardId } = event
+  if (!cardId) return err('缺少卡券 ID')
+
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid)
+  if (!user) return err('用户不存在')
+
+  const card = await getCard(cardId)
+  if (!card) return err('卡券不存在')
+  if (card.currentHolderId !== user._id) return err('只有持有人可转赠')
+  if (!['gifted', 'claimed'].includes(card.status)) return err('该卡券当前不可转赠')
+
+  const codeRes = await cloud.openapi.wxacode.getUnlimited({
+    scene: cardId,
+    page: 'pages/card-detail/card-detail',
+    checkPath: false,
+    envVersion: 'trial',
+  })
+  const buffer = codeRes.buffer || codeRes
+  const cloudPath = `card-share-codes/${cardId}.png`
+  const uploadRes = await cloud.uploadFile({
+    cloudPath,
+    fileContent: buffer,
+  })
+  return {
+    success: true,
+    fileID: uploadRes.fileID,
+    path: `/pages/card-detail/card-detail?scene=${encodeURIComponent(cardId)}`,
+  }
+}
+
+async function claimSharedCard(event, now) {
+  const { cardId } = event
+  if (!cardId) return err('缺少卡券 ID')
+
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid)
+  if (!user) return err('请先登录或注册小程序')
+
+  const card = await getCard(cardId)
+  if (!card) return err('卡券不存在')
+  if (!['gifted', 'claimed'].includes(card.status)) return err('该卡券当前不可认领')
+  if (card.currentHolderId === user._id && card.status === 'claimed') {
+    return { success: true, card: normalizeCard(card) }
+  }
+
+  const fromUserId = card.currentHolderId || card.purchaserId || ''
+  const fromUserName = card.currentHolderName || card.purchaserName || '分享人'
+  const toUserName = user.nickname || user.phone || ''
+  const giftEntry = {
+    fromUserId,
+    fromUserName,
+    toUserId: user._id,
+    toUserName,
+    action: 'share_claim',
+    at: now,
+  }
+
+  await db.collection('card_vouchers').doc(cardId).update({
+    data: {
+      status: 'claimed',
+      currentHolderId: user._id,
+      currentHolderName: toUserName,
+      giftHistory: _.push(giftEntry),
+      updatedAt: now,
+    },
+  })
+
+  await writeLog('claim_shared_card', user._id, `扫码认领卡券 ${card.cardNo}`)
+  return { success: true }
 }
 
 // --- 代理商赠送卡券给医院客户 ---
@@ -192,7 +327,7 @@ async function redeemCard(event, now) {
 
   // 必须是认证机构
   if (user.customerType !== 'institution') return err('仅机构客户可兑换')
-  if (user.verificationStatus !== 'approved') return err('请先完成医院认证')
+  if (user.verificationStatus !== 'approved') return err('请先完成门店认证')
 
   const card = await getCard(cardId)
   if (!card) return err('卡券不存在')
@@ -334,6 +469,10 @@ exports.main = async (event) => {
   const now = formatDateTime(new Date())
 
   switch (event.action) {
+    case 'listMine': return listMyCards(event, now)
+    case 'get':      return getMyCard(event, now)
+    case 'shareCode': return createShareCode(event, now)
+    case 'claimShared': return claimSharedCard(event, now)
     case 'gift':    return giftCard(event, now)
     case 'claim':   return claimCard(event, now)
     case 'regift':  return regiftCard(event, now)

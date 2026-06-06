@@ -15,6 +15,15 @@ function error(message, code = 'BAD_REQUEST') {
 }
 
 async function getCurrentUser(openid, operatorId) {
+  if (operatorId) {
+    try {
+      const { data } = await db.collection('users').doc(operatorId).get()
+      if (data && (!openid || data._openid === openid || data.boundOpenid === openid)) return data
+    } catch (e) {
+      // fall through to openid lookup
+    }
+  }
+
   if (openid) {
     const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
     if (data && data.length) return data[0]
@@ -23,21 +32,13 @@ async function getCurrentUser(openid, operatorId) {
     if (boundUsers && boundUsers.length) return boundUsers[0]
   }
 
-  if (operatorId) {
-    try {
-      const { data } = await db.collection('users').doc(operatorId).get()
-      if (data) return data
-    } catch (e) {
-      return null
-    }
-  }
-
   return null
 }
 
 function canReadAllOrders(user) {
   if (!user || user.status === 'disabled') return false
   if (['admin', 'system_admin'].includes(user.role)) return true
+  if (user.role === 'clerk') return false
   if (user.permissions && user.permissions.manage_orders === true) return true
   return user.role === 'service'
 }
@@ -45,9 +46,12 @@ function canReadAllOrders(user) {
 function canReadOrder(user, order) {
   if (!user || !order) return false
   if (canReadAllOrders(user)) return true
+  if (user.role === 'clerk') {
+    const assignedIds = Array.isArray(user.assignedOrderIds) ? user.assignedOrderIds : []
+    return order.clerkId === user._id || assignedIds.includes(order._id)
+  }
   if (order.customerId === user._id || order.customerOpenid === user._openid || order.customerOpenid === user.boundOpenid) return true
   if (user.role === 'salesperson' && order.salespersonId === user._id) return true
-  if (user.role === 'clerk' && (!order.clerkId || order.clerkId === user._id)) return true
   return false
 }
 
@@ -144,7 +148,7 @@ exports.main = async (event = {}) => {
     cond.salespersonId = user._id
     if (event.customerId) cond.customerId = String(event.customerId)
   } else if (user.role === 'clerk') {
-    if (event.clerkId) cond.clerkId = String(event.clerkId)
+    cond.clerkId = user._id
   }
 
   if (event.status) cond.status = String(event.status)

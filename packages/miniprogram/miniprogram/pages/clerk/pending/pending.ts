@@ -26,8 +26,10 @@ Page({
         imageUrl: item.productImage || getProductVisualImage(item.name || item.productName),
       })),
       statusText: getOrderStatusText(order.rawStatus),
-      badgeText: order.type === 'exchange' ? '换货优先' : order.status === 'preparing' ? '备货中' : index === 0 ? '当前最急' : '待发货',
-      helperText: order.type === 'exchange'
+      badgeText: order.isUrgentBooking ? '加急预约' : order.type === 'exchange' ? '换货优先' : order.status === 'preparing' ? '备货中' : index === 0 ? '当前最急' : '待发货',
+      helperText: order.isUrgentBooking
+        ? '线下加急配送，出发后填写预计到达时间'
+        : order.type === 'exchange'
         ? '关联原订单，优先补发避免客户等待'
         : order.status === 'preparing'
         ? '正在备货，完成后请录入物流发货'
@@ -38,11 +40,11 @@ Page({
       orders: mappedOrders,
       isEmpty: mappedOrders.length === 0,
       pendingCount: mappedOrders.length,
-      urgentCount: mappedOrders.filter((item: any) => item.type === 'exchange').length,
+      urgentCount: mappedOrders.filter((item: any) => item.type === 'exchange' || item.isUrgentBooking).length,
       preparingCount: mappedOrders.filter((item: any) => item.status === 'preparing').length,
       summaryCards: [
         { value: String(mappedOrders.length), label: '待发货' },
-        { value: String(mappedOrders.filter((item: any) => item.type === 'exchange').length), label: '换货单' },
+        { value: String(mappedOrders.filter((item: any) => item.type === 'exchange' || item.isUrgentBooking).length), label: '优先处理' },
         { value: String(mappedOrders.filter((item: any) => item.status === 'preparing').length), label: '备货中' },
       ],
     })

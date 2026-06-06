@@ -79,6 +79,37 @@ async function buildOrderItems(rawItems, customer) {
 
   for (const raw of rawItems) {
     const quantity = Math.max(1, Number(raw.quantity || 1))
+    if (raw.bookingRequest === true || raw.productType === 'blood_booking') {
+      if (customer.customerType !== 'institution' || customer.verificationStatus !== 'approved') {
+        return { error: '用血预约仅限已认证医院客户提交' }
+      }
+      const species = String(raw.species || '').trim()
+      const bloodType = String(raw.bloodType || '').trim()
+      const volumeMl = Number(raw.volumeMl || 0)
+      if (!['dog', 'cat'].includes(species)) return { error: '请选择犬/猫用血类型' }
+      if (!bloodType) return { error: '请选择血型' }
+      if (!Number.isFinite(volumeMl) || volumeMl <= 0) return { error: '请输入需要的血量' }
+
+      const speciesLabel = species === 'dog' ? '犬血' : '猫血'
+      items.push({
+        productId: raw.productId || `blood_booking_${species}`,
+        productName: raw.productName || `${speciesLabel}预约`,
+        productImage: raw.productImage || '',
+        spec: raw.spec || `${bloodType} · ${volumeMl}ml`,
+        quantity: 1,
+        unitPrice: 0,
+        totalPrice: 0,
+        testReportCode: '',
+        batchNo: '',
+        stockManaged: false,
+        productType: 'blood_booking',
+        species,
+        bloodType,
+        volumeMl,
+      })
+      continue
+    }
+
     const product = await getProduct(raw.productId)
     if (!product) return { error: `商品不存在：${raw.productName || raw.productId || ''}` }
     if (product.status !== 'on_sale') return { error: `商品已下架：${product.name}` }
@@ -332,7 +363,9 @@ exports.main = async (event) => {
   // --- 加急费用 ---
   let urgentFee = 0
   let isUrgent = false
-  if (event.isUrgent) {
+  if (event.isUrgent && type === 'booking' && event.booking && event.booking.bloodBooking === true) {
+    isUrgent = true
+  } else if (event.isUrgent) {
     // 查第一个商品的 urgentConfig
     const firstItem = built.items[0]
     if (firstItem) {
@@ -358,34 +391,28 @@ exports.main = async (event) => {
     actualAmount = couponResult.finalAmount
   }
 
-  // --- 积分抵扣 ---
+  // --- 积分抵扣计划：下单时只记录，支付成功时再实际扣积分 ---
   let pointsDeduction = 0
+  let pointsConsumed = 0
   if (event.pointsToUse > 0 && type !== 'recharge') {
-    try {
-      const balance = customer.points?.balance || 0
-      const requested = Math.min(Number(event.pointsToUse), balance)
-      if (requested >= 100) {
-        pointsDeduction = Math.floor(requested / 100)  // 100积分=1元
-        const pointsConsumed = pointsDeduction * 100
-        actualAmount = Math.max(0.01, Math.round((actualAmount - pointsDeduction) * 100) / 100)
-        await db.collection('users').doc(customer._id).update({
-          data: {
-            'points.balance': db.command.inc(-pointsConsumed),
-            'points.history': db.command.push({
-              id: `pts_${Date.now()}`, change: -pointsConsumed,
-              reason: `订单积分抵扣`, createdAt: now,
-            }),
-            updatedAt: now,
-          }
-        })
-      }
-    } catch (_e) { /* skip points deduction */ }
+    const balance = customer.points?.balance || 0
+    const requested = Math.min(Number(event.pointsToUse), balance)
+    if (requested >= 100) {
+      pointsDeduction = Math.floor(requested / 100)  // 100积分=1元
+      pointsConsumed = pointsDeduction * 100
+      actualAmount = Math.max(0.01, Math.round((actualAmount - pointsDeduction) * 100) / 100)
+    }
   }
+
+  const initialStatus = type === 'booking' && event.booking && event.booking.bloodBooking === true
+    ? 'pending_confirmation'
+    : 'pending_payment'
+  const paymentStatus = initialStatus === 'pending_payment' ? 'unpaid' : 'not_required'
 
   const order = {
     orderNo: `DD${Date.now()}`,
     type,
-    status: 'pending_payment',
+    status: initialStatus,
     customerId: customer._id,
     customerName: customer.nickname || customer.name || customer.phone || '客户',
     customerOpenid: openid,
@@ -396,10 +423,10 @@ exports.main = async (event) => {
       originalAmount: Math.round(totalAmount * 100) / 100,
       actualAmount,
       priceLog: [],
-      shippingFee: 0, urgentFee, pointsDeduction, refundedAmount: 0,
+      shippingFee: 0, urgentFee, pointsDeduction, pointsConsumed, pointsDeductedAt: '', refundedAmount: 0,
       ...(couponRecord ? { coupon: couponRecord } : {}),
     },
-    payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
+    payment: { status: paymentStatus, method: '', paidAt: '', transactionId: '' },
     shipping: {
       address: shippingAddress,
       trackingNo: null,
@@ -423,7 +450,6 @@ exports.main = async (event) => {
   if (!stockResult.success) {
     try {
       await releaseCoupon(couponRecord, now)
-      await releasePoints(customer._id, pointsDeduction, now)
     } catch (_e) { /* non-critical cleanup */ }
     return error(stockResult.error)
   }
@@ -445,7 +471,6 @@ exports.main = async (event) => {
     }
     try {
       await releaseCoupon(couponRecord, now)
-      await releasePoints(customer._id, pointsDeduction, now)
     } catch (_e) { /* non-critical cleanup */ }
     return error('订单创建失败，请稍后重试')
   }

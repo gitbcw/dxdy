@@ -2,12 +2,12 @@ const { getMyCards, getGiftedCards } = require('../../services/index')
 
 Page({
   data: {
-    activeTab: 'gifted',
+    activeTab: 'all',
     tabs: [
+      { key: 'all', label: '全部' },
       { key: 'gifted', label: '待认领' },
       { key: 'claimed', label: '可使用' },
       { key: 'redeemed', label: '已兑换' },
-      { key: 'all', label: '全部' },
     ],
     allCards: [] as any[],
     visibleCards: [] as any[],

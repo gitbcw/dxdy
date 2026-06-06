@@ -4,6 +4,17 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
 
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
+
 function formatDate(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -94,15 +105,16 @@ exports.main = async (event) => {
 
   const target = await getUser(userId)
   if (!target) return error('用户不存在', 'NOT_FOUND')
-  if (target.role !== 'customer') return error('仅支持医院客户认证审核', 'FORBIDDEN')
+  if (!['customer', 'salesperson'].includes(target.role)) return error('仅支持医院客户和代理商认证审核', 'FORBIDDEN')
   if (target.verificationStatus !== 'pending') return error('当前认证状态不可审核', 'INVALID_STATUS')
 
   const info = target.verificationInfo || {}
-  if (!info.businessLicense) return error('认证材料缺失')
+  if (target.role === 'customer' && !info.businessLicense) return error('认证材料缺失')
+  if (target.role === 'salesperson' && !info.realName && !info.idCard) return error('认证材料缺失')
   if (event.approved !== true && !String(event.rejectReason || event.note || '').trim()) return error('请填写驳回原因')
 
   // 审核通过前检查资质编号唯一性
-  if (event.approved && info.businessLicense) {
+  if (target.role === 'customer' && event.approved && info.businessLicense) {
     const _ = db.command
     const { data: dupes } = await db.collection('users').where({
       'verificationInfo.businessLicense': info.businessLicense,
@@ -119,28 +131,35 @@ exports.main = async (event) => {
   const operatorName = getOperatorName(operator, String(event.operatorName || '').trim())
   const updateData = {
     verificationStatus: event.approved ? 'approved' : 'rejected',
-    customerType: event.approved ? 'institution' : (target.customerType || 'personal'),
     'verificationInfo.reviewedAt': now,
     'verificationInfo.reviewerId': operator._id,
     'verificationInfo.reviewerName': operatorName,
     'verificationInfo.rejectReason': rejectReason,
     updatedAt: now,
   }
+  if (target.role === 'customer') {
+    updateData.customerType = event.approved ? 'institution' : (target.customerType || 'personal')
+  }
 
   await db.collection('users').doc(target._id).update({ data: updateData })
+
+  const subjectType = target.role === 'salesperson' ? '代理商' : '医院'
+  const subjectName = target.role === 'salesperson'
+    ? (info.realName || target.nickname || target.phone)
+    : (info.hospitalName || target.nickname || target.phone)
 
   await db.collection('logs').add({
     data: {
       operatorId: operator._id,
       operatorName,
       operatorRole: operator.role,
-      action: event.approved ? '医院认证通过' : '医院认证驳回',
+      action: event.approved ? `${subjectType}认证通过` : `${subjectType}认证驳回`,
       target: target._id,
       detail: event.approved
-        ? `审核通过医院「${info.hospitalName || target.nickname || target.phone}」认证`
-        : `驳回医院「${info.hospitalName || target.nickname || target.phone}」认证，原因：${rejectReason}`,
+        ? `审核通过${subjectType}「${subjectName}」认证`
+        : `驳回${subjectType}「${subjectName}」认证，原因：${rejectReason}`,
       result: 'success',
-      createdAt: now,
+      createdAt: formatBeijingLogTime(),
     },
   })
 

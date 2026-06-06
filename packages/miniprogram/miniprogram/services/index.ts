@@ -41,6 +41,8 @@ function mapClerkOrder(order: any) {
   const address = shipping.address || order.shippingAddress || {}
   const pricing = order.pricing || {}
   const coldChain = shipping.coldChain || {}
+  const directDelivery = shipping.directDelivery || {}
+  const isUrgentBooking = order.type === 'booking' && !!(order.booking?.urgent || shipping.urgent)
   const items = (order.items || []).map((item: any) => ({
     ...item,
     name: item.name || item.productName || '',
@@ -65,6 +67,11 @@ function mapClerkOrder(order: any) {
     boxTemperature: coldChain.boxTemperature || shipping.boxTemperature || '',
     temperature: shipping.temperature || coldChain.temperature || '',
     eta: shipping.eta || '',
+    isUrgentBooking,
+    deliveryMode: shipping.deliveryMode || '',
+    directDelivery,
+    departedAt: directDelivery.departedAt || '',
+    estimatedArrivalAt: directDelivery.estimatedArrivalAt || shipping.eta || '',
     lastModifyReason: shipping.lastModifyReason || '',
     assignedAt: order.assignedAt || order.createdAt || '',
     address: address.full || address.detail || order.address || '',
@@ -181,11 +188,11 @@ export function getProductVisualImage(productOrName: any): string {
 
 // ===== 认证服务 =====
 
-export async function loginByPhone(phone: string) {
+export async function loginByPhone(phone: string, options: { password?: string, demo?: boolean } = {}) {
   try {
     const { result } = await wx.cloud.callFunction({
       name: 'loginByPhone',
-      data: { phone },
+      data: { phone, password: options.password || '', demo: options.demo === true },
     }) as any
     if (result?.success && result.user) {
       const user = result.user
@@ -471,6 +478,18 @@ export async function getOrderById(id: string) {
   } catch { return null }
 }
 
+export async function queryLogistics(orderId: string) {
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'queryLogistics',
+      data: { orderId, userId: getCurrentUser()?.id },
+    }) as any
+    return result || { success: false, error: '物流查询失败' }
+  } catch (e: any) {
+    return { success: false, error: e?.message || '物流查询失败' }
+  }
+}
+
 export async function getOrderByNo(orderNo: string) {
   try {
     const { result } = await wx.cloud.callFunction({
@@ -506,11 +525,36 @@ export async function createOrder(params: {
   return result.order
 }
 
-export async function payOrder(orderId: string, method: string = 'wechat') {
+export async function payOrder(orderId: string, method: string = 'wechat', options?: { cardVoucherId?: string }) {
   const { result } = await wx.cloud.callFunction({
     name: 'payOrder',
-    data: { orderId, method },
+    data: { orderId, method, ...(options || {}) },
   }) as any
+  if (result?.success && method === 'wechat' && result.payRequest) {
+    const payRes = await (wx.cloud as any).callHTTPFunction({
+      name: 'daxiongdongyi-nrignywh-demo-scfweb',
+      config: { env: 'cloud1-d7g7ctn4m86bada89' },
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      path: '/wx-pay/wxpay_order',
+      data: result.payRequest,
+    })
+    const body = payRes?.data
+    if (body?.code !== 0) {
+      return { success: false, error: body?.msg || '微信支付下单失败', order: result.order }
+    }
+    const payment = body?.data?.data || body?.data
+    if (!payment?.timeStamp || !payment?.nonceStr || !payment?.package || !payment?.paySign || !payment?.signType) {
+      return { success: false, error: body?.msg || '微信支付参数缺失', order: result.order }
+    }
+    result.payment = payment
+  }
+  if (result?.success && result.user) {
+    const app = getApp()
+    app.globalData.userInfo = result.user
+    app.globalData.userRole = app.resolveRole?.(result.user) || app.globalData.userRole
+    wx.setStorageSync('current_user', JSON.stringify(result.user))
+  }
   return result || { success: false, error: '支付失败' }
 }
 
@@ -593,31 +637,50 @@ export async function confirmBooking(orderId: string) {
 // ===== 制单员订单服务 =====
 
 export async function getClerkOrders(options?: { status?: string }) {
-  const cond: any = { clerkId: _.neq(null).and(_.neq('')) }
-  if (options?.status === 'pending') {
-    cond.status = _.in(['pending_shipment', 'confirmed', 'preparing'])
-  } else if (options?.status === 'shipped') {
-    cond.status = 'pending_receipt'
-  } else if (options?.status === 'signed') {
-    cond.status = 'completed'
-  } else if (options?.status === 'today_shipped') {
-    cond.status = 'pending_receipt'
-    const today = formatDate(new Date())
-    cond['shipping.shippedAt'] = _.gte(today)
-  }
-  const { data } = await db.collection('orders').where(cond).orderBy('createdAt', 'desc').limit(100).get()
-  return normalizeList(data).map(mapClerkOrder)
+  const user = getCurrentUser()
+  if (!user || user.role !== 'clerk') return []
+
+  const { result } = await wx.cloud.callFunction({
+    name: 'queryOrders',
+    data: { action: 'listOrders', operatorId: user.id, clerkId: user.id },
+  }) as any
+  if (!result?.success) throw new Error(result?.error || '制单员订单读取失败')
+
+  const status = options?.status
+  const today = formatDate(new Date())
+  return (result.orders || [])
+    .filter((order: any) => {
+      if (status === 'pending') return ['pending_shipment', 'confirmed', 'preparing'].includes(order.status)
+      if (status === 'shipped') return order.status === 'pending_receipt'
+      if (status === 'signed') return order.status === 'completed'
+      if (status === 'today_shipped') {
+        return order.status === 'pending_receipt' && String(order.shipping?.shippedAt || '').startsWith(today)
+      }
+      return true
+    })
+    .map(mapClerkOrder)
 }
 
 export async function getClerkOrderById(id: string) {
-  const order = await getOrderById(id)
-  return mapClerkOrder(order)
+  const user = getCurrentUser()
+  if (!user || user.role !== 'clerk') return null
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'queryOrders',
+      data: { action: 'getOrderById', orderId: id, operatorId: user.id },
+    }) as any
+    return result?.success ? mapClerkOrder(result.order) : null
+  } catch {
+    return null
+  }
 }
 
 export async function clerkShipOrder(params: {
   orderId: string
-  expressCompany: string
-  expressNo: string
+  expressCompany?: string
+  expressNo?: string
+  deliveryMode?: string
+  estimatedArrivalAt?: string
   packageType?: string
   coldChainMethod?: string
   packageWeight?: string
@@ -636,11 +699,7 @@ export async function clerkShipOrder(params: {
 }
 
 export async function markOrderPreparing(orderId: string) {
-  const now = formatDateTime(new Date())
-  await db.collection('orders').doc(orderId).update({
-    data: { status: 'preparing', updatedAt: now },
-  })
-  return getOrderById(orderId)
+  return updateOrderStatus(orderId, 'preparing')
 }
 
 // ===== 退换货服务 =====
@@ -834,39 +893,14 @@ export async function getCommissionSummary() {
 export async function getSalesmanCustomers() {
   const user = getCurrentUser()
   if (!user) return []
-  const [{ data: customerDocs }, { data: orderDocs }, { data: returnDocs }] = await Promise.all([
-    db.collection('users').where({ role: 'customer', boundSalespersonId: user.id }).limit(100).get(),
-    db.collection('orders').where({ salespersonId: user.id }).orderBy('createdAt', 'desc').limit(100).get(),
-    db.collection('returns').limit(100).get(),
-  ])
-  const focusDocs = await getSalesmanCustomerFocusRecords()
-  const orders = normalizeList(orderDocs)
-  const returns = normalizeList(returnDocs)
-  const focusMap = new Map(focusDocs.map((item: any) => [item.customerId, item]))
-  return normalizeList(customerDocs).map((customer: any) => {
-    const customerOrders = orders.filter((order: any) => order.customerId === customer.id)
-    const customerReturns = returns.filter((record: any) => customerOrders.some((order: any) => order.id === record.orderId))
-    const totalAmount = customerOrders.reduce((sum: number, order: any) => sum + (order.pricing?.actualAmount || 0), 0)
-    const lastOrder = customerOrders[0] || null
-    const monthKey = formatDate(new Date()).slice(0, 7)
-    const monthAmount = customerOrders
-      .filter((order: any) => String(order.createdAt || '').slice(0, 7) === monthKey)
-      .reduce((sum: number, order: any) => sum + (order.pricing?.actualAmount || 0), 0)
-    return {
-      ...customer,
-      type: customer.customerType || 'personal',
-      totalAmount,
-      monthAmount,
-      orderCount: customerOrders.length,
-      exchangeCount: customerReturns.length,
-      lastOrderAt: lastOrder?.createdAt || '',
-      lastOrderNo: lastOrder?.orderNo || '',
-      lastOrderStatus: lastOrder?.status || '',
-      boundAt: customer.boundAt || customer.createdAt || '',
-      isFocused: focusMap.has(customer.id),
-      focusCreatedAt: focusMap.get(customer.id)?.createdAt || '',
-    }
-  })
+  const { result } = await wx.cloud.callFunction({
+    name: 'toggleSalesmanCustomerFocus',
+    data: {
+      action: 'customers',
+      userId: user.id,
+    },
+  }) as any
+  return result?.success ? (result.customers || []) : []
 }
 
 export async function getSalesmanCustomerFocusRecords() {
@@ -905,65 +939,49 @@ export async function toggleSalesmanCustomerFocus(customerId: string) {
 export async function getAgentCustomerDetail(customerId: string) {
   const user = getCurrentUser()
   if (!user || !customerId) return null
-  const customer = await getCustomerById(customerId)
-  if (!customer || customer.boundSalespersonId !== user.id) return null
-  const [{ data: orderDocs }, { data: returnDocs }, { data: commissionDocs }] = await Promise.all([
-    db.collection('orders').where({ customerId, salespersonId: user.id }).orderBy('createdAt', 'desc').limit(100).get(),
-    db.collection('returns').where({ customerId }).orderBy('createdAt', 'desc').limit(100).get(),
-    db.collection('commission_records').where({ customerId, salespersonId: user.id }).orderBy('createdAt', 'desc').limit(100).get(),
-  ])
-  const orders = normalizeList(orderDocs)
-  const returns = normalizeList(returnDocs)
-  const commissions = normalizeList(commissionDocs)
-  const monthKey = formatDate(new Date()).slice(0, 7)
-  const totalAmount = orders.reduce((sum: number, order: any) => sum + (order.pricing?.actualAmount || 0), 0)
-  const monthAmount = orders
-    .filter((order: any) => String(order.createdAt || '').slice(0, 7) === monthKey)
-    .reduce((sum: number, order: any) => sum + (order.pricing?.actualAmount || 0), 0)
-  const commissionAmount = commissions.reduce((sum: number, record: any) => sum + (record.amount || 0), 0)
-  return {
-    customer: {
-      ...customer,
-      type: customer.customerType || 'personal',
-      boundAt: customer.boundAt || customer.createdAt || '',
-    },
-    orders,
-    returns,
-    commissions,
-    stats: {
-      orderCount: orders.length,
-      totalAmount,
-      monthAmount,
-      commissionAmount,
-      afterSaleCount: returns.length,
-    },
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'toggleSalesmanCustomerFocus',
+      data: {
+        action: 'detail',
+        customerId,
+        userId: user.id,
+      },
+    }) as any
+    return result?.success ? result.detail : null
+  } catch {
+    return null
   }
 }
 
 export async function getAgentOrders(options?: { status?: string; customerId?: string }) {
   const user = getCurrentUser()
   if (!user) return []
-  const cond: any = { salespersonId: user.id }
-  if (options?.customerId) cond.customerId = options.customerId
-  if (options?.status && options.status !== 'all') cond.status = options.status
-  const [{ data: orderDocs }, { data: customerDocs }, { data: returnDocs }] = await Promise.all([
-    db.collection('orders').where(cond).orderBy('createdAt', 'desc').limit(100).get(),
-    db.collection('users').where({ role: 'customer', boundSalespersonId: user.id }).limit(100).get(),
-    db.collection('returns').limit(100).get(),
+  options = options || {}
+  {
+  const [{ result }, customers] = await Promise.all([
+    wx.cloud.callFunction({
+      name: 'queryOrders',
+      data: {
+        action: 'listOrders',
+        operatorId: user.id,
+        customerId: options?.customerId || '',
+        status: options?.status && options.status !== 'all' ? options.status : '',
+      },
+    }) as any,
+    getSalesmanCustomers(),
   ])
-  const customers = normalizeList(customerDocs)
-  const returns = normalizeList(returnDocs)
-  return normalizeList(orderDocs).map((order: any) => {
+  if (!result?.success) return []
+  return (result.orders || []).map((order: any) => {
     const customer = customers.find((item: any) => item.id === order.customerId)
-    const returnRecord = returns.find((item: any) => item.orderId === order.id)
     return {
       ...order,
       customer,
       customerType: customer?.customerType || 'personal',
       customerName: order.customerName || customer?.nickname || customer?.phone || '客户',
-      returnRecord,
     }
   })
+  }
 }
 
 export async function getWithdrawalRecords(salespersonId: string) {
@@ -980,6 +998,18 @@ export async function saveAgentBankCard(userId: string, card: any) {
     return result || { success: false, error: '保存失败' }
   } catch (e: any) {
     return { success: false, error: e?.message || '保存失败' }
+  }
+}
+
+export async function deleteAgentBankCard(userId: string, cardId: string) {
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'saveAgentBankCard',
+      data: { action: 'delete', userId, cardId },
+    }) as any
+    return result || { success: false, error: '删除失败' }
+  } catch (e: any) {
+    return { success: false, error: e?.message || '删除失败' }
   }
 }
 
@@ -1033,6 +1063,10 @@ export async function updateWithdrawalStatus(id: string, status: string, operato
 
 // ===== 代理商服务 =====
 
+export function isApprovedAgent(user: any) {
+  return user?.agentStatus === 'approved' || user?.role === 'salesperson'
+}
+
 export async function submitAgentApplication(userId: string, info: any) {
   try {
     const basePath = `agent-applications/${userId}/${Date.now()}`
@@ -1054,9 +1088,18 @@ export async function getAgentApplication(userId?: string) {
   try {
     const { data } = await db.collection('users').doc(id).get()
     const u = normalize(data)
+    const approved = isApprovedAgent(u)
+    const fallbackInfo = approved ? {
+      contactName: u?.agentApplication?.contactName || u?.verificationInfo?.realName || u?.nickname || '',
+      contactPhone: u?.agentApplication?.contactPhone || u?.phone || '',
+      submittedAt: u?.agentApplication?.submittedAt || u?.agentApprovedAt || u?.updatedAt || u?.createdAt || '',
+      idNumber: u?.agentApplication?.idNumber || u?.verificationInfo?.idCard || '',
+      idCardFront: u?.agentApplication?.idCardFront || '',
+      idCardBack: u?.agentApplication?.idCardBack || '',
+    } : {}
     return {
-      status: u?.agentStatus || (u?.role === 'salesperson' ? 'approved' : 'none'),
-      info: u?.agentApplication || {},
+      status: u?.agentStatus || (approved ? 'approved' : 'none'),
+      info: { ...fallbackInfo, ...(u?.agentApplication || {}) },
       user: u,
     }
   } catch { return null }
@@ -1247,7 +1290,7 @@ export function canPurchase(product: any, user: any | null, options?: { quantity
   const isBloodPack = product.productType === 'blood_pack' || product.isBloodPack
   if (isBloodPack) {
     if (customerType !== 'institution') return { allowed: false, reason: '血包商品仅限医院客户', code: 'blood_pack_auth' }
-    if (user.verificationStatus !== 'approved') return { allowed: false, reason: '请先完成医院认证', code: 'blood_pack_auth' }
+    if (user.verificationStatus !== 'approved') return { allowed: false, reason: '请先完成门店认证', code: 'blood_pack_auth' }
   }
 
   const isCardVoucher = product.productType === 'card_voucher'
@@ -1461,35 +1504,30 @@ export async function getAgentCards() {
 }
 
 export async function getMyCards() {
-  const user = getCurrentUser()
-  if (!user) return []
-  const { data } = await db.collection('card_vouchers')
-    .where({ currentHolderId: user.id })
-    .orderBy('updatedAt', 'desc').limit(100).get()
-  const cards = normalizeList(data)
-  const now = formatDateTime(new Date())
-  for (const card of cards) {
-    if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
-      await db.collection('card_vouchers').doc(card.id).update({ data: { status: 'expired', updatedAt: now } })
-      card.status = 'expired'
-    }
-  }
-  return cards
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageCardVoucher',
+    data: { action: 'listMine' },
+  }) as any
+  if (!result?.success) return []
+  return result.cards || []
 }
 
 export async function getGiftedCards() {
-  const user = getCurrentUser()
-  if (!user) return []
-  const { data } = await db.collection('card_vouchers')
-    .where({ currentHolderId: user.id, status: 'gifted' })
-    .orderBy('updatedAt', 'desc').limit(100).get()
-  return normalizeList(data)
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageCardVoucher',
+    data: { action: 'listMine', status: 'gifted' },
+  }) as any
+  if (!result?.success) return []
+  return result.cards || []
 }
 
 export async function getCardById(id: string) {
   try {
-    const { data } = await db.collection('card_vouchers').doc(id).get()
-    return normalize(data)
+    const { result } = await wx.cloud.callFunction({
+      name: 'manageCardVoucher',
+      data: { action: 'get', cardId: id },
+    }) as any
+    return result?.success ? result.card : null
   } catch { return null }
 }
 
@@ -1518,7 +1556,7 @@ export async function getCardVoucherProducts() {
 }
 
 export async function manageCardVoucher(params: {
-  action: 'gift' | 'claim' | 'regift' | 'redeem' | 'void'
+  action: 'gift' | 'claim' | 'regift' | 'redeem' | 'void' | 'shareCode' | 'claimShared'
   cardId: string
   toUserId?: string
   redeemProductId?: string

@@ -57,6 +57,7 @@ function verifyToken(token) {
 function canRead(role, collection) {
   if (role === 'system_admin') return true
   if (role === 'product_manager') return ['products', 'categories'].includes(collection)
+  if (role === 'clerk') return ['orders', 'returns'].includes(collection)
   if (role === 'service') {
     return ['orders', 'returns', 'users', 'withdrawals', 'invoices', 'products', 'categories'].includes(collection)
   }

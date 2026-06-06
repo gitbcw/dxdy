@@ -3,6 +3,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const _ = db.command
 
 function formatDate(date) {
   const y = date.getFullYear()
@@ -19,13 +20,13 @@ function error(message, code = 'BAD_REQUEST') {
   return { success: false, code, error: message }
 }
 
-exports.main = async (event) => {
-  const wxContext = cloud.getWXContext()
-  const openid = wxContext.OPENID || ''
-  const operatorId = String(event.operatorId || '').trim()
-  if (!openid && !operatorId) return error('登录状态无效', 'UNAUTHORIZED')
+function normalizeUser(user) {
+  if (!user) return null
+  const { _id, ...rest } = user
+  return { id: _id, ...rest }
+}
 
-  // 获取用户
+async function getCustomer(openid, operatorId) {
   let customer = null
   if (openid) {
     const { data: users } = await db.collection('users').where({ _openid: openid }).limit(1).get()
@@ -39,64 +40,75 @@ exports.main = async (event) => {
     try {
       const { data } = await db.collection('users').doc(operatorId).get()
       customer = data
-    } catch (_e) { /* keep null */ }
+    } catch (_e) {}
   }
-  if (!customer) return error('用户不存在', 'FORBIDDEN')
+  return customer
+}
 
-  // 读取充值档位配置
-  const tierIndex = parseInt(event.tierIndex, 10)
-  if (isNaN(tierIndex) || tierIndex < 0) return error('请选择充值档位')
-
+async function getRechargeTier(tierIndex) {
   let tiers = []
   try {
     const { data: cfg } = await db.collection('config').doc('system').get()
-    tiers = cfg?.rechargeTiers || []
-  } catch (_e) { /* use empty */ }
+    tiers = Array.isArray(cfg && cfg.rechargeTiers) ? cfg.rechargeTiers : []
+  } catch (_e) {}
 
-  if (tierIndex >= tiers.length) return error('充值档位不存在')
+  if (tierIndex < 0 || tierIndex >= tiers.length) return null
   const tier = tiers[tierIndex]
   const amount = Number(tier.amount) || 0
-  if (amount <= 0) return error('充值金额异常')
+  if (amount <= 0) return null
+  return {
+    amount,
+    bonus: Number(tier.bonus || 0),
+    label: tier.label || `充值 ¥${amount}`,
+  }
+}
+
+exports.main = async (event) => {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID || ''
+  const operatorId = String(event.operatorId || '').trim()
+  if (!openid && !operatorId) return error('登录状态无效', 'UNAUTHORIZED')
+
+  const tierIndex = parseInt(event.tierIndex, 10)
+  if (Number.isNaN(tierIndex) || tierIndex < 0) return error('请选择充值档位')
+
+  const customer = await getCustomer(openid, operatorId)
+  if (!customer) return error('用户不存在', 'FORBIDDEN')
+  if (customer.role !== 'customer') return error('仅客户账号可充值钱包', 'FORBIDDEN')
+
+  const tier = await getRechargeTier(tierIndex)
+  if (!tier) return error('充值档位不存在')
 
   const now = formatDateTime(new Date())
-  const orderNo = `RC${Date.now()}`
+  const credit = tier.amount + tier.bonus
+  const rechargeId = `rch_${Date.now()}`
 
-  const order = {
-    orderNo,
-    type: 'recharge',
-    status: 'pending_payment',
-    customerId: customer._id,
-    customerName: customer.nickname || customer.phone || '客户',
-    customerOpenid: openid || customer._openid || customer.boundOpenid || '',
-    salespersonId: '',
-    clerkId: null,
-    items: [{
-      productId: '',
-      productName: `充值 ¥${amount}${tier.bonus > 0 ? `（赠 ¥${tier.bonus}）` : ''}`,
-      productImage: '',
-      spec: tier.label || `${amount}元档`,
-      quantity: 1,
-      unitPrice: amount,
-      totalPrice: amount,
-    }],
-    pricing: {
-      originalAmount: amount,
-      actualAmount: amount,
-      priceLog: [],
-      shippingFee: 0,
-      urgentFee: 0,
-      pointsDeduction: 0,
-      refundedAmount: 0,
+  await db.collection('users').doc(customer._id).update({
+    data: {
+      'wallet.balance': _.inc(credit),
+      'wallet.rechargeHistory': _.push({
+        id: rechargeId,
+        amount: tier.amount,
+        bonus: tier.bonus,
+        label: tier.label,
+        method: 'wechat',
+        status: 'paid',
+        createdAt: now,
+      }),
+      updatedAt: now,
     },
-    payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
-    shipping: { address: '虚拟充值订单', trackingNo: null, company: null, logistics: [] },
-    returnRecordId: null,
-    commission: { status: 'none', amount: 0, settledAt: null },
-    rechargeTier: { amount, bonus: tier.bonus || 0, label: tier.label || '' },
-    createdAt: now,
-    updatedAt: now,
-  }
+  })
 
-  const { _id } = await db.collection('orders').add({ data: order })
-  return { success: true, order: { ...order, id: _id } }
+  const { data: updatedUser } = await db.collection('users').doc(customer._id).get()
+  return {
+    success: true,
+    recharge: {
+      id: rechargeId,
+      amount: tier.amount,
+      bonus: tier.bonus,
+      credit,
+      paidAt: now,
+    },
+    user: normalizeUser(updatedUser),
+  }
 }

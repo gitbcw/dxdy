@@ -2,9 +2,27 @@ const {
   createInvoice,
   getInvoiceByOrderId,
   getOrderById,
-  getOrderByNo,
+  getOrders,
   formatMoney,
 } = require('../../../services/index')
+
+function getOrderProductNames(order: any) {
+  const names = (order.items || [])
+    .map((item: any) => item.productName || item.name || '')
+    .filter(Boolean)
+  if (!names.length) return '订单商品'
+  if (names.length === 1) return names[0]
+  return `${names[0]}等${names.length}件商品`
+}
+
+function mapInvoiceOrder(order: any) {
+  const productNames = getOrderProductNames(order)
+  return {
+    ...order,
+    productNames,
+    amountText: formatMoney(order.pricing?.actualAmount || 0),
+  }
+}
 
 Page({
   data: {
@@ -14,6 +32,10 @@ Page({
     email: '',
     orderId: '',
     orderNo: '',
+    orderProductNames: '',
+    orderOptions: [] as any[],
+    showOrderPanel: false,
+    loadingOrders: false,
     amount: '0.00',
     statusText: '',
     orderLocked: false,
@@ -24,6 +46,8 @@ Page({
   onLoad(options: any) {
     if (options.orderId) {
       this.loadOrder(options.orderId)
+    } else {
+      this.loadCompletedOrders()
     }
   },
 
@@ -34,13 +58,29 @@ Page({
       return
     }
     const invoice = await getInvoiceByOrderId(order.id)
+    const mapped = mapInvoiceOrder(order)
     this.setData({
-      orderId: order.id,
-      orderNo: order.orderNo,
-      amount: formatMoney(order.pricing?.actualAmount || 0),
+      orderId: mapped.id,
+      orderNo: mapped.orderNo,
+      orderProductNames: mapped.productNames,
+      amount: mapped.amountText,
       statusText: invoice ? '该订单已提交开票申请' : '',
       orderLocked: true,
     })
+  },
+
+  async loadCompletedOrders() {
+    this.setData({ loadingOrders: true })
+    try {
+      const orders = await getOrders({ status: 'completed' })
+      const orderOptions = (orders || [])
+        .filter((order: any) => order.payment?.status === 'paid')
+        .map(mapInvoiceOrder)
+      this.setData({ orderOptions, loadingOrders: false })
+    } catch (e: any) {
+      this.setData({ orderOptions: [], loadingOrders: false })
+      wx.showToast({ title: e?.message || '订单读取失败', icon: 'none' })
+    }
   },
 
   onInput(e: any) {
@@ -48,18 +88,31 @@ Page({
     this.setData({ [field]: e.detail.value })
   },
 
-  async resolveOrder() {
-    if (this.data.orderId) return this.data.orderId
-    const orderNo = this.data.orderNo.trim()
-    if (!orderNo) return ''
-    const order = await getOrderByNo(orderNo)
-    if (!order) return ''
+  onOpenOrderPanel() {
+    if (this.data.orderLocked) return
+    if (!this.data.orderOptions.length && !this.data.loadingOrders) {
+      this.loadCompletedOrders()
+    }
+    this.setData({ showOrderPanel: true })
+  },
+
+  onCloseOrderPanel() {
+    this.setData({ showOrderPanel: false })
+  },
+
+  async onSelectOrder(e: any) {
+    const id = e.currentTarget.dataset.id
+    const order = this.data.orderOptions.find((item: any) => item.id === id)
+    if (!order) return
+    const invoice = await getInvoiceByOrderId(order.id)
     this.setData({
       orderId: order.id,
       orderNo: order.orderNo,
-      amount: formatMoney(order.pricing?.actualAmount || 0),
+      orderProductNames: order.productNames,
+      amount: order.amountText,
+      statusText: invoice ? '该订单已提交开票申请' : '',
+      showOrderPanel: false,
     })
-    return order.id
   },
 
   async onSubmit() {
@@ -80,11 +133,11 @@ Page({
 
     this.setData({ submitting: true })
     wx.showLoading({ title: '提交中...' })
-    const orderId = await this.resolveOrder()
+    const orderId = this.data.orderId
     if (!orderId) {
       wx.hideLoading()
       this.setData({ submitting: false })
-      wx.showToast({ title: '请填写有效订单号', icon: 'none' })
+      wx.showToast({ title: '请选择已完成订单', icon: 'none' })
       return
     }
 

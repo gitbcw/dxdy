@@ -23,6 +23,7 @@ import type { AdminUser, AdminRole } from '@/lib/types';
 const roleLabel: Record<AdminRole, string> = {
   service: '客服',
   product_manager: '商品管理员',
+  clerk: '制单员',
   system_admin: '系统管理员',
 };
 
@@ -34,6 +35,8 @@ const statusLabel: Record<string, string> = {
 export default function AccountsPage() {
   const { user } = useAuth();
   const [accounts, setAccounts] = useState<AdminUser[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -62,6 +65,14 @@ export default function AccountsPage() {
 
   useEffect(() => { loadAccounts(); }, []);
 
+  const totalAccounts = accounts.length;
+  const totalPages = Math.max(1, Math.ceil(totalAccounts / pageSize));
+  const pagedAccounts = accounts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
+
   function openCreate() {
     setEditTarget(null);
     setForm({ username: '', password: '', realName: '', phone: '', role: 'service', status: 'active' });
@@ -84,25 +95,38 @@ export default function AccountsPage() {
   async function handleSubmit() {
     setError('');
     try {
+      const username = form.username.trim();
+      const password = form.password.trim();
+      const realName = form.realName.trim();
+      const phone = form.phone.trim();
+      if (!editTarget && (!username || !password || !realName || !phone || !form.role)) {
+        setError('新增账号时用户名、密码、姓名、手机、角色均为必填');
+        return;
+      }
+      if (editTarget && (!realName || !phone || !form.role || !form.status)) {
+        setError('姓名、手机、角色、状态均为必填');
+        return;
+      }
       if (editTarget) {
         const data: Partial<{ realName: string; phone: string; role: AdminRole; status: 'active' | 'disabled'; password: string }> = {
-          realName: form.realName,
-          phone: form.phone,
+          realName,
+          phone,
           role: form.role,
           status: form.status,
         };
-        if (form.password) data.password = form.password;
+        if (password) data.password = password;
         await updateAdminAccount(editTarget.id, data);
         await writeAdminLog({ operator: user, action: 'update_account', target: editTarget.id, detail: `更新账号 ${editTarget.username}` });
       } else {
+        const finalUsername = form.role === 'clerk' ? phone : username;
         await createAdminAccount({
-          username: form.username,
-          password: form.password,
-          realName: form.realName,
-          phone: form.phone,
+          username: finalUsername,
+          password,
+          realName,
+          phone,
           role: form.role,
         });
-        await writeAdminLog({ operator: user, action: 'create_account', target: form.username, detail: `创建账号 ${form.username}` });
+        await writeAdminLog({ operator: user, action: 'create_account', target: finalUsername, detail: `创建账号 ${finalUsername}` });
       }
       setDialogOpen(false);
       await loadAccounts();
@@ -160,7 +184,7 @@ export default function AccountsPage() {
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">加载账号中...</TableCell>
                 </TableRow>
               )}
-              {!loading && accounts.map(a => (
+              {!loading && pagedAccounts.map(a => (
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-sm">{a.username}</TableCell>
                   <TableCell>{a.realName}</TableCell>
@@ -187,6 +211,45 @@ export default function AccountsPage() {
               )}
             </TableBody>
           </Table>
+          <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              第 <span className="font-medium text-foreground">{currentPage}</span> / <span className="font-medium text-foreground">{totalPages}</span> 页，
+              每页 <span className="font-medium text-foreground">{pageSize}</span> 条，
+              账号总数 <span className="font-medium text-foreground">{totalAccounts}</span> 条
+            </p>
+            <div className="flex gap-2">
+              <Select
+                value={String(pageSize)}
+                onValueChange={value => {
+                  setPageSize(parseInt(value ?? '10', 10));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                disabled={currentPage <= 1}
+              >
+                上一页
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                下一页
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -199,20 +262,20 @@ export default function AccountsPage() {
             {!editTarget && (
               <div className="space-y-2">
                 <Label>用户名</Label>
-                <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="输入用户名" />
+                <Input required value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="输入用户名" />
               </div>
             )}
             <div className="space-y-2">
               <Label>{editTarget ? '重置密码（留空不修改）' : '密码'}</Label>
-              <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={editTarget ? '留空不修改' : '输入密码'} />
+              <Input required={!editTarget} type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={editTarget ? '留空不修改' : '输入密码'} />
             </div>
             <div className="space-y-2">
               <Label>姓名</Label>
-              <Input value={form.realName} onChange={e => setForm({ ...form, realName: e.target.value })} placeholder="输入真实姓名" />
+              <Input required value={form.realName} onChange={e => setForm({ ...form, realName: e.target.value })} placeholder="输入真实姓名" />
             </div>
             <div className="space-y-2">
               <Label>手机</Label>
-              <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="输入手机号" />
+              <Input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="输入手机号" />
             </div>
             <div className="space-y-2">
               <Label>角色</Label>
@@ -221,6 +284,7 @@ export default function AccountsPage() {
                 <SelectContent>
                   <SelectItem value="service">客服</SelectItem>
                   <SelectItem value="product_manager">商品管理员</SelectItem>
+                  <SelectItem value="clerk">制单员</SelectItem>
                   <SelectItem value="system_admin">系统管理员</SelectItem>
                 </SelectContent>
               </Select>

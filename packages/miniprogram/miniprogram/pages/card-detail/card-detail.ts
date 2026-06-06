@@ -1,6 +1,5 @@
 const {
   getCardById,
-  getRedeemableProducts,
   manageCardVoucher,
 } = require('../../services/index')
 
@@ -14,59 +13,91 @@ const statusText: Record<string, string> = {
   voided: '已作废',
 }
 
+function decodeScene(options: any) {
+  if (options?.id) return decodeURIComponent(options.id)
+  if (options?.scene) return decodeURIComponent(options.scene)
+  return ''
+}
+
 Page({
   data: {
     card: null as any,
+    cardId: '',
     statusText: '',
     canClaim: false,
     canRegift: false,
-    canRedeem: false,
     isHolder: false,
-    redeemProducts: [] as any[],
-    selectedProductId: '',
-    selectedProductName: '',
-    showRedeemPanel: false,
     showRegiftPanel: false,
-    regiftSearchText: '',
-    regiftResults: [] as any[],
-    regiftSelectedId: '',
-    regiftSelectedName: '',
+    shareQrcodeUrl: '',
+    shareLink: '',
     loading: false,
   },
 
   onLoad(options: any) {
-    if (options?.id) this.loadCard(options.id)
+    const cardId = decodeScene(options)
+    if (!cardId) return
+    this.setData({ cardId, shareLink: `/pages/card-detail/card-detail?id=${encodeURIComponent(cardId)}` })
+    this.loadCard(cardId)
+  },
+
+  onShow() {
+    if (this.data.cardId) this.loadCard(this.data.cardId)
   },
 
   async loadCard(id: string) {
     const card = await getCardById(id)
-    if (!card) { wx.showToast({ title: '卡券不存在', icon: 'none' }); return }
-
     const app = getApp()
     const user = app.globalData.userInfo
-    const isHolder = user && card.currentHolderId === user.id
 
+    if (!card) {
+      if (user) {
+        await this.claimSharedCard(id)
+        return
+      }
+      this.promptLogin()
+      return
+    }
+
+    const isHolder = !!user && card.currentHolderId === user.id
     this.setData({
       card,
       statusText: statusText[card.status] || card.status,
       isHolder,
       canClaim: isHolder && card.status === 'gifted',
       canRegift: isHolder && ['claimed', 'gifted'].includes(card.status),
-      canRedeem: isHolder && card.status === 'claimed' && user?.verificationStatus === 'approved',
     })
-
-    if (card.status === 'claimed' && card.redeemableCategory && user?.verificationStatus === 'approved') {
-      const products = await getRedeemableProducts(card.redeemableCategory)
-      this.setData({ redeemProducts: products })
-    }
   },
 
-  async onClaimTap() {
+  promptLogin() {
+    wx.showModal({
+      title: '请先登录',
+      content: '登录或注册后即可认领这张卡券。',
+      confirmText: '去登录',
+      success: res => {
+        if (res.confirm) {
+          wx.navigateTo({
+            url: `/pages/login/login?redirect=${encodeURIComponent(`/pages/card-detail/card-detail?id=${encodeURIComponent(this.data.cardId)}`)}`,
+          })
+        }
+      },
+    })
+  },
+
+  async claimSharedCard(cardId: string) {
     this.setData({ loading: true })
     try {
-      await manageCardVoucher({ action: 'claim', cardId: this.data.card.id })
+      await manageCardVoucher({ action: 'claimShared', cardId })
       wx.showToast({ title: '认领成功', icon: 'success' })
-      this.loadCard(this.data.card.id)
+      const card = await getCardById(cardId)
+      if (card) {
+        this.setData({
+          card,
+          statusText: statusText[card.status] || card.status,
+          canClaim: false,
+          canRegift: true,
+          isHolder: true,
+        })
+      }
     } catch (err: any) {
       wx.showToast({ title: err.message || '认领失败', icon: 'none' })
     } finally {
@@ -74,90 +105,44 @@ Page({
     }
   },
 
-  onShowRegiftPanel() {
-    this.setData({ showRegiftPanel: true, regiftSearchText: '', regiftResults: [], regiftSelectedId: '' })
+  async onClaimTap() {
+    await this.claimSharedCard(this.data.card.id)
+  },
+
+  async onShowRegiftPanel() {
+    if (!this.data.card?.id) return
+    this.setData({ showRegiftPanel: true })
+    if (this.data.shareQrcodeUrl) return
+
+    this.setData({ loading: true })
+    try {
+      const result = await manageCardVoucher({ action: 'shareCode', cardId: this.data.card.id })
+      this.setData({
+        shareQrcodeUrl: result.fileID || '',
+        shareLink: result.path || this.data.shareLink,
+      })
+    } catch (err: any) {
+      wx.showToast({ title: err.message || '生成二维码失败', icon: 'none' })
+    } finally {
+      this.setData({ loading: false })
+    }
   },
 
   onCloseRegiftPanel() {
     this.setData({ showRegiftPanel: false })
   },
 
-  async onRegiftSearch(e: any) {
-    const keyword = (e.detail.value || '').trim()
-    this.setData({ regiftSearchText: keyword })
-    if (!keyword) { this.setData({ regiftResults: [] }); return }
-
-    const db = wx.cloud.database()
-    const _ = db.command
-    const { data } = await db.collection('users')
-      .where({
-        role: 'customer',
-        customerType: 'institution',
-        ...(_.or([
-          { nickname: db.RegExp({ regexp: keyword, options: 'i' }) },
-          { phone: db.RegExp({ regexp: keyword, options: 'i' }) },
-        ]) as any),
-      })
-      .limit(20)
-      .get()
-    this.setData({
-      regiftResults: (data || []).map((u: any) => ({
-        id: u._id,
-        name: u.nickname || u.phone || '未命名',
-        phone: u.phone || '',
-      })),
+  onCopyShareLink() {
+    wx.setClipboardData({
+      data: this.data.shareLink,
+      success: () => wx.showToast({ title: '链接已复制', icon: 'success' }),
     })
   },
 
-  onSelectRegiftTarget(e: any) {
-    const { id, name } = e.currentTarget.dataset
-    this.setData({ regiftSelectedId: id, regiftSelectedName: name })
-  },
-
-  async onConfirmRegift() {
-    if (!this.data.regiftSelectedId) { wx.showToast({ title: '请选择转赠对象', icon: 'none' }); return }
-    this.setData({ loading: true })
-    try {
-      await manageCardVoucher({ action: 'regift', cardId: this.data.card.id, toUserId: this.data.regiftSelectedId })
-      wx.showToast({ title: '转赠成功', icon: 'success' })
-      this.setData({ showRegiftPanel: false })
-      this.loadCard(this.data.card.id)
-    } catch (err: any) {
-      wx.showToast({ title: err.message || '转赠失败', icon: 'none' })
-    } finally {
-      this.setData({ loading: false })
-    }
-  },
-
-  onShowRedeemPanel() {
-    this.setData({ showRedeemPanel: true })
-  },
-
-  onCloseRedeemPanel() {
-    this.setData({ showRedeemPanel: false })
-  },
-
-  onSelectProduct(e: any) {
-    const { id, name } = e.currentTarget.dataset
-    this.setData({ selectedProductId: id, selectedProductName: name })
-  },
-
-  async onConfirmRedeem() {
-    if (!this.data.selectedProductId) { wx.showToast({ title: '请选择兑换商品', icon: 'none' }); return }
-    this.setData({ loading: true })
-    try {
-      await manageCardVoucher({
-        action: 'redeem',
-        cardId: this.data.card.id,
-        redeemProductId: this.data.selectedProductId,
-      })
-      wx.showToast({ title: '兑换成功', icon: 'success' })
-      this.setData({ showRedeemPanel: false })
-      this.loadCard(this.data.card.id)
-    } catch (err: any) {
-      wx.showToast({ title: err.message || '兑换失败', icon: 'none' })
-    } finally {
-      this.setData({ loading: false })
+  onShareAppMessage() {
+    return {
+      title: `领取卡券：${this.data.card?.productName || ''}`,
+      path: this.data.shareLink || `/pages/card-detail/card-detail?id=${this.data.cardId}`,
     }
   },
 })

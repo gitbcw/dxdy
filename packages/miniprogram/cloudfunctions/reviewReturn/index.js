@@ -4,6 +4,17 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
 
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
+}
+
 function formatDate(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -47,7 +58,7 @@ async function getCurrentUser(openid, operatorId) {
     if (!user) return null
     if (user._openid && user._openid !== openid) return null
     if (user.boundOpenid && user.boundOpenid !== openid) return null
-    if (['admin', 'system_admin', 'service'].includes(user.role)) {
+    if (['admin', 'system_admin', 'service', 'clerk'].includes(user.role)) {
       await db.collection('users').doc(user._id).update({
         data: { boundOpenid: openid, updatedAt: formatDateTime(new Date()) },
       })
@@ -62,7 +73,7 @@ async function getCurrentUser(openid, operatorId) {
 function canReview(user) {
   if (!user) return false
   if (['admin', 'system_admin'].includes(user.role)) return true
-  if (user.role !== 'service') return false
+  if (!['service', 'clerk'].includes(user.role)) return false
   return !user.permissions || user.permissions.return_review === true || user.permissions.manage_returns === true
 }
 
@@ -303,7 +314,7 @@ exports.main = async (event) => {
               target: record.orderId,
               detail: `售后退款完成，扣回代理商 ${origOrder.salespersonId} 提成 ¥${deductedAmount}`,
               result: 'success',
-              createdAt: now,
+              createdAt: formatBeijingLogTime(),
             },
           })
         }
@@ -355,7 +366,7 @@ exports.main = async (event) => {
             target: exchangeOrderId,
             detail: `售后单 ${record.afterNo || record._id} 验货通过，创建换货发货订单 ${exchangeOrderId}，指派制单员 ${origOrder.clerkId || '待指派'}`,
             result: 'success',
-            createdAt: now,
+            createdAt: formatBeijingLogTime(),
           },
         })
       }
@@ -371,7 +382,7 @@ exports.main = async (event) => {
       target: record._id,
       detail: `售后单 ${record.afterNo || record._id} 从「${getStatusText(canonicalStatus(record.status))}」变更为「${getStatusText(targetStatus)}」${note ? `，备注：${note}` : ''}`,
       result: 'success',
-      createdAt: now,
+      createdAt: formatBeijingLogTime(),
     },
   })
 

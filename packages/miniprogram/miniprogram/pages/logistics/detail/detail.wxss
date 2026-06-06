@@ -84,6 +84,13 @@
   word-break: break-all;
 }
 
+.track-source {
+  padding: 12rpx 0 6rpx;
+  color: #18a44a;
+  font-size: 23rpx;
+  font-weight: 900;
+}
+
 .track {
   position: relative;
   padding: 18rpx 0 22rpx 48rpx;

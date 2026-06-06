@@ -1,60 +1,117 @@
 <view class="page">
   <view class="hero-card">
-    <text class="hero-tag">机构预约</text>
-    <text class="hero-title">预约用血</text>
-    <text class="hero-desc">选择可预约血制品后，填写预约日期、地点和联系人信息即可提交预约。</text>
+    <text class="hero-tag">门店用血预约</text>
+    <text class="hero-title">犬/猫血预约</text>
+    <text class="hero-desc">选择动物类型、血型和需求血量，提交后由客服确认库存、配血和配送安排。</text>
   </view>
 
   <view wx:if="{{!isInstitution}}" class="empty-card">
-    <text class="empty-title">当前仅机构客户可预约用血</text>
-    <text class="empty-desc">请切换到机构客户身份后查看预约用血相关商品。</text>
-    <view class="ghost-btn" bindtap="onGoCatalog">查看商品分类</view>
+    <text class="empty-title">当前仅医院客户可预约</text>
+    <text class="empty-desc">用血预约涉及临床输血安全，仅开放给医院客户。</text>
   </view>
 
   <view wx:elif="{{!isVerified}}" class="empty-card">
-    <text class="empty-title">完成机构认证后可预约用血</text>
-    <text class="empty-desc">认证通过后会展示可预约血制品及机构价格。</text>
+    <text class="empty-title">完成门店认证后可预约</text>
+    <text class="empty-desc">认证通过后即可提交犬/猫用血预约需求。</text>
     <view class="primary-btn" bindtap="onGoVerify">去认证</view>
   </view>
 
-  <view wx:elif="{{isEmpty}}" class="empty-card">
-    <text class="empty-title">当前暂无可预约血制品</text>
-    <text class="empty-desc">可稍后再看，或前往分类页查看其他商品。</text>
-    <view class="ghost-btn" bindtap="onGoCatalog">查看商品分类</view>
-  </view>
-
   <view wx:else class="content">
-    <view class="tips-card">
-      <view class="tip-item">
-        <text class="tip-label">1</text>
-        <text class="tip-text">选择血制品并提交预约</text>
+    <view class="form-card">
+      <text class="card-title">用血信息</text>
+      <view class="species-grid">
+        <view
+          wx:for="{{speciesOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          class="species-card {{species === item.value ? 'active' : ''}}"
+          bindtap="onSpeciesTap"
+        >
+          <text class="species-name">{{item.label}}</text>
+          <text class="species-hint">{{item.hint}}</text>
+        </view>
       </view>
-      <view class="tip-item">
-        <text class="tip-label">2</text>
-        <text class="tip-text">填写预约日期、地点和联系人</text>
+
+      <view class="field">
+        <text class="field-label">血型</text>
+        <picker mode="selector" range="{{bloodTypes}}" value="{{bloodTypeIndex}}" bindchange="onBloodTypeChange">
+          <view class="picker-value">{{bloodTypes[bloodTypeIndex]}} ></view>
+        </picker>
       </view>
-      <view class="tip-item">
-        <text class="tip-label">3</text>
-        <text class="tip-text">预约提交后等待客服确认</text>
+
+      <view class="field">
+        <text class="field-label">需要血量</text>
+        <view class="input-wrap">
+          <input
+            class="field-input"
+            type="digit"
+            placeholder="请输入毫升数"
+            value="{{volumeMl}}"
+            data-field="volumeMl"
+            bindinput="onInput"
+          />
+          <text class="input-unit">ml</text>
+        </view>
       </view>
     </view>
 
-    <view class="list">
-      <view wx:for="{{products}}" wx:key="id" class="product-card">
-        <view class="product-head">
+    <view class="form-card">
+      <text class="card-title">预约信息</text>
+      <view class="field">
+        <text class="field-label">预约日期</text>
+        <picker mode="date" value="{{bookingDate}}" start="{{minBookingDate}}" bindchange="onDateChange">
+          <view class="picker-value">{{bookingDate}} ></view>
+        </picker>
+      </view>
+      <view class="field">
+        <text class="field-label">预约小时</text>
+        <picker mode="selector" range="{{bookingHours}}" value="{{bookingHourIndex}}" bindchange="onHourChange">
+          <view class="picker-value">{{bookingHours[bookingHourIndex]}} ></view>
+        </picker>
+      </view>
+      <view class="address-card" bindtap="onAddressTap">
+        <view class="address-head">
           <view>
-            <text class="product-name">{{item.name}}</text>
-            <text class="product-spec">{{item.specText}}</text>
+            <text class="address-name">{{contactName || '请选择收货人'}}</text>
+            <text wx:if="{{contactPhone}}" class="address-phone">{{contactPhone}}</text>
           </view>
-          <text class="product-price">¥{{item.priceText}}</text>
+          <text class="address-action">{{selectedAddress ? '更换' : '选择'}}</text>
         </view>
-        <text class="product-desc">{{item.description}}</text>
-        <view class="product-foot">
-          <text class="product-stock">{{item.stockText}}</text>
-          <view class="primary-btn small" data-id="{{item.id}}" bindtap="onBookTap">立即预约</view>
+        <text class="address-text">{{addressText}} ></text>
+      </view>
+      <view class="urgent-row" bindtap="onUrgentToggle">
+        <view>
+          <text class="urgent-title">加急预约</text>
+          <text class="urgent-desc">开启后客服会优先确认库存、配血与配送</text>
+        </view>
+        <view class="urgent-switch {{isUrgent ? 'active' : ''}}" aria-role="switch" aria-checked="{{isUrgent}}">
+          <view class="urgent-switch-dot"></view>
         </view>
       </view>
+      <view class="remark-card" bindtap="onRemarkTap">
+        <view class="remark-head">
+          <text class="field-label">备注</text>
+          <text class="remark-action">{{remark ? '修改' : '填写'}}</text>
+        </view>
+        <text class="remark-preview {{remark ? '' : 'placeholder'}}">{{remark || '可填写受血动物情况、期望配送时间等'}}</text>
+      </view>
+    </view>
+
+    <view class="tips-card">
+      <text class="card-title">配血提示</text>
+      <view wx:for="{{safetyTips}}" wx:key="*this" class="tip-item">
+        <text class="tip-dot"></text>
+        <text class="tip-text">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="submit-bar">
+      <view class="submit-copy">
+        <text class="submit-title">提交预约后等待确认</text>
+        <text class="submit-desc">实际供血以客服确认和交叉配血结果为准</text>
+      </view>
+      <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">提交预约</button>
     </view>
   </view>
-  <floating-actions showCart="{{true}}" />
+  <floating-actions showCart="{{false}}" />
 </view>

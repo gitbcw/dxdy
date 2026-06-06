@@ -207,3 +207,11 @@
   color: #9aa39f;
   font-size: 19rpx;
 }
+
+.demo-password {
+  display: block;
+  margin-top: 6rpx;
+  color: #149447;
+  font-size: 19rpx;
+  font-weight: 800;
+}

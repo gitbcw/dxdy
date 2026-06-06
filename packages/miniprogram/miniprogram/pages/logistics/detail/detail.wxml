@@ -11,14 +11,15 @@
 
     <view class="info-card">
       <view class="row"><text>订单号</text><text>{{orderNo}}</text></view>
-      <view class="row"><text>快递公司</text><text>{{company}}</text></view>
-      <view class="row"><text>物流单号</text><text bindtap="onCopy">{{trackingNo || '待录入'}} {{trackingNo ? '复制' : ''}}</text></view>
-      <view class="row"><text>发货时间</text><text>{{shipTime}}</text></view>
+      <view class="row"><text>{{isDirectDelivery ? '配送方式' : '快递公司'}}</text><text>{{company}}</text></view>
+      <view wx:if="{{!isDirectDelivery}}" class="row"><text>物流单号</text><text bindtap="onCopy">{{trackingNo || '待录入'}} {{trackingNo ? '复制' : ''}}</text></view>
+      <view class="row"><text>{{isDirectDelivery ? '出发时间' : '发货时间'}}</text><text>{{shipTime}}</text></view>
       <view class="row"><text>预计送达</text><text>{{eta}}</text></view>
       <view class="row"><text>运输温控</text><text>{{temperature}}</text></view>
     </view>
 
     <view class="track-card">
+      <view class="track-source">{{realtime ? '实时物流轨迹' : (providerMessage || '平台物流记录')}}</view>
       <view wx:for="{{tracks}}" wx:key="title" class="track {{item.active ? 'active' : ''}}">
         <view class="track-line" wx:if="{{index < tracks.length - 1}}"></view>
         <text class="track-title">{{item.title}}</text>

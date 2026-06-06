@@ -33,7 +33,7 @@
           <text class="order-id">订单号：{{item.orderNo}}</text>
           <view class="status-tag {{item.type === 'exchange' ? 'tag-booking' : 'tag-normal'}}">
             <image wx:if="{{item.type === 'exchange'}}" src="{{iconRefresh}}" mode="aspectFit" style="width:20rpx;height:20rpx;" />
-            <text>{{item.type === 'exchange' ? '换货' : '普通'}}</text>
+            <text>{{item.isUrgentBooking ? '加急预约' : item.type === 'exchange' ? '换货' : item.type === 'booking' ? '预约' : '普通'}}</text>
           </view>
         </view>
 
@@ -64,14 +64,26 @@
 
         <!-- 快递信息（仅已发货订单显示） -->
         <view wx:if="{{item.status === 'shipped' && item.expressCompany}}" class="express-info">
-          <view class="express-row">
-            <text class="express-label">快递公司</text>
-            <text class="express-value">{{item.expressCompany}}</text>
-          </view>
-          <view class="express-row">
-            <text class="express-label">快递单号</text>
-            <text class="express-value express-no">{{item.expressNo}}</text>
-          </view>
+          <block wx:if="{{item.deliveryMode === 'direct'}}">
+            <view class="express-row">
+              <text class="express-label">配送方式</text>
+              <text class="express-value">制单员线下配送</text>
+            </view>
+            <view class="express-row">
+              <text class="express-label">预计到达</text>
+              <text class="express-value">{{item.estimatedArrivalAt || item.eta}}</text>
+            </view>
+          </block>
+          <block wx:else>
+            <view class="express-row">
+              <text class="express-label">快递公司</text>
+              <text class="express-value">{{item.expressCompany}}</text>
+            </view>
+            <view class="express-row">
+              <text class="express-label">快递单号</text>
+              <text class="express-value express-no">{{item.expressNo}}</text>
+            </view>
+          </block>
         </view>
 
         <!-- 底部：时间 + 查看详情 -->

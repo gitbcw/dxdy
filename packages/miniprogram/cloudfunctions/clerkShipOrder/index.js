@@ -21,37 +21,35 @@ function error(message, code = 'BAD_REQUEST') {
 }
 
 async function getCurrentUser(openid, operatorId) {
-  if (!openid && operatorId) {
+  if (operatorId) {
     try {
       const { data: user } = await db.collection('users').doc(operatorId).get()
-      return user || null
+      if (user && (!openid || user._openid === openid || user.boundOpenid === openid)) return user
     } catch (e) {
-      return null
+      // fall through to openid lookup
     }
   }
 
-  const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
-  if (data && data.length) return data[0]
+  if (openid) {
+    const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
+    if (data && data.length) return data[0]
 
-  const { data: boundUsers } = await db.collection('users').where({ boundOpenid: openid }).limit(1).get()
-  if (boundUsers && boundUsers.length) return boundUsers[0]
-
-  if (!operatorId) return null
-  try {
-    const { data: user } = await db.collection('users').doc(operatorId).get()
-    if (!user) return null
-    if (user._openid && user._openid !== openid) return null
-    if (user.boundOpenid && user.boundOpenid !== openid) return null
-    if (['clerk', 'admin', 'system_admin', 'service'].includes(user.role)) {
-      await db.collection('users').doc(user._id).update({
-        data: { boundOpenid: openid, updatedAt: formatDateTime(new Date()) },
-      })
-      return { ...user, boundOpenid: openid }
-    }
-    return user
-  } catch (e) {
-    return null
+    const { data: boundUsers } = await db.collection('users').where({ boundOpenid: openid }).limit(1).get()
+    if (boundUsers && boundUsers.length) return boundUsers[0]
   }
+
+  return null
+}
+
+function formatBeijingLogTime(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  const y = beijing.getUTCFullYear()
+  const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(beijing.getUTCDate()).padStart(2, '0')
+  const h = String(beijing.getUTCHours()).padStart(2, '0')
+  const min = String(beijing.getUTCMinutes()).padStart(2, '0')
+  const s = String(beijing.getUTCSeconds()).padStart(2, '0')
+  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
 }
 
 async function getOrder(orderId) {
@@ -69,7 +67,8 @@ function canShip(user, order) {
   if (['admin', 'system_admin', 'service'].includes(role)) return true
   if (role !== 'clerk') return false
   if (!order.clerkId) return true
-  return order.clerkId === user._id
+  const assignedIds = Array.isArray(user.assignedOrderIds) ? user.assignedOrderIds : []
+  return order.clerkId === user._id || assignedIds.includes(order._id)
 }
 
 function hasBloodItem(order) {
@@ -88,12 +87,12 @@ exports.main = async (event) => {
   const packageWeight = String(event.packageWeight || '').trim()
   const boxTemperature = String(event.boxTemperature || '').trim()
   const modifyReason = String(event.modifyReason || '').trim()
+  const deliveryMode = String(event.deliveryMode || '').trim()
+  const estimatedArrivalAt = String(event.estimatedArrivalAt || event.eta || '').trim()
   const abnormalFlag = !!event.abnormalFlag
   const abnormalType = abnormalFlag ? String(event.abnormalType || '').trim() : ''
   const abnormalReason = abnormalFlag ? String(event.abnormalReason || '').trim() : ''
   if (!orderId) return error('订单参数缺失')
-  if (!expressCompany) return error('请选择快递公司')
-  if (!expressNo) return error('请填写快递单号')
   if (!openid && !String(event.operatorId || '').trim()) return error('登录状态无效', 'UNAUTHORIZED')
 
   const user = await getCurrentUser(openid, String(event.operatorId || '').trim())
@@ -102,11 +101,58 @@ exports.main = async (event) => {
   const order = await getOrder(orderId)
   if (!order) return error('订单不存在', 'NOT_FOUND')
   if (!canShip(user, order)) return error('无权处理该订单', 'FORBIDDEN')
+  const isUrgentBooking = order.type === 'booking' && (order.booking?.urgent || order.shipping?.urgent)
+  const isDirectDelivery = isUrgentBooking && deliveryMode === 'direct'
   const isModify = order.status === 'pending_receipt' || !!(order.shipping && order.shipping.trackingNo)
   if (!['pending_shipment', 'confirmed', 'preparing', 'pending_receipt'].includes(order.status)) {
     return error('当前订单状态不可发货', 'INVALID_STATUS')
   }
+  if (isDirectDelivery) {
+    if (!estimatedArrivalAt) return error('请填写预计到达时间')
+    const departedAt = formatDateTime(new Date())
+    const updateData = {
+      'shipping.deliveryMode': 'direct',
+      'shipping.company': '制单员线下配送',
+      'shipping.trackingNo': '',
+      'shipping.shippedAt': departedAt,
+      'shipping.eta': estimatedArrivalAt,
+      'shipping.temperature': '专人加急配送',
+      'shipping.directDelivery': {
+        status: 'departed',
+        departedAt,
+        estimatedArrivalAt,
+        clerkId: user._id,
+        clerkName: user.nickname || user.name || user.username || '制单员',
+      },
+      'shipping.logistics': _.push({
+        time: departedAt,
+        title: '制单员已出发',
+        description: `加急预约订单已由制单员线下配送，预计 ${estimatedArrivalAt} 到达`,
+        location: '仓库',
+      }),
+      status: 'pending_receipt',
+      updatedAt: departedAt,
+    }
+    await db.collection('orders').doc(order._id).update({ data: updateData })
+    await db.collection('logs').add({
+      data: {
+        operatorId: user._id,
+        operatorName: user.nickname || user.name || user.username || '制单员',
+        operatorRole: user.role,
+        action: '加急配送出发',
+        target: order._id,
+        detail: `加急预约订单线下配送已出发，预计到达：${estimatedArrivalAt}`,
+        result: 'success',
+        createdAt: formatBeijingLogTime(),
+      },
+    })
+
+    const updated = await getOrder(order._id)
+    return { success: true, order: { ...updated, id: updated._id } }
+  }
   if (isModify && !modifyReason) return error('请填写修改原因')
+  if (!expressCompany) return error('请选择快递公司')
+  if (!expressNo) return error('请填写快递单号')
   if (hasBloodItem(order)) {
     if (!packageType) return error('请选择包装类型')
     if (!coldChainMethod) return error('请选择冷链方式')
@@ -164,7 +210,7 @@ exports.main = async (event) => {
       target: order._id,
       detail: `${isModify ? '修改' : '录入'} ${expressCompany} ${expressNo}${modifyReason ? `，原因：${modifyReason}` : ''}`,
       result: 'success',
-      createdAt: shippedAt,
+      createdAt: formatBeijingLogTime(),
     },
   })
 

@@ -13,12 +13,15 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchUsers } from '@/lib/services/database';
 import { reviewVerification, reviewAgentApplication } from '@/lib/services/functions';
 import { writeAdminLog } from '@/lib/admin-log';
-import { maskPhone, formatDate } from '@/lib/format';
-import type { Customer, Salesperson, Clerk } from '@/lib/types';
+import { formatDate } from '@/lib/format';
+import type { Customer, Salesperson } from '@/lib/types';
 
 type AgentApplicationUser = Customer & {
   agentStatus?: string;
@@ -32,12 +35,20 @@ type AgentApplicationUser = Customer & {
   };
 };
 
+type DetailUser = Customer | Salesperson | AgentApplicationUser;
+
 export default function UsersPage() {
   const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salespersons, setSalespersons] = useState<Salesperson[]>([]);
   const [agentApplications, setAgentApplications] = useState<AgentApplicationUser[]>([]);
-  const [clerks, setClerks] = useState<Clerk[]>([]);
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customerPageSize, setCustomerPageSize] = useState(10);
+  const [agentPage, setAgentPage] = useState(1);
+  const [agentPageSize, setAgentPageSize] = useState(10);
+  const [salespersonPage, setSalespersonPage] = useState(1);
+  const [salespersonPageSize, setSalespersonPageSize] = useState(10);
+  const [detailUser, setDetailUser] = useState<DetailUser | null>(null);
   const [reviewTarget, setReviewTarget] = useState<{ type: 'verification' | 'agent'; user: Customer | Salesperson } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [error, setError] = useState('');
@@ -55,7 +66,6 @@ export default function UsersPage() {
       setCustomers(data.customers);
       setSalespersons(data.salespersons);
       setAgentApplications(data.agentApplications as AgentApplicationUser[]);
-      setClerks(data.clerks);
     } catch (err) {
       setError(err instanceof Error ? err.message : '用户数据加载失败');
     } finally {
@@ -75,6 +85,77 @@ export default function UsersPage() {
     approved: 'default',
     rejected: 'destructive',
   };
+
+  const customerTotalPages = Math.max(1, Math.ceil(customers.length / customerPageSize));
+  const agentTotalPages = Math.max(1, Math.ceil(agentApplications.length / agentPageSize));
+  const salespersonTotalPages = Math.max(1, Math.ceil(salespersons.length / salespersonPageSize));
+  const pagedCustomers = customers.slice((customerPage - 1) * customerPageSize, customerPage * customerPageSize);
+  const pagedAgentApplications = agentApplications.slice((agentPage - 1) * agentPageSize, agentPage * agentPageSize);
+  const pagedSalespersons = salespersons.slice((salespersonPage - 1) * salespersonPageSize, salespersonPage * salespersonPageSize);
+
+  useEffect(() => {
+    setCustomerPage(page => Math.min(page, customerTotalPages));
+  }, [customerTotalPages]);
+
+  useEffect(() => {
+    setAgentPage(page => Math.min(page, agentTotalPages));
+  }, [agentTotalPages]);
+
+  useEffect(() => {
+    setSalespersonPage(page => Math.min(page, salespersonTotalPages));
+  }, [salespersonTotalPages]);
+
+  function renderPaginationBar(params: {
+    currentPage: number;
+    totalPages: number;
+    pageSize: number;
+    total: number;
+    totalLabel: string;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  }) {
+    return (
+      <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          第 <span className="font-medium text-foreground">{params.currentPage}</span> / <span className="font-medium text-foreground">{params.totalPages}</span> 页，
+          每页 <span className="font-medium text-foreground">{params.pageSize}</span> 条，
+          {params.totalLabel} <span className="font-medium text-foreground">{params.total}</span> 条
+        </p>
+        <div className="flex gap-2">
+          <Select
+            value={String(params.pageSize)}
+            onValueChange={value => {
+              params.onPageSizeChange(parseInt(value ?? '10', 10));
+              params.onPageChange(1);
+            }}
+          >
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => params.onPageChange(Math.max(1, params.currentPage - 1))}
+            disabled={params.currentPage <= 1}
+          >
+            上一页
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => params.onPageChange(Math.min(params.totalPages, params.currentPage + 1))}
+            disabled={params.currentPage >= params.totalPages}
+          >
+            下一页
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   async function handleReview(approved: boolean) {
     if (!reviewTarget) return;
@@ -103,6 +184,104 @@ export default function UsersPage() {
     }
   }
 
+  function detailValue(value: unknown) {
+    if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'boolean') return value ? '是' : '否';
+    return String(value);
+  }
+
+  function DetailRow({ label, value }: { label: string; value: unknown }) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="break-words text-sm">{detailValue(value)}</p>
+      </div>
+    );
+  }
+
+  function renderUserDetail(target: DetailUser) {
+    const customer = target as Customer;
+    const salesperson = target as Salesperson;
+    const agent = target as AgentApplicationUser;
+    const verificationInfo = customer.verificationInfo || salesperson.verificationInfo;
+    const agentApplication = agent.agentApplication;
+    const commission = salesperson.commission;
+    const role = String(target.role);
+    const roleText = role === 'customer' ? '客户' : role === 'salesperson' ? '代理商' : role;
+
+    return (
+      <div className="max-h-[70vh] space-y-6 overflow-y-auto py-2">
+        <div className="grid gap-4 md:grid-cols-2">
+          <DetailRow label="用户ID" value={target.id} />
+          <DetailRow label="角色" value={roleText} />
+          <DetailRow label="昵称" value={target.nickname} />
+          <DetailRow label="手机号" value={target.phone} />
+          <DetailRow label="注册时间" value={target.createdAt ? formatDate(target.createdAt) : '-'} />
+          <DetailRow label="认证状态" value={verifyLabel[target.verificationStatus] || target.verificationStatus} />
+        </div>
+
+        {'customerType' in target && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">客户信息</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DetailRow label="客户类型" value={target.customerType === 'institution' ? '医院' : '个人'} />
+              <DetailRow label="钱包余额" value={target.wallet?.balance !== undefined ? `¥${target.wallet.balance.toFixed(2)}` : '-'} />
+              <DetailRow label="积分余额" value={target.points?.balance ?? '-'} />
+              <DetailRow label="推荐码" value={target.referralCode} />
+              <DetailRow label="推荐人" value={target.referredBy} />
+              <DetailRow label="推荐时间" value={target.referredAt} />
+              <DetailRow label="绑定业务员ID" value={target.boundSalespersonId} />
+              <DetailRow label="地址数量" value={target.addresses?.length || 0} />
+            </div>
+          </div>
+        )}
+
+        {verificationInfo && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">认证信息</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DetailRow label="联系人/姓名" value={'contactName' in verificationInfo ? verificationInfo.contactName : verificationInfo.realName} />
+              <DetailRow label="联系电话" value={'contactPhone' in verificationInfo ? verificationInfo.contactPhone : '-'} />
+              <DetailRow label="营业执照" value={'businessLicense' in verificationInfo ? verificationInfo.businessLicense : '-'} />
+              <DetailRow label="身份证号" value={'idCard' in verificationInfo ? verificationInfo.idCard : '-'} />
+              <DetailRow label="驳回原因" value={verificationInfo.rejectReason} />
+            </div>
+          </div>
+        )}
+
+        {agentApplication && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">代理申请信息</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DetailRow label="申请主体" value={agentApplication.companyName} />
+              <DetailRow label="联系人" value={agentApplication.contactName} />
+              <DetailRow label="联系电话" value={agentApplication.contactPhone} />
+              <DetailRow label="区域" value={agentApplication.region} />
+              <DetailRow label="业务覆盖" value={agentApplication.businessArea} />
+              <DetailRow label="提交时间" value={agentApplication.submittedAt} />
+              <DetailRow label="申请状态" value={agent.agentStatus} />
+            </div>
+          </div>
+        )}
+
+        {target.role === 'salesperson' && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">代理商信息</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DetailRow label="客户数" value={salesperson.customers?.length || 0} />
+              <DetailRow label="累计提成" value={commission ? `¥${commission.total.toFixed(2)}` : '-'} />
+              <DetailRow label="可用提成" value={commission ? `¥${commission.available.toFixed(2)}` : '-'} />
+              <DetailRow label="已提现" value={commission ? `¥${commission.withdrawn.toFixed(2)}` : '-'} />
+              <DetailRow label="待扣回" value={commission ? `¥${commission.pendingDeduction.toFixed(2)}` : '-'} />
+              <DetailRow label="银行卡数量" value={salesperson.bankCards?.length || 0} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">用户管理</h1>
@@ -113,7 +292,6 @@ export default function UsersPage() {
           <TabsTrigger value="customers">客户 ({customers.length})</TabsTrigger>
           <TabsTrigger value="agents">代理审核 ({agentApplications.length})</TabsTrigger>
           <TabsTrigger value="salespersons">代理商 ({salespersons.length})</TabsTrigger>
-          <TabsTrigger value="clerks">制单员 ({clerks.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="customers">
@@ -140,11 +318,11 @@ export default function UsersPage() {
                       <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 用户...</TableCell>
                     </TableRow>
                   )}
-                  {!loading && customers.map(c => (
+                  {!loading && pagedCustomers.map(c => (
                     <TableRow key={c.id}>
                       <TableCell className="font-mono text-sm">{c.id}</TableCell>
                       <TableCell>{c.nickname}</TableCell>
-                      <TableCell>{maskPhone(c.phone)}</TableCell>
+                      <TableCell>{c.phone || '-'}</TableCell>
                       <TableCell>{c.customerType === 'institution' ? '医院' : '个人'}</TableCell>
                       <TableCell>
                         <Badge variant={verifyVariant[c.verificationStatus]}>{verifyLabel[c.verificationStatus]}</Badge>
@@ -153,7 +331,8 @@ export default function UsersPage() {
                       <TableCell className="font-mono text-xs">{c.referralCode || '-'}</TableCell>
                       <TableCell className="text-xs">{c.referredBy || '-'}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{c.createdAt ? formatDate(c.createdAt) : '-'}</TableCell>
-                      <TableCell>
+                      <TableCell className="space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => setDetailUser(c)}>详情</Button>
                         {c.verificationStatus === 'pending' && (
                           <Button variant="outline" size="sm" onClick={() => setReviewTarget({ type: 'verification', user: c })}>审核</Button>
                         )}
@@ -162,6 +341,15 @@ export default function UsersPage() {
                   ))}
                 </TableBody>
               </Table>
+              {renderPaginationBar({
+                currentPage: customerPage,
+                totalPages: customerTotalPages,
+                pageSize: customerPageSize,
+                total: customers.length,
+                totalLabel: '客户总数',
+                onPageChange: setCustomerPage,
+                onPageSizeChange: setCustomerPageSize,
+              })}
             </CardContent>
           </Card>
         </TabsContent>
@@ -188,18 +376,19 @@ export default function UsersPage() {
                       <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 代理商申请...</TableCell>
                     </TableRow>
                   )}
-                  {!loading && agentApplications.map(user => {
+                  {!loading && pagedAgentApplications.map(user => {
                     const app = user.agentApplication || {};
                     return (
                       <TableRow key={user.id}>
                         <TableCell className="font-mono text-sm">{user.id}</TableCell>
                         <TableCell>{app.companyName || user.nickname}</TableCell>
                         <TableCell>{app.contactName || user.nickname}</TableCell>
-                        <TableCell>{maskPhone(app.contactPhone || user.phone)}</TableCell>
+                        <TableCell>{app.contactPhone || user.phone || '-'}</TableCell>
                         <TableCell>{app.region || '-'}</TableCell>
                         <TableCell className="max-w-56 truncate">{app.businessArea || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{app.submittedAt || '-'}</TableCell>
-                        <TableCell>
+                        <TableCell className="space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => setDetailUser(user)}>详情</Button>
                           <Button variant="outline" size="sm" onClick={() => setReviewTarget({ type: 'agent', user })}>审核</Button>
                         </TableCell>
                       </TableRow>
@@ -212,6 +401,15 @@ export default function UsersPage() {
                   )}
                 </TableBody>
               </Table>
+              {renderPaginationBar({
+                currentPage: agentPage,
+                totalPages: agentTotalPages,
+                pageSize: agentPageSize,
+                total: agentApplications.length,
+                totalLabel: '代理审核总数',
+                onPageChange: setAgentPage,
+                onPageSizeChange: setAgentPageSize,
+              })}
             </CardContent>
           </Card>
         </TabsContent>
@@ -233,60 +431,64 @@ export default function UsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {salespersons.map(s => (
+                  {pagedSalespersons.map(s => (
                     <TableRow key={s.id}>
                       <TableCell className="font-mono text-sm">{s.id}</TableCell>
                       <TableCell>{s.nickname}</TableCell>
-                      <TableCell>{maskPhone(s.phone)}</TableCell>
+                      <TableCell>{s.phone || '-'}</TableCell>
                       <TableCell>
                         <Badge variant={verifyVariant[s.verificationStatus]}>{verifyLabel[s.verificationStatus]}</Badge>
                       </TableCell>
                       <TableCell>{s.customers?.length || 0}</TableCell>
                       <TableCell>¥{(s.commission?.available || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{s.createdAt ? formatDate(s.createdAt) : '-'}</TableCell>
-                      <TableCell>-</TableCell>
+                      <TableCell className="space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => setDetailUser(s)}>详情</Button>
+                        {s.verificationStatus === 'pending' && (
+                          <Button variant="outline" size="sm" onClick={() => setReviewTarget({ type: 'verification', user: s })}>审核</Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              {renderPaginationBar({
+                currentPage: salespersonPage,
+                totalPages: salespersonTotalPages,
+                pageSize: salespersonPageSize,
+                total: salespersons.length,
+                totalLabel: '代理商总数',
+                onPageChange: setSalespersonPage,
+                onPageSizeChange: setSalespersonPageSize,
+              })}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="clerks">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>姓名</TableHead>
-                    <TableHead>手机</TableHead>
-                    <TableHead>待处理订单</TableHead>
-                    <TableHead>注册时间</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clerks.map(cl => (
-                    <TableRow key={cl.id}>
-                      <TableCell className="font-mono text-sm">{cl.id}</TableCell>
-                      <TableCell>{cl.realName}</TableCell>
-                      <TableCell>{maskPhone(cl.phone)}</TableCell>
-                      <TableCell>{cl.assignedOrderIds.length}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(cl.createdAt)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      <Dialog open={!!detailUser} onOpenChange={() => setDetailUser(null)}>
+        <DialogContent className="!w-[min(92vw,44rem)] !max-w-[min(92vw,44rem)]">
+          <DialogHeader>
+            <DialogTitle>用户详情</DialogTitle>
+          </DialogHeader>
+          {detailUser && renderUserDetail(detailUser)}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailUser(null)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!reviewTarget} onOpenChange={() => setReviewTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{reviewTarget?.type === 'agent' ? '代理商申请审核' : '医院认证审核'}</DialogTitle>
+            <DialogTitle>
+              {reviewTarget?.type === 'agent'
+                ? '代理商申请审核'
+                : reviewTarget?.user.role === 'salesperson'
+                  ? '代理商认证审核'
+                  : '医院认证审核'}
+            </DialogTitle>
           </DialogHeader>
           {reviewTarget && (
             <div className="space-y-3 py-4">
@@ -294,10 +496,16 @@ export default function UsersPage() {
                 <p className="text-sm text-muted-foreground">用户</p>
                 <p>{reviewTarget.user.nickname} ({reviewTarget.user.phone})</p>
               </div>
-              {reviewTarget.type === 'verification' && (reviewTarget.user as Customer).verificationInfo && (
+              {reviewTarget.type === 'verification' && reviewTarget.user.role === 'customer' && (reviewTarget.user as Customer).verificationInfo && (
                 <div>
                   <p className="text-sm text-muted-foreground">联系人</p>
                   <p>{(reviewTarget.user as Customer).verificationInfo!.contactName}</p>
+                </div>
+              )}
+              {reviewTarget.type === 'verification' && reviewTarget.user.role === 'salesperson' && (reviewTarget.user as Salesperson).verificationInfo && (
+                <div>
+                  <p className="text-sm text-muted-foreground">真实姓名</p>
+                  <p>{(reviewTarget.user as Salesperson).verificationInfo!.realName || reviewTarget.user.nickname}</p>
                 </div>
               )}
               {reviewTarget.type === 'agent' && (

@@ -10,12 +10,13 @@ import { queryOrders } from '@/lib/services/functions'
 type CloudDoc = Record<string, unknown>
 const ADMIN_SESSION_KEY = 'dxdy_admin_profile'
 
-const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin']
+const ADMIN_ROLES: AdminRole[] = ['service', 'product_manager', 'system_admin', 'clerk']
 const ROLE_PERMISSIONS_CONFIG_ID = 'role_permissions'
 
 const defaultPermissions: Record<AdminRole, Record<string, boolean>> = {
   service: { view_dashboard: true, manage_orders: true, order_price_adjust: false, manage_returns: true },
   product_manager: { view_dashboard: true, manage_products: true },
+  clerk: { manage_orders: true, manage_returns: true },
   system_admin: {
     view_dashboard: true, manage_products: true, manage_orders: true, order_price_adjust: false,
     manage_returns: true, manage_users: true, manage_accounts: true,
@@ -247,21 +248,26 @@ export async function fetchAdminAccounts(): Promise<AdminUser[]> {
 
 export async function createAdminAccount(input: { username: string; password: string; realName: string; phone: string; role: AdminRole }) {
   const { username, password, realName, phone, role } = input
+  const finalUsername = role === 'clerk' ? phone.trim() : username.trim()
+  if (!finalUsername) throw new Error('请输入用户名')
+  if (!realName.trim()) throw new Error('请输入姓名')
+  if (!phone.trim()) throw new Error('请输入手机号')
   if (!password || password.length < 6) throw new Error('密码长度至少 6 位')
   const now = new Date().toISOString()
   const id = `admin_${Date.now().toString(36)}`
   const rolePermissions = await fetchRolePermissionTemplates()
   const doc = {
     _id: id,
-    username,
-    password: '***',
-    realName: realName || username,
-    nickname: realName || username,
-    phone,
+    username: finalUsername,
+    password,
+    realName: realName.trim(),
+    nickname: realName.trim(),
+    phone: phone.trim(),
     avatar: '',
     role,
     permissions: rolePermissions[role],
     status: 'active',
+    ...(role === 'clerk' ? { assignedOrderIds: [] } : {}),
     createdAt: now,
     updatedAt: now,
   }
@@ -276,12 +282,15 @@ export async function updateAdminAccount(id: string, updates: Partial<AdminUser>
   if (updates.status !== undefined) updateData.status = updates.status === 'disabled' ? 'disabled' : 'active'
   if (updates.password) {
     if (updates.password.length < 6) throw new Error('密码长度至少 6 位')
-    updateData.password = '***'
+    updateData.password = updates.password
   }
   if (ADMIN_ROLES.includes(updates.role as AdminRole) && updates.role) {
     const rolePermissions = await fetchRolePermissionTemplates()
     updateData.role = updates.role
     updateData.permissions = rolePermissions[updates.role]
+  }
+  if (updates.role === 'clerk' && typeof updates.phone === 'string') {
+    updateData.username = updates.phone.trim()
   }
   await adminRequest('update', 'users', { id, data: updateData })
   return updateData
@@ -300,7 +309,7 @@ export async function fetchRoles() {
   ])
   const admins = users.filter(u => ADMIN_ROLES.includes(u.role as AdminRole))
   const permissions = mergeRolePermissions(rolePermissions)
-  const counts: Record<AdminRole, number> = { service: 0, product_manager: 0, system_admin: 0 }
+  const counts: Record<AdminRole, number> = { service: 0, product_manager: 0, system_admin: 0, clerk: 0 }
   for (const admin of admins) {
     const role = admin.role as AdminRole
     if (ADMIN_ROLES.includes(role)) {
@@ -326,7 +335,7 @@ export async function updateRolePermissions(role: AdminRole, perms: Record<strin
 export async function fetchSystemConfig(): Promise<SystemConfig> {
   const docs = await readCollection('config')
   const match = docs.find((d: any) => d._id === 'system' || d.id === 'system')
-  return (match as any) || defaultSystemConfig
+  return { ...defaultSystemConfig, ...((match as any) || {}) }
 }
 
 export async function saveSystemConfig(config: SystemConfig) {
@@ -382,6 +391,13 @@ export async function fetchCardVouchers(): Promise<any[]> {
   return readCollection('card_vouchers')
 }
 
+export async function createCardVoucher(data: Record<string, unknown>) {
+  const now = new Date().toISOString()
+  const doc = { ...data, createdAt: data.createdAt || now, updatedAt: now }
+  const result = await adminRequest<{ id: string }>('add', 'card_vouchers', { data: doc })
+  return { ...doc, id: result.id }
+}
+
 export async function updateCardVoucher(id: string, updates: Record<string, unknown>) {
   const update = { ...updates, updatedAt: new Date().toISOString() }
   await adminRequest('update', 'card_vouchers', { id, data: update })
@@ -392,7 +408,7 @@ export async function updateCardVoucher(id: string, updates: Record<string, unkn
 
 export async function fetchProductReviews(status?: string): Promise<any[]> {
   const query = status && status !== 'all' ? { status } : undefined
-  return readCollection('reviews', query)
+  return readCollection('product_reviews', query)
 }
 
 // ===== Logs (write) =====

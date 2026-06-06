@@ -9,8 +9,8 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="h-full antialiased">
       <head>
-        <title>大熊动医华南医学检验实验室管理后台</title>
-        <meta name="description" content="大熊动医华南医学检验实验室管理后台" />
+        <title>大熊动医管理后台</title>
+        <meta name="description" content="大熊动医管理后台" />
       </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

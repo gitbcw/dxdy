@@ -21,8 +21,7 @@ function canTransition(order, status, user, openid) {
   const allowed = {
     pending_payment: ['cancelled'],
     pending_confirmation: ['confirmed', 'cancelled'],
-    confirmed: ['in_service', 'cancelled'],
-    in_service: ['completed', 'cancelled'],
+    confirmed: ['cancelled'],
     pending_shipment: ['cancelled'],
     pending_receipt: ['completed'],
   }

@@ -155,8 +155,8 @@ Page({
       userRoleLabel: isInstitution ? '宠物医院客户' : '普通客户',
       avatarText: user.nickname?.[0] || '客',
       stats: [
-        { label: '钱包余额', value: `¥${formatMoney(user.wallet?.balance ?? 0)}` },
-        { label: '积分', value: String(user.points?.balance ?? 0) },
+        { label: '钱包余额', value: `¥${formatMoney(user.wallet?.balance ?? 0)}`, action: 'wallet' },
+        { label: '积分', value: String(user.points?.balance ?? 0), action: 'points' },
       ],
       statNote: '',
       compactProfile: false,
@@ -189,6 +189,13 @@ Page({
     const page = this as any
     if (item && page[item.tap]) {
       page[item.tap]()
+    }
+  },
+
+  onProfileStatTap(e: any) {
+    const action = e.currentTarget.dataset.action
+    if (action === 'wallet' || action === 'points') {
+      this.onWalletTap()
     }
   },
 
