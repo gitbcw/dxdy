@@ -337,6 +337,54 @@
   font-weight: 900;
 }
 
+.pickup-address-card {
+  display: grid;
+  gap: 10rpx;
+  padding: 20rpx;
+  border-radius: 14rpx;
+  background: var(--bg-section);
+  border: 1rpx solid var(--border-color);
+}
+
+.pickup-address-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-width: 0;
+}
+
+.pickup-address-name {
+  color: var(--text-primary);
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.pickup-address-phone {
+  color: var(--text-secondary);
+  font-size: 25rpx;
+}
+
+.pickup-address-action {
+  margin-left: auto;
+  color: var(--color-primary);
+  font-size: 24rpx;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pickup-address-label {
+  color: var(--color-primary);
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+.pickup-address-detail,
+.pickup-address-empty {
+  color: var(--text-secondary);
+  font-size: 25rpx;
+  line-height: 1.45;
+}
+
 .btn-submit:active {
   opacity: 0.85;
   transform: scale(0.99);
@@ -466,6 +514,10 @@
   margin-bottom: 24rpx;
 }
 
+.express-input-wrap.with-top {
+  margin-top: 18rpx;
+}
+
 .express-input {
   width: 100%;
   height: 76rpx;
@@ -492,6 +544,14 @@
   box-sizing: border-box;
 }
 
+.manual-link {
+  margin-top: 22rpx;
+  color: var(--color-primary);
+  font-size: 25rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
 /* 提交按钮 */
 .btn-submit-panel {
   width: 100%;
@@ -511,4 +571,197 @@
 .btn-submit-panel:active {
   opacity: 0.85;
   transform: scale(0.99);
+}
+
+/* 首页风格统一覆盖 */
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 48%, #ffffff 100%);
+}
+
+.page-header {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8rpx 26rpx rgba(32, 98, 76, 0.05);
+}
+
+.back-arrow,
+.header-title,
+.section-title,
+.product-name,
+.total-label,
+.info-value,
+.panel-title,
+.company-item text,
+.pickup-address-name {
+  color: #10291f;
+}
+
+.order-content {
+  padding: 28rpx 28rpx 150rpx;
+}
+
+.status-bar,
+.section-card,
+.panel-content {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.status-bar {
+  margin: 0 0 22rpx;
+  padding: 22rpx 24rpx;
+}
+
+.status-tag {
+  border-radius: 999rpx;
+  font-weight: 900;
+}
+
+.tag-pending {
+  color: #d85b3d;
+  background: #fff2ec;
+}
+
+.tag-preparing {
+  color: #2f80ed;
+  background: #edf5ff;
+}
+
+.tag-shipped,
+.tag-normal {
+  color: #176f56;
+  background: #e9f7ef;
+}
+
+.tag-booking {
+  color: #b46b00;
+  background: #fff4dc;
+}
+
+.section-card {
+  padding: 28rpx;
+  margin-bottom: 22rpx;
+}
+
+.section-title {
+  border-bottom-color: #edf3ef;
+  font-weight: 900;
+}
+
+.product-item {
+  gap: 18rpx;
+  padding: 18rpx 0;
+}
+
+.product-item:not(:last-child),
+.info-row:not(:last-child) {
+  border-bottom-color: #edf3ef;
+}
+
+.product-icon {
+  width: 86rpx;
+  height: 86rpx;
+  border-radius: 20rpx;
+  background: #f1f8f4;
+  overflow: hidden;
+}
+
+.product-icon image {
+  object-fit: cover;
+}
+
+.product-name {
+  font-weight: 800;
+}
+
+.product-price,
+.product-qty,
+.info-label,
+.pickup-address-phone,
+.pickup-address-detail,
+.pickup-address-empty,
+.cold-input-wrap text {
+  color: #68776f;
+}
+
+.cold-meta text {
+  border-radius: 999rpx;
+  background: #edf5ff;
+}
+
+.order-total {
+  border-top-color: #edf3ef;
+}
+
+.total-value,
+.express-no,
+.manual-link,
+.pickup-address-action,
+.pickup-address-label,
+.company-selected text {
+  color: #176f56;
+}
+
+.bottom-bar {
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 20rpx;
+  gap: 18rpx;
+  padding: 14rpx;
+  border: 1rpx solid #edf3ef;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18rpx 44rpx rgba(32, 98, 76, 0.14);
+}
+
+.btn-scan,
+.btn-submit {
+  height: 78rpx;
+  border-radius: 999rpx;
+  font-weight: 900;
+}
+
+.btn-scan {
+  color: #176f56;
+  border-color: #cfe8dc;
+  background: #f5fbf7;
+}
+
+.btn-submit,
+.btn-submit-panel {
+  background: linear-gradient(180deg, #f1a24a 0%, #dc6a2c 100%);
+  box-shadow: 0 14rpx 30rpx rgba(216, 91, 61, 0.18);
+}
+
+.panel-content {
+  border-radius: 34rpx 34rpx 0 0;
+  padding: 32rpx 28rpx 0;
+}
+
+.panel-close,
+.cold-input-wrap,
+.pickup-address-card,
+.express-input,
+.picker-value,
+.company-item {
+  border-color: #edf3ef;
+  border-radius: 22rpx;
+  background: #f8fcf9;
+}
+
+.company-selected {
+  border-color: #176f56;
+  background: #e9f7ef;
+}
+
+.warm-tip {
+  border-color: #f5d3bd;
+  border-radius: 22rpx;
+  background: #fff7f1;
+}
+
+.btn-submit-panel {
+  border-radius: 999rpx;
 }

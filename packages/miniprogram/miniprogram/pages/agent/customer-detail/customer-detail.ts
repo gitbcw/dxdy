@@ -41,7 +41,7 @@ Page({
       },
       recentOrders,
       phoneText: maskPhone(customer.phone || ''),
-      typeText: customer.type === 'institution' ? '机构客户' : '普通客户',
+      typeText: '医院客户',
       verifyText: customer.verificationStatus === 'approved' ? '已认证' : customer.verificationStatus === 'pending' ? '认证中' : '未认证',
       trendBars,
     })

@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="page-title">商品分类</view>
+  <view class="page-title">分类</view>
 
   <view class="search-bar">
     <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
@@ -13,6 +13,7 @@
     />
     <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
   </view>
+
   <view wx:if="{{searchSuggestions.length > 0}}" class="suggestion-panel">
     <view
       wx:for="{{searchSuggestions}}"
@@ -26,94 +27,100 @@
     </view>
   </view>
 
-  <scroll-view scroll-x class="category-tabs">
-    <view
-      class="category-tab {{!activeCategory ? 'active' : ''}}"
-      bindtap="onAllCategoryTap"
-    >全部</view>
-    <view
-      wx:for="{{categories}}"
-      wx:key="id"
-      class="category-tab {{activeCategory === item.id ? 'active' : ''}}"
-      data-id="{{item.id}}"
-      bindtap="onCategoryTap"
-    >
-      {{item.name}}
-    </view>
-  </scroll-view>
-
-  <view class="sort-row">
-    <text
-      class="sort-item {{sortKey === 'comprehensive' ? 'active' : ''}}"
-      data-key="comprehensive"
-      bindtap="onSortTap"
-    >综合{{sortKey === 'comprehensive' ? '⌄' : ''}}</text>
-    <text
-      class="sort-item {{sortKey === 'sales' ? 'active' : ''}}"
-      data-key="sales"
-      bindtap="onSortTap"
-    >销量{{sortKey === 'sales' ? '⌄' : ''}}</text>
-    <text
-      class="sort-item {{sortKey === 'price' ? 'active' : ''}}"
-      data-key="price"
-      bindtap="onSortTap"
-    >价格{{sortKey === 'price' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}}</text>
-    <view class="sort-item filter-sort {{activeQuickFilter !== 'all' ? 'active' : ''}}" bindtap="onFilterTap">
-      <text>筛选</text>
-      <image src="{{filterIcon}}" mode="aspectFit" />
-    </view>
-  </view>
-
-  <scroll-view scroll-x class="quick-filters">
-    <view
-      wx:for="{{quickFilters}}"
-      wx:key="key"
-      class="filter-pill {{activeQuickFilter === item.key ? 'active' : ''}}"
-      data-key="{{item.key}}"
-      bindtap="onQuickFilterTap"
-    >
-      {{item.label}}
-    </view>
-  </scroll-view>
-
-  <view class="product-list">
-    <view
-      wx:for="{{products}}"
-      wx:key="id"
-      class="product-card {{item.lowStock ? 'warn' : ''}}"
-      data-id="{{item.id}}"
-      bindtap="onProductTap"
-    >
-      <view class="product-img">
-        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" />
-        <text wx:else>{{item.isBloodPack ? '血包' : '商品'}}</text>
+  <view class="catalog-layout">
+    <scroll-view scroll-y class="category-sidebar">
+      <view
+        class="side-category {{!activeCategory ? 'active' : ''}}"
+        bindtap="onAllCategoryTap"
+      >
+        <text>全部</text>
       </view>
-      <view class="product-info">
-        <view class="product-title-row">
-          <text class="product-name">{{item.name}}</text>
-          <image class="lock" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}" src="{{lockIcon}}" mode="aspectFit" />
-        </view>
-        <text class="product-spec">{{item.specText}}</text>
-        <text class="product-sales">{{item.salesText}}</text>
-        <view class="tag-row">
-          <text class="tag green">{{item.tagText}}</text>
-          <text class="tag" wx:if="{{item.isBloodPack}}">支持预约</text>
-          <text class="tag red" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}">仅认证医院可购买</text>
-          <text class="tag promo" wx:if="{{item.isPromo}}">促销</text>
-        </view>
-        <view class="product-bottom">
-          <view class="price-group">
-            <text class="price">¥{{item.priceText}}</text>
-            <text wx:if="{{item.originalPriceText}}" class="original-price">¥{{item.originalPriceText}}</text>
-          </view>
-          <text wx:if="{{item.leadText}}" class="stock {{item.lowStock ? 'warn' : ''}}">{{item.leadText}}</text>
-          <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
-            <image class="cart-plus-icon" src="{{cartIcon}}" mode="aspectFit" />
-          </view>
+      <view
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="side-category {{activeCategory === item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onCategoryTap"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+
+    <view class="catalog-content">
+      <view class="sort-row">
+        <text
+          class="sort-item {{sortKey === 'comprehensive' ? 'active' : ''}}"
+          data-key="comprehensive"
+          bindtap="onSortTap"
+        >综合{{sortKey === 'comprehensive' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}}</text>
+        <text
+          class="sort-item {{sortKey === 'sales' ? 'active' : ''}}"
+          data-key="sales"
+          bindtap="onSortTap"
+        >销量{{sortKey === 'sales' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}}</text>
+        <text
+          class="sort-item {{sortKey === 'price' ? 'active' : ''}}"
+          data-key="price"
+          bindtap="onSortTap"
+        >价格{{sortKey === 'price' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}}</text>
+        <view class="sort-item filter-sort {{activeQuickFilter !== 'all' ? 'active' : ''}}" bindtap="onFilterTap">
+          <text>筛选</text>
+          <image src="{{filterIcon}}" mode="aspectFit" />
         </view>
       </view>
+
+      <scroll-view scroll-x class="quick-filters">
+        <view
+          wx:for="{{quickFilters}}"
+          wx:key="key"
+          class="filter-pill {{activeQuickFilter === item.key ? 'active' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onQuickFilterTap"
+        >
+          {{item.label}}
+        </view>
+      </scroll-view>
+
+      <view class="product-list">
+        <view
+          wx:for="{{products}}"
+          wx:key="id"
+          class="product-card {{item.lowStock ? 'warn' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onProductTap"
+        >
+          <view class="product-img">
+            <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" />
+            <text wx:else>{{item.isBloodPack ? '血包' : '商品'}}</text>
+          </view>
+          <view class="product-info">
+            <view class="product-title-row">
+              <text class="product-name">{{item.name}}</text>
+              <image class="lock" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}" src="{{lockIcon}}" mode="aspectFit" />
+            </view>
+            <view class="sales-tag-row">
+              <text class="product-sales">{{item.salesText}}</text>
+              <view class="tag-row">
+                <text class="tag green">{{item.tagText}}</text>
+                <text class="tag" wx:if="{{item.isBloodPack}}">支持预约</text>
+                <text class="tag red" wx:if="{{item.visibility === 'institution_only' && !isInstitution}}">认证医院</text>
+                <text class="tag promo" wx:if="{{item.isPromo}}">促销</text>
+              </view>
+            </view>
+            <view class="product-bottom">
+              <view class="price-group">
+                <text class="price">¥{{item.priceText}}</text>
+                <text wx:if="{{item.originalPriceText}}" class="original-price">¥{{item.originalPriceText}}</text>
+              </view>
+              <view class="cart-plus-btn" catchtap="onCartPlusTap" data-id="{{item.id}}">
+                <image class="cart-plus-icon" src="{{cartIcon}}" mode="aspectFit" />
+              </view>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{products.length === 0}}" class="empty">{{emptyText}}</view>
+      </view>
     </view>
-    <view wx:if="{{products.length === 0}}" class="empty">{{emptyText}}</view>
   </view>
 
   <product-action-sheet

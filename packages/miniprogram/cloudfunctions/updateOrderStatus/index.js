@@ -50,6 +50,16 @@ function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100
 }
 
+function getCommissionBaseAmount(order, fallbackAmount) {
+  const storedBase = roundMoney(order.commission && order.commission.baseAmount)
+  if (storedBase > 0) return storedBase
+  const bookingStorePrice = roundMoney(order.booking && order.booking.storePrice)
+  if (order.commission && order.commission.sourceType === 'hospital_invite_booking' && bookingStorePrice > 0) {
+    return bookingStorePrice
+  }
+  return roundMoney(fallbackAmount)
+}
+
 async function getCurrentUser(openid, operatorId) {
   if (!openid && operatorId) {
     try {
@@ -173,6 +183,47 @@ async function releaseOrderAssets(order, now) {
   }).update({
     data: { status: 'cancelled', cancelledAt: now, updatedAt: now },
   })
+
+  await db.collection('blood_commission_records').where({
+    orderId: order._id,
+    status: _.in(['pending_payment', 'locked']),
+  }).update({
+    data: { status: 'cancelled', cancelledAt: now, updatedAt: now },
+  })
+}
+
+async function settleBloodCommission(order, now) {
+  const booking = order.booking || {}
+  const hospitalId = booking.hospitalReferrerId || ''
+  if (order.type !== 'booking' || !hospitalId) return
+
+  const { data: records } = await db.collection('blood_commission_records').where({
+    orderId: order._id,
+    hospitalId,
+    status: 'locked',
+  }).get()
+  const amount = (records || []).reduce((sum, record) => sum + roundMoney(record.amount || 0), 0)
+  if (amount <= 0) return
+
+  for (const record of (records || [])) {
+    await db.collection('blood_commission_records').doc(record._id).update({
+      data: { status: 'settled', settledAt: now, updatedAt: now },
+    })
+  }
+  await db.collection('users').doc(hospitalId).update({
+    data: {
+      'bloodCommission.total': db.command.inc(amount),
+      'bloodCommission.available': db.command.inc(amount),
+      updatedAt: now,
+    },
+  })
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      'booking.hospitalCommissionStatus': 'settled',
+      'booking.hospitalCommissionSettledAt': now,
+      updatedAt: now,
+    },
+  })
 }
 
 function isOwner(order, openid, user) {
@@ -251,6 +302,7 @@ exports.main = async (event) => {
     }
     const actualAmount = roundMoney(bookingAmount + urgentFee)
     updateData.status = 'pending_payment'
+    updateData.pendingPaymentAt = now
     updateData.confirmedAt = now
     updateData.confirmedBy = user._id
     updateData['pricing.originalAmount'] = actualAmount
@@ -277,7 +329,11 @@ exports.main = async (event) => {
     updateData['payment.status'] = 'unpaid'
     updateData['payment.method'] = ''
     updateData['payment.amount'] = actualAmount
-    updateData['commission.amount'] = roundMoney(actualAmount * Number(config.commissionRate || 0.2))
+    const commissionRate = Number(config.commissionRate || order.commission?.rate || 0.2)
+    const commissionBaseAmount = getCommissionBaseAmount(order, actualAmount)
+    updateData['commission.amount'] = roundMoney(commissionBaseAmount * commissionRate)
+    updateData['commission.rate'] = commissionRate
+    updateData['commission.baseAmount'] = commissionBaseAmount
     if (order.booking?.urgent || order.shipping?.urgent) {
       updateData['shipping.urgent'] = true
       updateData['booking.urgent'] = true
@@ -307,8 +363,14 @@ exports.main = async (event) => {
               orderId: order._id,
               orderNo: order.orderNo,
               amount: commissionAmount,
+              commission: commissionAmount,
+              orderAmount: updateData['pricing.actualAmount'] || order.pricing?.actualAmount || 0,
+              commissionBaseAmount: updateData['commission.baseAmount'] || order.commission?.baseAmount || order.pricing?.actualAmount || 0,
+              commissionRate: updateData['commission.rate'] || order.commission?.rate || Number(config.commissionRate || 0.2),
               status: 'pending',
-              sourceType: 'order',
+              sourceType: order.commission?.sourceType || 'order',
+              ...(order.commission?.hospitalId ? { hospitalId: order.commission.hospitalId } : {}),
+              ...(order.commission?.hospitalName ? { hospitalName: order.commission.hospitalName } : {}),
               description: `预约订单 ${order.orderNo || order._id} 提成 ¥${commissionAmount}`,
               createdAt: now,
               updatedAt: now,
@@ -316,7 +378,14 @@ exports.main = async (event) => {
           })
         } else {
           await db.collection('commission_records').where({ orderId: order._id }).update({
-            data: { amount: commissionAmount, updatedAt: now },
+            data: {
+              amount: commissionAmount,
+              commission: commissionAmount,
+              orderAmount: updateData['pricing.actualAmount'] || order.pricing?.actualAmount || 0,
+              commissionBaseAmount: updateData['commission.baseAmount'] || order.commission?.baseAmount || order.pricing?.actualAmount || 0,
+              commissionRate: updateData['commission.rate'] || order.commission?.rate || Number(config.commissionRate || 0.2),
+              updatedAt: now,
+            },
           })
         }
       } catch (_e) { /* non-critical */ }
@@ -362,6 +431,12 @@ exports.main = async (event) => {
           updatedAt: now,
         },
       })
+    } catch (_e) { /* non-critical */ }
+  }
+
+  if (status === 'completed') {
+    try {
+      await settleBloodCommission(order, now)
     } catch (_e) { /* non-critical */ }
   }
 

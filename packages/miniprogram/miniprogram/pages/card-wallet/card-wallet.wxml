@@ -1,4 +1,11 @@
 <view class="page">
+  <view class="wallet-head">
+    <view>
+      <text class="wallet-title">卡券钱包</text>
+      <text class="wallet-desc">可用 {{availableCount}} 张 · 共 {{totalCount}} 张</text>
+    </view>
+  </view>
+
   <view class="tab-bar">
     <view wx:for="{{tabs}}" wx:key="key"
       class="tab {{activeTab === item.key ? 'active' : ''}}"
@@ -8,12 +15,31 @@
   </view>
 
   <view class="card-list">
-    <view wx:for="{{visibleCards}}" wx:key="id" class="card-item" bindtap="onCardTap" data-id="{{item.id}}">
-      <view class="card-left">
-        <text class="card-product">{{item.productName}}</text>
+    <view wx:for="{{visibleCards}}" wx:key="id" class="card-item status-{{item.status}}" bindtap="onCardTap" data-id="{{item.id}}">
+      <view class="card-header">
+        <view class="card-title">
+          <text class="card-product">{{item.productName}}</text>
+        </view>
+        <text class="card-status status-{{item.status}}">{{item.statusText}}</text>
       </view>
-      <view class="card-right">
-        <text class="card-status status-{{item.status}}">{{item.status === 'gifted' ? '待认领' : item.status === 'claimed' ? '可使用' : item.status === 'redeemed' ? '已兑换' : item.status === 'verified' ? '已核销' : item.status === 'expired' ? '已过期' : '已作废'}}</text>
+
+      <view class="amount-row">
+        <view>
+          <text class="amount-label">抵扣金额</text>
+          <text class="amount-hint">结算时可用于抵扣</text>
+        </view>
+        <text class="amount-value">¥{{item.amountText}}</text>
+      </view>
+
+      <view class="meta-grid">
+        <view wx:if="{{item.claimedAtText}}" class="meta-row">
+          <text class="meta-label">领取时间</text>
+          <text class="meta-value">{{item.claimedAtText}}</text>
+        </view>
+        <view wx:if="{{item.redeemedAtText}}" class="meta-row">
+          <text class="meta-label">兑换时间</text>
+          <text class="meta-value">{{item.redeemedAtText}}</text>
+        </view>
       </view>
     </view>
 

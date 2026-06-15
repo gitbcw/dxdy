@@ -36,9 +36,12 @@
           <text class="amount">¥{{item.totalText}}</text>
         </view>
         <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}} · {{item.commissionText}}</view>
+        <view wx:if="{{item.status === 'pending_payment' && item.paymentTimeout}}" class="timeout-tip {{item.paymentTimeout.expired ? 'expired' : ''}}">
+          <text>{{item.paymentTimeout.notice}}</text>
+        </view>
         <view class="order-actions">
           <view
-            wx:if="{{item.status === 'pending_receipt'}}"
+            wx:if="{{item.status === 'pending_receipt' && item.canQueryLogistics}}"
             class="ghost-btn"
             data-id="{{item.id}}"
             catchtap="onLogisticsFromList"
@@ -120,13 +123,16 @@
         <text>收货信息</text>
         <text>{{selectedOrder.shipping.address.full}}</text>
       </view>
-      <view class="order-meta" bindtap="onLogisticsTap">
+      <view class="order-meta" bindtap="{{selectedOrder.canQueryLogistics ? 'onLogisticsTap' : ''}}">
         <text>物流信息</text>
-        <text>{{selectedOrder.logisticsText}} ></text>
+        <text>{{selectedOrder.logisticsText}}{{selectedOrder.canQueryLogistics ? ' >' : ''}}</text>
       </view>
     </view>
 
     <view wx:if="{{selectedOrder.status === 'pending_payment'}}" class="card">
+      <view wx:if="{{selectedOrder.paymentTimeout}}" class="timeout-tip in-detail {{selectedOrder.paymentTimeout.expired ? 'expired' : ''}}">
+        <text>{{selectedOrder.paymentTimeout.notice}}</text>
+      </view>
       <text class="card-title">支付方式</text>
       <view class="pay-list">
         <view class="pay-item {{selectedPayMethod === 'wechat' ? 'active' : ''}}" data-method="wechat" bindtap="onPayMethodTap">
@@ -175,14 +181,6 @@
     </view>
 
     <view class="card">
-      <view class="link-row" bindtap="onTestReportTap">
-        <text>电子检测报告</text>
-        <text>扫码/输入检测码 ></text>
-      </view>
-      <view class="link-row" bindtap="onInvoiceTap">
-        <text>发票信息</text>
-        <text>申请开票 ></text>
-      </view>
       <view class="link-row" bindtap="onReturnEntryTap">
         <text>申请售后</text>
         <text>{{selectedOrder.returnRecord ? selectedOrder.returnStatusText : '可申请' }} ></text>

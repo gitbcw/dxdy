@@ -2,42 +2,66 @@
   min-height: 100vh;
   padding: 22rpx;
   padding-bottom: 240rpx;
-  background: #f6f7f6;
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 42%, #ffffff 100%);
   box-sizing: border-box;
 }
 
 .tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8rpx;
+  border: 1rpx solid #e7ece9;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 12rpx 30rpx rgba(32, 98, 76, 0.08);
   white-space: nowrap;
 }
 
 .tab {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 104rpx;
   height: 58rpx;
-  margin-right: 26rpx;
-  color: #68746e;
+  margin-right: 8rpx;
+  padding: 0 18rpx;
+  border-radius: 16rpx;
+  color: #7d8782;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
+  box-sizing: border-box;
 }
 
 .tab.active {
-  color: #139445;
-  border-bottom: 5rpx solid #18a34a;
+  color: #176f56;
+  background: #eef8f3;
 }
 
 .order-list {
-  margin-top: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  margin-top: 18rpx;
 }
 
 .order-card,
 .card,
 .flow-card,
 .status-card {
+  padding: 22rpx;
+  border: 1rpx solid #edf1ee;
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.card,
+.flow-card,
+.status-card {
   margin-bottom: 18rpx;
-  padding: 20rpx;
-  border-radius: 18rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(24, 45, 32, 0.05);
 }
 
 .order-top {
@@ -49,15 +73,23 @@
 }
 
 .order-id {
-  color: #717d77;
+  flex: 1;
+  min-width: 0;
+  color: #7d8782;
   font-size: 22rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .order-status {
   flex-shrink: 0;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
   color: #ff5a00;
   font-size: 22rpx;
   font-weight: 900;
+  background: #fff7ed;
 }
 
 .goods-row,
@@ -66,17 +98,24 @@
   gap: 18rpx;
 }
 
+.detail-goods {
+  padding-bottom: 18rpx;
+  margin-bottom: 12rpx;
+  border-bottom: 1rpx solid #eef2ef;
+}
+
 .goods-img {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 132rpx;
   height: 132rpx;
-  border-radius: 14rpx;
-  color: #139445;
+  border-radius: 18rpx;
+  color: #176f56;
   font-size: 22rpx;
   font-weight: 900;
-  background: #f0f7f2;
+  background: #eef8f3;
   overflow: hidden;
 }
 
@@ -120,25 +159,56 @@
 .notice {
   display: block;
   margin-top: 10rpx;
-  color: #139445;
+  color: #176f56;
   font-size: 21rpx;
   line-height: 1.45;
 }
 
 .notice.amber {
   padding: 14rpx;
-  border-radius: 12rpx;
-  color: #ff5a00;
-  background: #fff2e8;
+  border-radius: 14rpx;
+  color: #d85b3d;
+  background: #fff7ed;
 }
 
 .notice.in-card {
   margin-top: 16rpx;
 }
 
+.timeout-tip {
+  margin-top: 16rpx;
+  padding: 14rpx 18rpx;
+  border: 1rpx solid rgba(216, 91, 61, 0.2);
+  border-radius: 16rpx;
+  background: #fff7ed;
+}
+
+.timeout-tip.in-detail {
+  margin-top: 0;
+  margin-bottom: 18rpx;
+}
+
+.timeout-tip text {
+  display: block;
+  color: #d85b3d;
+  font-size: 22rpx;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.timeout-tip.expired {
+  border-color: rgba(229, 72, 77, 0.24);
+  background: #fff1f1;
+}
+
+.timeout-tip.expired text {
+  color: #d92d20;
+}
+
 .order-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 14rpx;
   margin-top: 18rpx;
 }
@@ -155,8 +225,8 @@
 }
 
 .ghost-btn {
-  color: #139445;
-  border: 1rpx solid rgba(22, 163, 74, 0.35);
+  color: #176f56;
+  border: 1rpx solid rgba(23, 111, 86, 0.24);
   background: #ffffff;
 }
 
@@ -173,8 +243,8 @@
 }
 
 .status-card {
-  color: #139445;
-  background: #eaf8ef;
+  color: #176f56;
+  background: #eef8f3;
 }
 
 .status-title {
@@ -197,8 +267,8 @@
 }
 
 .flow-step {
-  flex: 1;
   position: relative;
+  flex: 1;
   text-align: center;
 }
 
@@ -206,8 +276,8 @@
   content: '';
   position: absolute;
   top: 13rpx;
-  left: 0;
   right: 0;
+  left: 0;
   height: 2rpx;
   background: #dfe6e2;
 }
@@ -223,7 +293,7 @@
 }
 
 .flow-dot.active {
-  background: #18a34a;
+  background: #176f56;
 }
 
 .flow-label {
@@ -316,13 +386,13 @@
   gap: 20rpx;
   padding: 18rpx 20rpx;
   border: 2rpx solid #edf2ef;
-  border-radius: 14rpx;
-  background: #fafcfb;
+  border-radius: 18rpx;
+  background: #fbfefd;
 }
 
 .voucher-item.active {
-  border-color: #ff6a00;
-  background: #fff7ed;
+  border-color: #cfe8dc;
+  background: #eef8f3;
 }
 
 .voucher-title,
@@ -361,7 +431,7 @@
   gap: 20rpx;
   margin-top: 18rpx;
   padding: 16rpx 18rpx;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
   background: #fff7ed;
 }
 
@@ -398,10 +468,10 @@
   min-width: 0;
   padding: 18rpx;
   border: 1rpx solid #eef2ef;
-  border-radius: 14rpx;
+  border-radius: 16rpx;
   color: #6e7973;
   font-size: 23rpx;
-  background: #f8faf8;
+  background: #fbfefd;
 }
 
 .pay-item text {
@@ -416,9 +486,9 @@
 }
 
 .pay-item.active {
-  color: #139445;
-  border-color: rgba(22, 163, 74, 0.3);
-  background: #edf8f0;
+  color: #176f56;
+  border-color: #cfe8dc;
+  background: #eef8f3;
 }
 
 .price-log text {
@@ -438,17 +508,17 @@
   left: 0;
   display: flex;
   gap: 14rpx;
-  padding: 16rpx 22rpx calc(16rpx + env(safe-area-inset-bottom));
+  padding: 18rpx 22rpx calc(18rpx + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 -8rpx 24rpx rgba(24, 45, 32, 0.08);
+  box-shadow: 0 -14rpx 34rpx rgba(32, 98, 76, 0.08);
 }
 
 .back-action,
 .action-btn {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
   min-height: 80rpx;
   border-radius: 18rpx;
   font-size: 26rpx;
@@ -457,8 +527,8 @@
 
 .back-action,
 .action-btn {
-  color: #139445;
-  border: 1rpx solid rgba(22, 163, 74, 0.35);
+  color: #176f56;
+  border: 1rpx solid rgba(23, 111, 86, 0.24);
   background: #ffffff;
 }
 
@@ -475,8 +545,14 @@
 }
 
 .empty {
-  padding: 160rpx 0;
-  color: #8b9994;
+  margin-top: 40rpx;
+  padding: 120rpx 0;
+  border: 1rpx solid #edf1ee;
+  border-radius: 26rpx;
+  color: #97a39d;
   font-size: 26rpx;
+  font-weight: 800;
   text-align: center;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.06);
 }

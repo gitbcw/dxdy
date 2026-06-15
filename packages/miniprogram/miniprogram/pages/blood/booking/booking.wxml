@@ -5,15 +5,20 @@
     <text class="hero-desc">选择动物类型、血型和需求血量，提交后由客服确认库存、配血和配送安排。</text>
   </view>
 
-  <view wx:if="{{!isInstitution}}" class="empty-card">
-    <text class="empty-title">当前仅医院客户可预约</text>
-    <text class="empty-desc">用血预约涉及临床输血安全，仅开放给医院客户。</text>
+  <view wx:if="{{!isInstitution && !isPersonalInvite}}" class="empty-card">
+    <text class="empty-title">请通过医院二维码进入</text>
+    <text class="empty-desc">个人客户需扫描医院客户提供的当天有效预约二维码后提交预约。</text>
   </view>
 
-  <view wx:elif="{{!isVerified}}" class="empty-card">
+  <view wx:elif="{{isInstitution && !isVerified}}" class="empty-card">
     <text class="empty-title">完成门店认证后可预约</text>
     <text class="empty-desc">认证通过后即可提交犬/猫用血预约需求。</text>
     <view class="primary-btn" bindtap="onGoVerify">去认证</view>
+  </view>
+
+  <view wx:elif="{{inviteError}}" class="empty-card">
+    <text class="empty-title">预约二维码不可用</text>
+    <text class="empty-desc">{{inviteError}}</text>
   </view>
 
   <view wx:else class="content">
@@ -41,17 +46,16 @@
 
       <view class="field">
         <text class="field-label">需要血量</text>
-        <view class="input-wrap">
-          <input
-            class="field-input"
-            type="digit"
-            placeholder="请输入毫升数"
-            value="{{volumeMl}}"
-            data-field="volumeMl"
-            bindinput="onInput"
-          />
-          <text class="input-unit">ml</text>
-        </view>
+        <picker mode="selector" range="{{volumeOptions}}" value="{{volumeIndex}}" bindchange="onVolumeChange">
+          <view class="picker-value">{{volumeMl}} ml ></view>
+        </picker>
+      </view>
+      <view class="price-row">
+        <text class="price-label">{{priceMode === 'retail' ? '预约零售价' : '预约门店价'}}</text>
+        <text class="price-value">¥{{bookingAmountText}}</text>
+      </view>
+      <view wx:if="{{isPersonalInvite && invite}}" class="invite-note">
+        <text>由 {{invite.hospitalName}} 提供预约入口</text>
       </view>
     </view>
 

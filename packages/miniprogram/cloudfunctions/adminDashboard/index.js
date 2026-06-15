@@ -11,6 +11,7 @@ const defaultSystemConfig = {
   minWithdrawAmount: 100,
   withdrawReviewEnabled: true,
   paymentTimeoutMinutes: 30,
+  autoReceiptDays: 7,
   returnDeadlineDays: 7,
   returnAddress: '',
   reviewTimeoutHours: 24,

@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="hero">
+    <view class="icon-wrap">
+      <image class="icon" src="{{hospitalIcon}}" mode="aspectFit" />
+    </view>
+    <text class="title">预约用血二维码</text>
+    <text class="desc">个人客户扫码后进入预约用血页面，订单完成后差额会计入门店提成。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="card center-card">
+    <text class="muted">正在生成二维码...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="card center-card">
+    <text class="error">{{error}}</text>
+    <button class="primary-btn" bindtap="onRefreshTap">重新生成</button>
+  </view>
+
+  <view wx:else class="card qr-card">
+    <image class="qrcode" src="{{qrcodeUrl}}" mode="aspectFit" />
+    <text class="hospital-name">{{invite.hospitalName}}</text>
+    <text class="expire-text">有效期至 {{invite.expiresAt}}</text>
+    <view class="actions">
+      <button class="primary-btn" open-type="share">分享给客户</button>
+    </view>
+  </view>
+</view>

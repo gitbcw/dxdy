@@ -1,0 +1,118 @@
+.page {
+  min-height: 100vh;
+  padding: 40rpx 28rpx 72rpx;
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 42%, #ffffff 100%);
+  box-sizing: border-box;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background: #eef8f2;
+}
+
+.icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.title {
+  color: #16251e;
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.desc {
+  color: #68776f;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.card {
+  margin-top: 30rpx;
+  padding: 30rpx;
+  border: 1rpx solid #edf1ee;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+  box-sizing: border-box;
+}
+
+.center-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.muted {
+  color: #68776f;
+  font-size: 26rpx;
+}
+
+.error {
+  color: #c2410c;
+  font-size: 26rpx;
+}
+
+.qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qrcode {
+  width: 430rpx;
+  height: 430rpx;
+}
+
+.hospital-name {
+  margin-top: 18rpx;
+  color: #16251e;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.expire-text {
+  margin-top: 8rpx;
+  color: #68776f;
+  font-size: 23rpx;
+}
+
+.actions {
+  display: flex;
+  width: 100%;
+  margin-top: 26rpx;
+  box-sizing: border-box;
+}
+
+.primary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 82rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  font-size: 25rpx;
+  font-weight: 900;
+  line-height: 82rpx;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.primary-btn {
+  color: #ffffff;
+  background: #156f56;
+}

@@ -38,3 +38,6 @@ packages/miniprogram/miniprogram/pages/**/*.js
 
 # MCP secrets
 .mcp.json
+
+# temporary payment integration scratch files
+.tmp-pay-common/

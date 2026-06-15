@@ -51,9 +51,6 @@ Page({
         return [
           order.orderNo,
           order.id,
-          order.customerName,
-          order.customerPhone,
-          order.address,
           productText,
         ].some((value) => String(value || '').toLowerCase().includes(keyword))
       })

@@ -140,6 +140,26 @@
   text-align: right;
 }
 
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  min-height: 88rpx;
+}
+
+.price-label {
+  color: #4c3b39;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.price-value {
+  color: #a6343d;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
 .input-wrap {
   display: flex;
   align-items: center;
@@ -311,6 +331,16 @@
   color: #5c4947;
   font-size: 24rpx;
   line-height: 1.6;
+}
+
+.invite-note {
+  margin-top: 14rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 16rpx;
+  color: #156f56;
+  font-size: 23rpx;
+  font-weight: 800;
+  background: #eef8f2;
 }
 
 .empty-title {

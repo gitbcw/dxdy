@@ -3,8 +3,6 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
-const _ = db.command
-
 function formatDate(date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -28,6 +26,12 @@ function normalizeUser(user) {
 
 async function getCustomer(openid, operatorId) {
   let customer = null
+  if (operatorId) {
+    try {
+      const { data } = await db.collection('users').doc(operatorId).get()
+      if (data) return data
+    } catch (_e) {}
+  }
   if (openid) {
     const { data: users } = await db.collection('users').where({ _openid: openid }).limit(1).get()
     customer = users && users[0]
@@ -35,12 +39,6 @@ async function getCustomer(openid, operatorId) {
       const { data: boundUsers } = await db.collection('users').where({ boundOpenid: openid }).limit(1).get()
       customer = boundUsers && boundUsers[0]
     }
-  }
-  if (!customer && operatorId) {
-    try {
-      const { data } = await db.collection('users').doc(operatorId).get()
-      customer = data
-    } catch (_e) {}
   }
   return customer
 }
@@ -69,6 +67,12 @@ exports.main = async (event) => {
   const operatorId = String(event.operatorId || '').trim()
   if (!openid && !operatorId) return error('登录状态无效', 'UNAUTHORIZED')
 
+  if (event.action === 'getCurrentUser') {
+    const customer = await getCustomer(openid, operatorId)
+    if (!customer) return error('用户不存在', 'FORBIDDEN')
+    return { success: true, user: normalizeUser(customer) }
+  }
+
   const tierIndex = parseInt(event.tierIndex, 10)
   if (Number.isNaN(tierIndex) || tierIndex < 0) return error('请选择充值档位')
 
@@ -80,35 +84,65 @@ exports.main = async (event) => {
   if (!tier) return error('充值档位不存在')
 
   const now = formatDateTime(new Date())
-  const credit = tier.amount + tier.bonus
-  const rechargeId = `rch_${Date.now()}`
-
-  await db.collection('users').doc(customer._id).update({
-    data: {
-      'wallet.balance': _.inc(credit),
-      'wallet.rechargeHistory': _.push({
-        id: rechargeId,
-        amount: tier.amount,
-        bonus: tier.bonus,
-        label: tier.label,
-        method: 'wechat',
-        status: 'paid',
-        createdAt: now,
-      }),
-      updatedAt: now,
+  const orderNo = `RC${Date.now()}`
+  const order = {
+    orderNo,
+    type: 'recharge',
+    status: 'pending_payment',
+    customerId: customer._id,
+    customerName: customer.nickname || customer.name || customer.phone || '客户',
+    customerOpenid: openid || customer._openid || customer.boundOpenid || '',
+    salespersonId: '',
+    clerkId: null,
+    items: [{
+      productId: 'wallet_recharge',
+      productName: tier.label || `钱包充值 ¥${tier.amount}`,
+      productImage: '',
+      spec: '钱包充值',
+      quantity: 1,
+      unitPrice: tier.amount,
+      totalPrice: tier.amount,
+    }],
+    pricing: {
+      originalAmount: tier.amount,
+      actualAmount: tier.amount,
+      priceLog: [],
+      shippingFee: 0,
+      urgentFee: 0,
+      pointsDeduction: 0,
+      pointsConsumed: 0,
+      pointsDeductedAt: '',
+      refundedAmount: 0,
     },
-  })
-
-  const { data: updatedUser } = await db.collection('users').doc(customer._id).get()
-  return {
-    success: true,
-    recharge: {
-      id: rechargeId,
+    rechargeTier: {
       amount: tier.amount,
       bonus: tier.bonus,
-      credit,
-      paidAt: now,
+      label: tier.label,
     },
-    user: normalizeUser(updatedUser),
+    payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
+    shipping: { address: null, trackingNo: null, company: null, logistics: [] },
+    returnRecordId: null,
+    commission: { status: 'none', amount: 0, settledAt: null },
+    remark: `钱包充值 ¥${tier.amount}`,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  const addResult = await db.collection('orders').add({ data: order })
+
+  return {
+    success: true,
+    order: {
+      ...order,
+      id: addResult._id,
+    },
+    recharge: {
+      orderId: addResult._id,
+      orderNo,
+      amount: tier.amount,
+      bonus: tier.bonus,
+      credit: tier.amount + tier.bonus,
+    },
+    user: normalizeUser(customer),
   }
 }

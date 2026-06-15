@@ -48,14 +48,52 @@ async function getOrder(orderId) {
   return data || null
 }
 
-async function getUserByOpenid(openid) {
-  const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
-  return data?.[0] || null
+async function getUserByOpenid(openid, preferredRole = '') {
+  const [openidRes, boundRes] = await Promise.all([
+    db.collection('users').where({ _openid: openid }).limit(5).get(),
+    db.collection('users').where({ boundOpenid: openid }).limit(5).get(),
+  ])
+  const users = [...(openidRes.data || []), ...(boundRes.data || [])]
+  if (!users.length) return null
+
+  if (preferredRole === 'salesperson') {
+    const agent = users.find(user => user.role === 'salesperson' || user.agentStatus === 'approved')
+    if (agent) return agent
+  }
+  if (preferredRole === 'institution') {
+    const institution = users.find(user => user.role === 'customer' && user.customerType === 'institution' && user.verificationStatus === 'approved')
+      || users.find(user => user.role === 'customer' && user.customerType === 'institution')
+    if (institution) return institution
+  }
+
+  const approvedInstitution = users.find(user => user.role === 'customer' && user.customerType === 'institution' && user.verificationStatus === 'approved')
+  if (approvedInstitution) return approvedInstitution
+  const approvedAgent = users.find(user => user.role === 'salesperson' || user.agentStatus === 'approved')
+  return approvedAgent || users[0]
 }
 
 async function getUserById(id) {
   const { data } = await db.collection('users').doc(id).get()
   return data || null
+}
+
+async function getRequestUser(event, openid, preferredRole = '') {
+  const userId = String(event.userId || '').trim()
+  if (userId) {
+    try {
+      const user = await getUserById(userId)
+      if (user && (user._openid === openid || user.boundOpenid === openid)) return user
+    } catch (_e) { /* fall back to openid lookup */ }
+  }
+  return getUserByOpenid(openid, preferredRole)
+}
+
+function getCardAmount(card) {
+  return Math.round(Number(card?.deductionAmount || card?.discountAmount || 0) * 100) / 100
+}
+
+function getCardPurchaseAmount(card) {
+  return Math.round(Number(card?.purchaseAmount || card?.deductionAmount || card?.discountAmount || 0) * 100) / 100
 }
 
 async function writeLog(action, operatorId, detail) {
@@ -75,7 +113,7 @@ async function writeLog(action, operatorId, detail) {
 async function listMyCards(event, now) {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  const user = await getUserByOpenid(openid)
+  const user = await getRequestUser(event, openid)
   if (!user) return err('用户不存在')
 
   const query = { currentHolderId: user._id }
@@ -93,6 +131,212 @@ async function listMyCards(event, now) {
     }
   }
   return { success: true, cards: cards.map(normalizeCard) }
+}
+
+async function listAgentCards(event, now) {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getRequestUser(event, openid, 'salesperson')
+  if (!user) return err('用户不存在')
+  if (user.role !== 'salesperson') return err('仅代理商可查看卡券')
+
+  const [purchasedRes, heldRes] = await Promise.all([
+    db.collection('card_vouchers')
+      .where({ purchaserId: user._id })
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get(),
+    db.collection('card_vouchers')
+      .where({ currentHolderId: user._id })
+      .orderBy('updatedAt', 'desc')
+      .limit(100)
+      .get(),
+  ])
+
+  const map = new Map()
+  for (const card of [...(purchasedRes.data || []), ...(heldRes.data || [])]) {
+    if (['verified', 'expired'].includes(card.status)) continue
+    if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
+      await db.collection('card_vouchers').doc(card._id).update({ data: { status: 'expired', updatedAt: now } })
+      continue
+    }
+    map.set(card._id, card)
+  }
+
+  const cards = Array.from(map.values()).sort((a, b) => {
+    return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))
+  })
+  return { success: true, cards: cards.map(normalizeCard) }
+}
+
+async function listGiftTargets() {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const operator = await getUserByOpenid(openid, 'salesperson')
+  if (!operator) return err('用户不存在')
+  if (operator.role !== 'salesperson') return err('仅代理商可赠送卡券')
+
+  const customerMap = new Map()
+  const relatedIds = Array.isArray(operator.customers)
+    ? operator.customers.map(id => String(id || '').trim()).filter(Boolean)
+    : []
+
+  if (relatedIds.length > 0) {
+    const { data } = await db.collection('users')
+      .where({
+        _id: _.in(relatedIds.slice(0, 100)),
+        role: 'customer',
+        customerType: 'institution',
+      })
+      .limit(100)
+      .get()
+    for (const customer of (data || [])) customerMap.set(customer._id, customer)
+  }
+
+  const { data: boundCustomers } = await db.collection('users')
+    .where({
+      role: 'customer',
+      customerType: 'institution',
+      boundSalespersonId: operator._id,
+    })
+    .orderBy('createdAt', 'desc')
+    .limit(100)
+    .get()
+  for (const customer of (boundCustomers || [])) customerMap.set(customer._id, customer)
+
+  const customers = Array.from(customerMap.values()).map(customer => ({
+    id: customer._id,
+    name: customer.nickname || customer.name || customer.phone || '未命名客户',
+    phone: customer.phone || '',
+    verified: customer.verificationStatus === 'approved',
+  }))
+
+  return { success: true, customers }
+}
+
+async function listAvailableCards() {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid, 'salesperson')
+  if (!user) return err('用户不存在')
+  if (user.role !== 'salesperson') return err('仅代理商可购买卡券')
+
+  const { data } = await db.collection('card_vouchers')
+    .where({ status: 'ungifted' })
+    .orderBy('createdAt', 'desc')
+    .limit(100)
+    .get()
+  const cards = []
+  for (const card of (data || [])) {
+    if (card.purchaserId || card.currentHolderId) continue
+    if (!card.purchaseOrderId) {
+      cards.push(card)
+      continue
+    }
+    const order = await getOrder(card.purchaseOrderId)
+    if (!order || order.status === 'cancelled') {
+      await db.collection('card_vouchers').doc(card._id).update({
+        data: { purchaseOrderId: '', purchaseOrderNo: '', updatedAt: formatDateTime(new Date()) },
+      })
+      cards.push({ ...card, purchaseOrderId: '', purchaseOrderNo: '' })
+      continue
+    }
+    if (order.customerId === user._id && order.status === 'pending_payment' && order.payment?.status !== 'paid') {
+      cards.push({ ...card, pendingOrderId: order._id })
+    }
+  }
+  return { success: true, cards: cards.map(normalizeCard) }
+}
+
+async function purchaseCard(event, now) {
+  const { cardId } = event
+  if (!cardId) return err('缺少卡券 ID')
+
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid, 'salesperson')
+  if (!user) return err('用户不存在')
+  if (user.role !== 'salesperson') return err('仅代理商可购买卡券')
+
+  const card = await getCard(cardId)
+  if (!card) return err('卡券不存在')
+  if (card.status !== 'ungifted' || card.purchaserId || card.currentHolderId) {
+    return err('该卡券已被购买或不可购买')
+  }
+  if (card.purchaseOrderId) {
+    const existingOrder = await getOrder(card.purchaseOrderId)
+    if (existingOrder && existingOrder.customerId === user._id && existingOrder.status === 'pending_payment' && existingOrder.payment?.status !== 'paid') {
+      return { success: true, cardId, orderId: existingOrder._id, orderNo: existingOrder.orderNo }
+    }
+    if (existingOrder && existingOrder.status !== 'cancelled') {
+      return err('该卡券已被锁定，请刷新后重试')
+    }
+  }
+
+  const amount = getCardPurchaseAmount(card)
+  if (amount <= 0) return err('卡券金额异常，无法购买')
+  const order = {
+    orderNo: `CVP${Date.now()}`,
+    type: 'card_order',
+    status: 'pending_payment',
+    customerId: user._id,
+    customerName: user.nickname || user.realName || user.phone || '代理商',
+    customerOpenid: openid,
+    salespersonId: user._id,
+    clerkId: null,
+    items: [{
+      productId: card._id,
+      productName: card.productName || '卡券',
+      productImage: card.productImage || '',
+      spec: card.cardNo || '',
+      quantity: 1,
+      unitPrice: amount,
+      totalPrice: amount,
+    }],
+    pricing: {
+      originalAmount: amount,
+      actualAmount: amount,
+      priceLog: [],
+      shippingFee: 0,
+      urgentFee: 0,
+      pointsDeduction: 0,
+      refundedAmount: 0,
+    },
+    payment: {
+      status: 'unpaid',
+      method: '',
+      paidAt: '',
+      transactionId: '',
+    },
+    shipping: { address: { address: '卡券虚拟发货', name: '', phone: '' }, trackingNo: null, company: null, logistics: [] },
+    commission: { status: 'none', amount: 0, settledAt: null },
+    cardVoucherId: card._id,
+    returnRecordId: null,
+    remark: `代理商购买卡券 ${card.cardNo}`,
+    pendingPaymentAt: now,
+    createdAt: now,
+    updatedAt: now,
+  }
+  const { _id: orderId } = await db.collection('orders').add({ data: order })
+
+  const updateRes = await db.collection('card_vouchers').where({
+    _id: cardId,
+    status: 'ungifted',
+    purchaserId: '',
+  }).update({
+    data: {
+      purchaseOrderId: orderId,
+      purchaseOrderNo: order.orderNo,
+      updatedAt: now,
+    },
+  })
+  if (!updateRes.stats || updateRes.stats.updated < 1) {
+    await db.collection('orders').doc(orderId).remove()
+    return err('该卡券已被购买，请刷新后重试')
+  }
+
+  await writeLog('create_card_purchase_order', user._id, `代理商创建卡券采购订单 ${card.cardNo}`)
+  return { success: true, cardId, orderId, orderNo: order.orderNo }
 }
 
 async function getMyCard(event, now) {
@@ -148,14 +392,172 @@ async function createShareCode(event) {
   }
 }
 
+async function createBloodInviteCode(event, now) {
+  const { inviteId } = event
+  if (!inviteId) return err('缺少预约邀请 ID')
+
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid, 'institution')
+  if (!user) return err('用户不存在')
+  if (user.role !== 'customer' || user.customerType !== 'institution') return err('仅医院客户可生成预约二维码')
+
+  const { data: invite } = await db.collection('blood_booking_invites').doc(inviteId).get()
+  if (!invite || invite.hospitalId !== user._id) return err('预约邀请不存在或无权限')
+
+  const codeRes = await cloud.openapi.wxacode.getUnlimited({
+    scene: inviteId,
+    page: 'pages/blood/booking/booking',
+    checkPath: false,
+    envVersion: 'trial',
+  })
+  const buffer = codeRes.buffer || codeRes
+  const cloudPath = `blood-booking-invites/${inviteId}.png`
+  const uploadRes = await cloud.uploadFile({
+    cloudPath,
+    fileContent: buffer,
+  })
+  await db.collection('blood_booking_invites').doc(inviteId).update({
+    data: {
+      qrcodeFileId: uploadRes.fileID,
+      updatedAt: now,
+    },
+  })
+  return {
+    success: true,
+    fileID: uploadRes.fileID,
+    path: `/pages/blood/booking/booking?scene=${encodeURIComponent(inviteId)}`,
+  }
+}
+
+function buildReferralCode(user) {
+  const raw = String(user.referralCode || '').trim()
+  if (raw) return raw
+  const suffix = String(user._id || '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(-8)
+    .toUpperCase()
+    .padStart(6, '0')
+  return `DXY${suffix}`
+}
+
+async function createAgentPromoCode(event, now) {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid, 'salesperson')
+  if (!user) return err('用户不存在')
+  if (user.role !== 'salesperson') return err('仅代理商可生成推广二维码')
+
+  const referralCode = buildReferralCode(user)
+  if (!user.referralCode) {
+    await db.collection('users').doc(user._id).update({
+      data: {
+        referralCode,
+        updatedAt: now,
+      },
+    })
+  }
+
+  const codeRes = await cloud.openapi.wxacode.getUnlimited({
+    scene: referralCode,
+    page: 'pages/register/register',
+    checkPath: false,
+    envVersion: 'trial',
+  })
+  const buffer = codeRes.buffer || codeRes
+  const cloudPath = `agent-promo-codes/${user._id}.png`
+  const uploadRes = await cloud.uploadFile({
+    cloudPath,
+    fileContent: buffer,
+  })
+  return {
+    success: true,
+    fileID: uploadRes.fileID,
+    referralCode,
+    path: `/pages/register/register?referralCode=${encodeURIComponent(referralCode)}`,
+  }
+}
+
+async function recordAgentPromoVisit(event, now) {
+  const referralCode = String(event.referralCode || '').trim()
+  if (!referralCode) return { success: true }
+
+  const { data: agents } = await db.collection('users').where({
+    referralCode,
+    role: 'salesperson',
+  }).limit(1).get()
+  const agent = agents && agents[0]
+  if (!agent) return err('推广码无效')
+
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID || ''
+  const visitKey = `${agent._id}_${openid || String(event.sessionId || '') || Date.now()}`
+  const { data: existing } = await db.collection('agent_promo_visits').where({ visitKey }).limit(1).get().catch(() => ({ data: [] }))
+  if (existing && existing.length) {
+    await db.collection('agent_promo_visits').doc(existing[0]._id).update({
+      data: {
+        lastVisitedAt: now,
+        visitCount: _.inc(1),
+      },
+    })
+    return { success: true }
+  }
+  await db.collection('agent_promo_visits').add({
+    data: {
+      visitKey,
+      salespersonId: agent._id,
+      referralCode,
+      openid,
+      visitCount: 1,
+      createdAt: now,
+      lastVisitedAt: now,
+    },
+  })
+  return { success: true }
+}
+
+async function getAgentPromoStats(event) {
+  const wxContext = cloud.getWXContext()
+  const openid = wxContext.OPENID
+  const user = await getUserByOpenid(openid, 'salesperson')
+  if (!user) return err('用户不存在')
+  if (user.role !== 'salesperson') return err('仅代理商可查看推广数据')
+
+  const [visitsRes, referredRes, boundRes, ordersRes] = await Promise.all([
+    db.collection('agent_promo_visits').where({ salespersonId: user._id }).limit(1000).get().catch(() => ({ data: [] })),
+    db.collection('users').where({ referredBy: user._id, role: 'customer' }).limit(1000).get(),
+    db.collection('users').where({ boundSalespersonId: user._id, role: 'customer' }).limit(1000).get(),
+    db.collection('orders').where({ salespersonId: user._id }).limit(1000).get(),
+  ])
+
+  const customerIds = new Set()
+  for (const customer of [...(referredRes.data || []), ...(boundRes.data || [])]) {
+    customerIds.add(customer._id)
+  }
+  const orderCustomerIds = new Set()
+  for (const order of (ordersRes.data || [])) {
+    if (order.customerId) orderCustomerIds.add(order.customerId)
+  }
+
+  return {
+    success: true,
+    stats: {
+      scanVisits: (visitsRes.data || []).length,
+      registeredCustomers: customerIds.size,
+      orderedCustomers: orderCustomerIds.size,
+    },
+  }
+}
+
 async function claimSharedCard(event, now) {
   const { cardId } = event
   if (!cardId) return err('缺少卡券 ID')
 
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  const user = await getUserByOpenid(openid)
+  const user = await getUserByOpenid(openid, 'institution')
   if (!user) return err('请先登录或注册小程序')
+  if (user.role !== 'customer' || user.customerType !== 'institution') return err('仅医院客户可认领卡券')
 
   const card = await getCard(cardId)
   if (!card) return err('卡券不存在')
@@ -197,7 +599,7 @@ async function giftCard(event, now) {
 
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  const operator = await getUserByOpenid(openid)
+  const operator = await getUserByOpenid(openid, 'salesperson')
   if (!operator) return err('用户不存在')
   if (operator.role !== 'salesperson') return err('仅代理商可赠送卡券')
 
@@ -252,7 +654,7 @@ async function claimCard(event, now) {
 
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  const user = await getUserByOpenid(openid)
+  const user = await getUserByOpenid(openid, 'institution')
   if (!user) return err('用户不存在')
 
   const card = await getCard(cardId)
@@ -278,7 +680,7 @@ async function regiftCard(event, now) {
 
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  const user = await getUserByOpenid(openid)
+  const user = await getUserByOpenid(openid, 'institution')
   if (!user) return err('用户不存在')
 
   const card = await getCard(cardId)
@@ -322,7 +724,7 @@ async function redeemCard(event, now) {
 
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  const user = await getUserByOpenid(openid)
+  const user = await getUserByOpenid(openid, 'institution')
   if (!user) return err('用户不存在')
 
   // 必须是认证机构
@@ -470,8 +872,16 @@ exports.main = async (event) => {
 
   switch (event.action) {
     case 'listMine': return listMyCards(event, now)
+    case 'listAgent': return listAgentCards(event, now)
+    case 'listGiftTargets': return listGiftTargets()
+    case 'listAvailable': return listAvailableCards(event, now)
+    case 'purchase': return purchaseCard(event, now)
     case 'get':      return getMyCard(event, now)
     case 'shareCode': return createShareCode(event, now)
+    case 'bloodInviteCode': return createBloodInviteCode(event, now)
+    case 'agentPromoCode': return createAgentPromoCode(event, now)
+    case 'recordAgentPromoVisit': return recordAgentPromoVisit(event, now)
+    case 'agentPromoStats': return getAgentPromoStats(event, now)
     case 'claimShared': return claimSharedCard(event, now)
     case 'gift':    return giftCard(event, now)
     case 'claim':   return claimCard(event, now)

@@ -195,3 +195,51 @@
   color: #ffffff;
   background: #ff7a1a;
 }
+
+/* 首页风格统一覆盖 */
+.page {
+  padding: 34rpx 28rpx calc(40rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 46%, #ffffff 100%);
+}
+
+.status-card,
+.info-card,
+.timeline {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.status-icon {
+  border-radius: 30rpx;
+}
+
+.approved .status-icon,
+.step.active::before {
+  background: #176f56;
+}
+
+.status-desc,
+.info-label {
+  color: #68776f;
+}
+
+.id-card-image {
+  border-radius: 18rpx;
+  background: #f3faf6;
+}
+
+.ghost-btn,
+.primary-btn {
+  border-radius: 999rpx;
+}
+
+.ghost-btn {
+  color: #176f56;
+  border-color: #cfe8dc;
+}
+
+.primary-btn {
+  background: #176f56;
+}

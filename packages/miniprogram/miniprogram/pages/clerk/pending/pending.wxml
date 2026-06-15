@@ -16,7 +16,7 @@
 
   <view class="search-row">
     <text class="search-icon">⌕</text>
-    <input class="search-input" placeholder="搜索订单号 / 医院名称 / 客户名称" />
+    <input class="search-input" placeholder="搜索订单号 / 商品名称" />
     <text class="filter">筛选</text>
   </view>
 
@@ -43,9 +43,9 @@
 
       <view class="hospital-row">
         <text class="pin">●</text>
-        <text class="hospital">{{item.customerName}}</text>
+        <text class="hospital">客户信息已隐藏</text>
       </view>
-      <text class="address">{{item.address}}</text>
+      <text class="address">请按商品清单完成备货，配送信息由系统保存。</text>
       <text wx:if="{{item.bookingTime}}" class="booking-time">预约时间　{{item.bookingTime}}</text>
 
       <view wx:for="{{item.items}}" wx:for-item="prod" wx:key="name" class="product-row">

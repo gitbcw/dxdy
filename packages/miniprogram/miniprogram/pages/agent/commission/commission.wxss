@@ -199,3 +199,82 @@
 .record-amount.negative {
   color: #DC3545;
 }
+
+/* 首页风格统一覆盖 */
+.commission-page {
+  padding: 34rpx 28rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 48%, #ffffff 100%);
+}
+
+.page-header,
+.summary-card,
+.empty-records,
+.record-item {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.page-header {
+  margin-bottom: 22rpx;
+  padding: 34rpx 30rpx;
+  background: linear-gradient(135deg, rgba(226, 248, 237, 0.98) 0%, rgba(255, 255, 255, 0.98) 62%, rgba(255, 245, 229, 0.98) 100%);
+}
+
+.page-title {
+  color: #10291f;
+}
+
+.page-subtitle,
+.summary-label,
+.record-desc,
+.record-date,
+.empty-text,
+.withdraw-hint {
+  color: #68776f;
+}
+
+.summary-grid {
+  gap: 18rpx;
+  margin-bottom: 28rpx;
+}
+
+.summary-card,
+.summary-card.green,
+.summary-card.blue,
+.summary-card.orange {
+  border-color: #edf3ef;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.summary-value,
+.summary-card.orange .summary-value,
+.record-amount.positive {
+  color: #176f56;
+}
+
+.section-header {
+  margin-bottom: 18rpx;
+}
+
+.section-title,
+.record-source {
+  color: #10291f;
+  font-weight: 900;
+}
+
+.record-item {
+  margin-bottom: 18rpx;
+}
+
+.btn-withdraw {
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #f1a24a 0%, #dc6a2c 100%);
+  box-shadow: 0 16rpx 32rpx rgba(216, 91, 61, 0.18);
+}
+
+.btn-withdraw.btn-disabled {
+  color: #9aa7a0;
+  background: #eef3f0;
+}

@@ -50,18 +50,6 @@
           </view>
         </view>
 
-        <!-- 客户信息 -->
-        <view class="order-customer">
-          <view class="customer-row">
-            <text class="customer-label">客户姓名</text>
-            <text class="customer-value">{{item.customerName}}</text>
-          </view>
-          <view class="customer-row">
-            <text class="customer-label">联系电话</text>
-            <text class="customer-value">{{item.customerPhone}}</text>
-          </view>
-        </view>
-
         <!-- 快递信息（仅已发货订单显示） -->
         <view wx:if="{{item.status === 'shipped' && item.expressCompany}}" class="express-info">
           <block wx:if="{{item.deliveryMode === 'direct'}}">

@@ -23,7 +23,13 @@ Page({
       this.setStatus('none', {})
       return
     }
-    const result = await getAgentApplication(user.id)
+    const result = await getAgentApplication()
+    if (result?.user) {
+      app.globalData.userInfo = result.user
+      app.globalData.userRole = app.resolveRole?.(result.user) || app.globalData.userRole
+      wx.setStorageSync('current_user', JSON.stringify(result.user))
+      wx.setStorageSync('user_role', app.globalData.userRole)
+    }
     const status = result?.status || 'none'
     this.setStatus(status, result?.info || {})
   },

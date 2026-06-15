@@ -33,7 +33,7 @@
     </view>
     <view wx:for="{{records}}" wx:key="id" class="record-item">
       <view class="record-left">
-        <text class="record-source">{{item.sourceLabel}}</text>
+        <text class="record-source">{{item.sourceLabel}} · {{item.statusLabel}}</text>
         <text class="record-desc">{{item.description}}</text>
         <text class="record-date">{{item.createdAt}}</text>
       </view>

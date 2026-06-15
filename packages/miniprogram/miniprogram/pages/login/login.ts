@@ -1,10 +1,6 @@
-const { loginByPhone, bindCustomerPhone, GENERATED_ASSETS } = require('../../services/index')
+const { loginByPhone, bindCustomerPhone, GENERATED_ASSETS, manageCardVoucher } = require('../../services/index')
 const tracking = require('../../services/tracking')
 const icons = require('../../services/icons')
-
-function isDemoLoginEnabled() {
-  return true
-}
 
 Page({
   data: {
@@ -12,25 +8,19 @@ Page({
     phone: '',
     password: '',
     loginHeroImage: GENERATED_ASSETS.loginHero,
+    loginBackgroundImage: GENERATED_ASSETS.loginFullscreen,
+    brandLogo: '/assets/brand/dxiong-logo-transparent.png',
     phoneIcon: icons.phone,
     shieldIcon: icons.shield,
     wechatIcon: icons.service,
     logoIcon: icons.hospital,
     referralCode: '',
     redirect: '',
-    demoLoginEnabled: false,
-    showDemoAccounts: false,
-    demoAccounts: [
-      { label: '普通客户', phone: '13888002233' },
-      { label: '宠物医院', phone: '13821003456' },
-      { label: '代理商', phone: '13811001234' },
-      { label: '制单员', phone: '13833007890' },
-    ],
+    bloodInvite: '',
   },
 
   onLoad(options: Record<string, string | undefined> = {}) {
-    const demoLoginEnabled = isDemoLoginEnabled()
-    this.setData({ demoLoginEnabled, checkingSession: false })
+    this.setData({ checkingSession: false })
 
     const app = getApp()
     const cachedUser = app.globalData.userInfo
@@ -44,20 +34,16 @@ Page({
     if (options.referralCode) {
       this.setData({ referralCode: options.referralCode })
       app.ensureOpenidUser?.({ referralCode: options.referralCode })
+      manageCardVoucher({ action: 'recordAgentPromoVisit', referralCode: options.referralCode }).catch(() => null)
     }
 
     if (options.redirect) {
       this.setData({ redirect: decodeURIComponent(options.redirect) })
     }
-
-    const demoPhone = options.demoPhone || ''
-    if (!demoLoginEnabled || !/^1\d{10}$/.test(demoPhone)) return
-
-    this.setData({ phone: demoPhone, password: '123456' })
-
-    if (options.autoLogin === '1' || options.autoLogin === 'true') {
-      this.loginWithPhone(demoPhone, '123456', { redirectHome: true, silent: true, demo: true })
+    if (options.bloodInvite) {
+      this.setData({ bloodInvite: options.bloodInvite })
     }
+
   },
 
   onPhoneInput(e: any) {
@@ -68,24 +54,21 @@ Page({
     this.setData({ password: e.detail.value })
   },
 
-  toggleDemoAccounts() {
-    if (!this.data.demoLoginEnabled) return
-    this.setData({ showDemoAccounts: !this.data.showDemoAccounts })
-  },
-
-  useDemoAccount(e: any) {
-    if (!this.data.demoLoginEnabled) return
-    const phone = e.currentTarget.dataset.phone
-    const password = '123456'
-    this.setData({ phone, password })
-    this.loginWithPhone(phone, password, { redirectHome: true, demo: true })
-  },
+  noop() {},
 
   inferRole(user: any) {
     if (user?.role === 'salesperson') return 'salesperson'
     if (user?.role === 'clerk') return 'clerk'
-    if (user?.customerType === 'institution') return 'customer_institution'
-    return 'customer_personal'
+    if (user?.role === 'customer') return user.customerType === 'personal' ? 'customer_personal' : 'customer_institution'
+    return user?.role || ''
+  },
+
+  onRegisterTap() {
+    const params: string[] = []
+    if (this.data.referralCode) params.push(`referralCode=${encodeURIComponent(this.data.referralCode)}`)
+    if (this.data.redirect) params.push(`redirect=${encodeURIComponent(this.data.redirect)}`)
+    if (this.data.bloodInvite) params.push(`bloodInvite=${encodeURIComponent(this.data.bloodInvite)}`)
+    wx.navigateTo({ url: `/pages/register/register${params.length ? `?${params.join('&')}` : ''}` })
   },
 
   finishLogin(user: any, title: string, redirectHome = true) {
@@ -111,7 +94,7 @@ Page({
     }, 500)
   },
 
-  async loginWithPhone(phone: string, password: string, options: { redirectHome?: boolean, silent?: boolean, demo?: boolean } = {}) {
+  async loginWithPhone(phone: string, password: string, options: { redirectHome?: boolean, silent?: boolean } = {}) {
     if (!phone || phone.length !== 11) {
       wx.showToast({ title: '请输入正确手机号', icon: 'none' })
       return
@@ -122,7 +105,7 @@ Page({
     }
 
     if (!options.silent) wx.showLoading({ title: '登录中...' })
-    const result = await loginByPhone(phone, { password, demo: options.demo === true })
+    const result = await loginByPhone(phone, { password })
     if (!options.silent) wx.hideLoading()
 
     if (result.success) {

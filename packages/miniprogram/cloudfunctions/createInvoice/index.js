@@ -44,6 +44,7 @@ exports.main = async (event) => {
   if (order.customerOpenid && order.customerOpenid !== openid) return error('只能申请自己的订单发票', 'FORBIDDEN')
   if (!order.customerOpenid && order._openid !== openid) return error('只能申请自己的订单发票', 'FORBIDDEN')
   if (!order.payment || order.payment.status !== 'paid') return error('订单支付后才能申请发票')
+  if (order.type === 'recharge') return error('充值订单无需申请发票', 'INVALID_ORDER_TYPE')
   const paidAmount = order.pricing && typeof order.pricing.actualAmount === 'number' ? order.pricing.actualAmount : 0
   const refundedAmount = order.pricing && typeof order.pricing.refundedAmount === 'number' ? order.pricing.refundedAmount : 0
   const invoiceAmount = Math.max(0, Math.round((paidAmount - refundedAmount) * 100) / 100)

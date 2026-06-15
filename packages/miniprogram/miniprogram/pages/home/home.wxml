@@ -49,7 +49,7 @@
     <view wx:if="{{banner.actionText}}" class="cert-action">{{banner.actionText}}</view>
   </view>
 
-  <view class="quick-grid">
+  <view wx:if="{{quickActions.length > 0}}" class="quick-grid role-{{currentRole}}">
     <view
       wx:for="{{quickActions}}"
       wx:key="title"
@@ -58,11 +58,14 @@
       bindtap="onQuickActionTap"
     >
       <image class="quick-icon" src="{{item.iconSrc}}" mode="aspectFit" />
-      <text class="quick-title">{{item.title}}</text>
+      <view class="quick-copy">
+        <text class="quick-title">{{item.title}}</text>
+        <text wx:if="{{item.desc}}" class="quick-desc">{{item.desc}}</text>
+      </view>
     </view>
   </view>
 
-  <view wx:if="{{taskCards.length > 0 && currentRole !== 'customer_personal' && currentRole !== 'customer_institution'}}" class="section">
+  <view wx:if="{{taskCards.length > 0 && currentRole !== 'customer_institution' && currentRole !== 'customer_personal'}}" class="section">
     <view wx:if="{{currentRole !== 'salesperson'}}" class="section-head">
       <text class="section-title">待办提醒</text>
       <text class="section-more">及时处理</text>
@@ -101,10 +104,10 @@
           <text wx:else>{{item.badge}}</text>
         </view>
         <text class="product-name">{{item.title}}</text>
-        <text class="product-spec">{{item.desc}}</text>
+        <text wx:if="{{item.desc}}" class="product-spec">{{item.desc}}</text>
         <view class="product-bottom">
           <text class="product-price">{{item.meta}}</text>
-          <view wx:if="{{item.type === 'product'}}" class="cart-btn" data-idx="{{index}}" catchtap="onBoardCartTap">＋</view>
+          <view wx:if="{{item.type === 'product'}}" class="cart-btn" data-idx="{{index}}" catchtap="onBoardCartTap">+</view>
           <text wx:elif="{{item.actionText}}" class="board-action">{{item.actionText}}</text>
         </view>
       </view>
@@ -126,6 +129,11 @@
         <text class="queue-action">{{item.actionText}}</text>
       </view>
     </view>
+  </view>
+
+  <view class="home-footer">
+    <text class="footer-company">大熊动医华南医学检验实验室(广州)有限公司</text>
+    <text class="footer-icp">粤ICP备2026066284</text>
   </view>
 
   <product-action-sheet

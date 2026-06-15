@@ -1,8 +1,8 @@
 .page {
   min-height: 100vh;
-  padding: 24rpx;
-  padding-bottom: calc(26rpx + env(safe-area-inset-bottom) + 112rpx);
-  background: #f7f8f7;
+  padding: 28rpx;
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom) + 112rpx);
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 42%, #ffffff 100%);
   box-sizing: border-box;
 }
 
@@ -15,42 +15,43 @@
 .address-card,
 .form-panel {
   padding: 24rpx;
-  border-radius: 16rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+  border: 1rpx solid #edf1ee;
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
 }
 
 .address-card.is-default {
-  border-top: 6rpx solid #18a44a;
+  border-top: 8rpx solid #176f56;
 }
 
 .address-info {
   display: flex;
   align-items: center;
-  gap: 14rpx;
   flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.default-badge,
+.select-badge {
+  padding: 5rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 900;
 }
 
 .default-badge {
-  padding: 4rpx 12rpx;
-  border-radius: 6rpx;
   color: #ffffff;
-  background: #18a44a;
-  font-size: 20rpx;
-  font-weight: 900;
+  background: #176f56;
 }
 
 .select-badge {
-  padding: 4rpx 12rpx;
-  border-radius: 6rpx;
-  color: #ff5a00;
-  background: #fff2e8;
-  font-size: 20rpx;
-  font-weight: 900;
+  color: #d85b3d;
+  background: #fff7ed;
 }
 
 .address-name {
-  color: #17201b;
+  color: #17231f;
   font-size: 30rpx;
   font-weight: 900;
 }
@@ -73,27 +74,28 @@
 }
 
 .hospital {
-  color: #18a44a;
+  color: #176f56;
   font-weight: 800;
 }
 
 .address-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 28rpx;
+  flex-wrap: wrap;
+  gap: 22rpx;
   margin-top: 20rpx;
   padding-top: 18rpx;
-  border-top: 1rpx solid #edf0ee;
+  border-top: 1rpx solid #edf1ee;
 }
 
 .action-text {
-  color: #18a44a;
+  color: #176f56;
   font-size: 24rpx;
   font-weight: 800;
 }
 
 .danger {
-  color: #ff5a1f;
+  color: #d85b3d;
 }
 
 .empty-state {
@@ -108,8 +110,8 @@
   width: 92rpx;
   height: 92rpx;
   border-radius: 50%;
-  color: #18a44a;
-  background: #eaf8ee;
+  color: #176f56;
+  background: #eef8f3;
   font-size: 24rpx;
   font-weight: 900;
 }
@@ -121,34 +123,44 @@
 
 .empty-text {
   margin-top: 24rpx;
-  color: #17201b;
+  color: #17231f;
   font-size: 30rpx;
   font-weight: 900;
 }
 
 .empty-hint {
   margin-top: 8rpx;
-  color: #8b9590;
+  color: #97a39d;
   font-size: 24rpx;
 }
 
 .bottom-btn {
   position: fixed;
-  left: 24rpx;
   right: 24rpx;
   bottom: calc(24rpx + env(safe-area-inset-bottom));
+  left: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 86rpx;
+  border-radius: 20rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+  background: #176f56;
+  box-shadow: 0 14rpx 34rpx rgba(32, 98, 76, 0.18);
 }
 
 .field-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 86rpx;
-  border-bottom: 1rpx solid #edf0ee;
+  min-height: 88rpx;
+  border-bottom: 1rpx solid #edf1ee;
 }
 
 .field-row text {
-  color: #17201b;
+  color: #17231f;
   font-size: 26rpx;
   font-weight: 800;
 }
@@ -156,7 +168,7 @@
 .field-row input {
   flex: 1;
   min-width: 0;
-  color: #17201b;
+  color: #17231f;
   font-size: 26rpx;
   text-align: right;
 }
@@ -167,13 +179,13 @@
 }
 
 .picker-value {
-  color: #17201b;
+  color: #17231f;
   font-size: 26rpx;
   text-align: right;
 }
 
 .picker-value.placeholder {
-  color: #9aa39e;
+  color: #97a39d;
 }
 
 .switch-row {
@@ -189,16 +201,22 @@
 
 .outline-btn,
 .save-btn {
-  height: 78rpx;
-  line-height: 78rpx;
-  border-radius: 12rpx;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  border-radius: 18rpx;
   font-size: 27rpx;
   font-weight: 900;
 }
 
 .outline-btn {
-  color: #18a44a;
-  border: 1rpx solid #9bddb0;
+  color: #176f56;
+  border: 1rpx solid #cfe8dc;
   background: #ffffff;
+}
+
+.save-btn {
+  color: #ffffff;
+  background: #176f56;
 }

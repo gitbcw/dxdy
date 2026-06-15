@@ -14,28 +14,23 @@
 
   <view class="qrcode-card">
     <text class="card-title">我的专属推广码</text>
-    <image class="qrcode-img" src="{{qrcodeUrl}}" mode="aspectFit" />
+    <image wx:if="{{qrcodeUrl}}" class="qrcode-img" src="{{qrcodeUrl}}" mode="aspectFit" />
+    <view wx:else class="qrcode-img qrcode-loading">{{loading ? '二维码生成中' : '二维码暂不可用'}}</view>
     <text class="qrcode-hint">扫描二维码，客户即可成为我的推广关系</text>
     <view class="stats-row">
       <view class="stat">
         <text class="stat-label">扫码访问</text>
-        <text class="stat-value">1,256</text>
+        <text class="stat-value">{{stats.scanVisits}}</text>
       </view>
       <view class="stat">
         <text class="stat-label">注册客户</text>
-        <text class="stat-value">236</text>
+        <text class="stat-value">{{stats.registeredCustomers}}</text>
       </view>
       <view class="stat">
         <text class="stat-label">下单客户</text>
-        <text class="stat-value">68</text>
+        <text class="stat-value">{{stats.orderedCustomers}}</text>
       </view>
     </view>
-  </view>
-
-  <view class="link-card">
-    <text class="link-label">推广链接</text>
-    <text class="link-text">{{promoLink}}</text>
-    <text class="copy-btn">复制</text>
   </view>
 
   <view class="bottom-actions">

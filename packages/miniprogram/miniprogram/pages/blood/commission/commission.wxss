@@ -1,0 +1,137 @@
+.page {
+  min-height: 100vh;
+  padding: 28rpx 22rpx 56rpx;
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 42%, #ffffff 100%);
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 28rpx;
+  border: 1rpx solid #dceee7;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18rpx 44rpx rgba(32, 98, 76, 0.12);
+}
+
+.title {
+  display: block;
+  color: #17231f;
+  font-size: 38rpx;
+  font-weight: 900;
+}
+
+.desc {
+  display: block;
+  margin-top: 10rpx;
+  color: #7d8782;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  margin-top: 20rpx;
+}
+
+.summary-card {
+  padding: 22rpx 16rpx;
+  border: 1rpx solid #edf1ee;
+  border-radius: 20rpx;
+  background: #fbfefd;
+}
+
+.summary-label,
+.summary-value,
+.meta {
+  display: block;
+}
+
+.summary-label {
+  color: #7d8782;
+  font-size: 21rpx;
+}
+
+.summary-value {
+  margin-top: 8rpx;
+  color: #176f56;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.summary-value.muted {
+  color: #97a39d;
+}
+
+.empty-card,
+.record-card {
+  margin-top: 24rpx;
+  padding: 28rpx;
+  border: 1rpx solid #edf1ee;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.empty-card {
+  color: #97a39d;
+  font-size: 26rpx;
+  text-align: center;
+}
+
+.list {
+  margin-top: 8rpx;
+}
+
+.record-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.order-no {
+  color: #17231f;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.status {
+  flex-shrink: 0;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  color: #176f56;
+  font-size: 21rpx;
+  font-weight: 800;
+  background: #eef8f3;
+}
+
+.status.cancelled {
+  color: #97a39d;
+  background: #f3f5f4;
+}
+
+.amount-row {
+  margin-top: 18rpx;
+}
+
+.amount {
+  display: block;
+  color: #d85b3d;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.formula {
+  display: block;
+  margin-top: 6rpx;
+  color: #7d8782;
+  font-size: 22rpx;
+}
+
+.meta {
+  margin-top: 8rpx;
+  color: #97a39d;
+  font-size: 22rpx;
+}

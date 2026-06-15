@@ -28,6 +28,15 @@ function error(message, code = 'BAD_REQUEST') {
 }
 
 async function getCurrentUser(openid, userId) {
+  if (userId) {
+    try {
+      const { data } = await db.collection('users').doc(userId).get()
+      if (data && (!openid || data._openid === openid || data.boundOpenid === openid || !data._openid && !data.boundOpenid)) return data
+    } catch (e) {
+      // fall through to openid lookup
+    }
+  }
+
   if (openid) {
     const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
     if (data && data.length) return data[0]
@@ -36,13 +45,7 @@ async function getCurrentUser(openid, userId) {
     if (boundUsers && boundUsers.length) return boundUsers[0]
   }
 
-  if (!userId) return null
-  try {
-    const { data } = await db.collection('users').doc(userId).get()
-    return data || null
-  } catch (e) {
-    return null
-  }
+  return null
 }
 
 function canManageAddress(operator, customerId) {
@@ -62,7 +65,7 @@ async function getCustomer(customerId) {
 
 exports.main = async (event = {}) => {
   const action = String(event.action || '').trim()
-  if (!['saveAddress', 'deleteAddress'].includes(action)) return error('Invalid action')
+  if (!['saveAddress', 'deleteAddress', 'savePickupAddress', 'deletePickupAddress'].includes(action)) return error('Invalid action')
 
   const customerId = String(event.customerId || '').trim()
   if (!customerId) return error('Missing customer ID')
@@ -75,9 +78,11 @@ exports.main = async (event = {}) => {
   if (!customer) return error('Customer not found', 'NOT_FOUND')
 
   const now = formatDateTime(new Date())
-  let addresses = Array.isArray(customer.addresses) ? customer.addresses : []
+  const isPickupAddress = action === 'savePickupAddress' || action === 'deletePickupAddress'
+  const fieldName = isPickupAddress ? 'pickupAddresses' : 'addresses'
+  let addresses = Array.isArray(customer[fieldName]) ? customer[fieldName] : []
 
-  if (action === 'deleteAddress') {
+  if (action === 'deleteAddress' || action === 'deletePickupAddress') {
     const addressId = String(event.addressId || '').trim()
     if (!addressId) return error('Missing address ID')
     addresses = addresses.filter((address) => address.id !== addressId)
@@ -110,7 +115,7 @@ exports.main = async (event = {}) => {
   }
 
   await db.collection('users').doc(customerId).update({
-    data: { addresses, updatedAt: now },
+    data: { [fieldName]: addresses, updatedAt: now },
   })
 
   const updated = await getCustomer(customerId)

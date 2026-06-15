@@ -72,8 +72,8 @@ Page({
     addressText: '',
     addressName: '请选择收货人',
     addressPhone: '',
-    customerTypeLabel: '普通客户',
-    priceLabel: '零售价',
+    customerTypeLabel: '宠物医院客户',
+    priceLabel: '机构价',
     canBooking: false,
     isBloodProduct: false,
     isCardVoucher: false,
@@ -103,7 +103,6 @@ Page({
     if (!requireBoundPhone(user)) return
     this._loaded = true
 
-    const isInstitution = user.customerType === 'institution'
     const selectedAddressId = wx.getStorageSync(SELECTED_ADDRESS_KEY) as string
     const addresses = user.addresses || []
     const preferredAddressIndex = addresses.findIndex((item: any) => item.id === selectedAddressId)
@@ -123,8 +122,8 @@ Page({
       addressText,
       addressName: currentAddress?.name || '请选择收货人',
       addressPhone: currentAddress?.phone || '',
-      customerTypeLabel: isInstitution ? '宠物医院客户' : '普通客户',
-      priceLabel: isInstitution ? '机构价' : '零售价',
+      customerTypeLabel: '宠物医院客户',
+      priceLabel: '机构价',
     }
 
     if (options.fromCart === '1') {
@@ -134,7 +133,7 @@ Page({
       this._cartRaw = items
 
       const displayItems = items.map((item: any) => {
-        const price = item.unitPrice ?? getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
+        const price = item.unitPrice ?? getEffectivePrice(item, user)
         return {
           ...item,
           unitPrice: price,
@@ -144,7 +143,7 @@ Page({
         }
       })
       const total = items.reduce((s: number, item: any) => {
-        const price = item.unitPrice ?? getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
+        const price = item.unitPrice ?? getEffectivePrice(item, user)
         return s + price * item.quantity
       }, 0)
 
@@ -161,7 +160,7 @@ Page({
       const product = await getProductById(options.productId)
       if (!product) return
 
-      const unitPrice = getEffectivePrice(product, isInstitution ? 'institution' : 'personal')
+      const unitPrice = getEffectivePrice(product, user)
       const canBooking = !!product.isBloodPack
       const isCardVoucher = product.productType === 'card_voucher'
       const orderType = isCardVoucher ? 'card_voucher' : canBooking ? 'booking' : 'normal'
@@ -372,9 +371,8 @@ Page({
     let orderItems: any[]
 
     if (this.data.isFromCart) {
-      const isInstitution = user.customerType === 'institution'
       orderItems = this._cartRaw.map((item: any) => {
-        const price = item.unitPrice ?? getEffectivePrice(item, isInstitution ? 'institution' : 'personal')
+        const price = item.unitPrice ?? getEffectivePrice(item, user)
         return {
           productId: item.productId || item.id || item._id,
           productName: item.name,

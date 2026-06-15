@@ -1,15 +1,17 @@
 .page {
   min-height: 100vh;
-  padding: 24rpx;
-  background: #f7f8f7;
+  padding: 28rpx;
+  padding-bottom: 160rpx;
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 42%, #ffffff 100%);
   box-sizing: border-box;
 }
 
 .card {
   padding: 24rpx;
-  border-radius: 16rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 26rpx rgba(30, 44, 40, 0.06);
+  border: 1rpx solid #edf1ee;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
 }
 
 .row {
@@ -18,11 +20,11 @@
   justify-content: space-between;
   gap: 20rpx;
   min-height: 88rpx;
-  border-bottom: 1rpx solid #edf0ee;
+  border-bottom: 1rpx solid #edf1ee;
 }
 
 .row text:first-child {
-  color: #17201b;
+  color: #17231f;
   font-size: 26rpx;
   font-weight: 900;
 }
@@ -30,7 +32,7 @@
 .row input {
   flex: 1;
   min-width: 0;
-  color: #17201b;
+  color: #17231f;
   font-size: 25rpx;
   text-align: right;
 }
@@ -40,12 +42,12 @@
 }
 
 .order-select {
-  flex: 1;
-  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10rpx;
+  flex: 1;
+  min-width: 0;
 }
 
 .order-select text {
@@ -59,16 +61,16 @@
 }
 
 .order-select .placeholder {
-  color: #a5aaa7;
+  color: #97a39d;
 }
 
 .order-select .selected {
-  color: #17201b;
+  color: #17231f;
 }
 
 .order-select .arrow {
   flex: 0 0 auto;
-  color: #a5aaa7;
+  color: #97a39d;
   font-size: 34rpx;
   font-weight: 700;
 }
@@ -76,8 +78,8 @@
 .selected-order {
   margin: 18rpx 0 8rpx;
   padding: 18rpx 20rpx;
-  border-radius: 12rpx;
-  background: #fff7ed;
+  border-radius: 18rpx;
+  background: #eef8f3;
 }
 
 .selected-title,
@@ -89,20 +91,20 @@
 }
 
 .selected-title {
-  color: #17201b;
+  color: #17231f;
   font-size: 26rpx;
   font-weight: 900;
 }
 
 .selected-no {
   margin-top: 8rpx;
-  color: #7d8580;
+  color: #7d8782;
   font-size: 23rpx;
   font-weight: 700;
 }
 
 .amount {
-  color: #ff5a1f;
+  color: #d85b3d;
   font-size: 28rpx;
   font-weight: 900;
 }
@@ -110,15 +112,24 @@
 .status {
   margin-top: 20rpx;
   padding: 18rpx 20rpx;
-  border-radius: 10rpx;
-  color: #18a44a;
-  background: #ecf8ef;
+  border-radius: 14rpx;
+  color: #176f56;
+  background: #eef8f3;
   font-size: 24rpx;
   font-weight: 800;
 }
 
 .submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 86rpx;
   margin-top: 32rpx;
+  border-radius: 20rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+  background: #176f56;
 }
 
 .submit.disabled {
@@ -134,17 +145,17 @@
 .panel-mask {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.36);
+  background: rgba(18, 31, 26, 0.42);
 }
 
 .panel-card {
   position: absolute;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   max-height: 72vh;
   padding: 28rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
-  border-radius: 24rpx 24rpx 0 0;
+  border-radius: 30rpx 30rpx 0 0;
   background: #ffffff;
   box-sizing: border-box;
 }
@@ -154,24 +165,27 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20rpx;
-  color: #17201b;
+  color: #17231f;
   font-size: 30rpx;
   font-weight: 900;
 }
 
 .panel-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: #f3f4f3;
-  color: #7d8580;
+  background: #f3f5f4;
+  color: #97a39d;
   line-height: 56rpx;
   text-align: center;
 }
 
 .panel-empty {
   padding: 80rpx 0;
-  color: #8a928d;
+  color: #97a39d;
   font-size: 26rpx;
   font-weight: 700;
   text-align: center;
@@ -187,11 +201,11 @@
   justify-content: space-between;
   gap: 20rpx;
   padding: 22rpx 0;
-  border-bottom: 1rpx solid #edf0ee;
+  border-bottom: 1rpx solid #edf1ee;
 }
 
 .order-option.active {
-  background: #fff7ed;
+  background: #eef8f3;
 }
 
 .option-main {
@@ -208,21 +222,21 @@
 }
 
 .option-title {
-  color: #17201b;
+  color: #17231f;
   font-size: 27rpx;
   font-weight: 900;
 }
 
 .option-no {
   margin-top: 8rpx;
-  color: #8a928d;
+  color: #97a39d;
   font-size: 23rpx;
   font-weight: 700;
 }
 
 .option-amount {
   flex: 0 0 auto;
-  color: #ff5a1f;
+  color: #d85b3d;
   font-size: 27rpx;
   font-weight: 900;
 }

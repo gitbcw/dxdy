@@ -38,8 +38,7 @@ function getUnitPrice(product, customer) {
       return Number(product.promotionPrice)
     }
   }
-  const customerType = customer.customerType || 'personal'
-  if (customerType === 'institution') {
+  if (customer.customerType === 'institution' && customer.verificationStatus === 'approved') {
     return Number(product.institutionPrice || product.personalPrice || 0)
   }
   return Number(product.personalPrice || product.institutionPrice || 0)
@@ -51,6 +50,29 @@ function getFirstSpec(product) {
 
 function getFirstImage(product) {
   return Array.isArray(product.images) && product.images[0] ? product.images[0] : product.image || ''
+}
+
+function roundMoney(value) {
+  return Math.round(Number(value || 0) * 100) / 100
+}
+
+function getBloodBookingPrice(systemConfig, species, bloodType, volumeMl) {
+  const rules = systemConfig && systemConfig.bloodBookingConfig && Array.isArray(systemConfig.bloodBookingConfig.priceRules)
+    ? systemConfig.bloodBookingConfig.priceRules
+    : []
+  const rule = rules.find((item) => (
+    item &&
+    item.species === species &&
+    String(item.bloodType || '') === bloodType &&
+    Number(item.volumeMl) === Number(volumeMl)
+  ))
+  const legacyPrice = roundMoney(rule && rule.price)
+  const storePrice = roundMoney((rule && rule.storePrice) || legacyPrice)
+  const retailPrice = roundMoney((rule && rule.retailPrice) || (storePrice > 0 ? storePrice * 2 : 0))
+  return {
+    storePrice: Number.isFinite(storePrice) && storePrice > 0 ? storePrice : 0,
+    retailPrice: Number.isFinite(retailPrice) && retailPrice > 0 ? retailPrice : 0,
+  }
 }
 
 async function getCustomer(customerId, openid) {
@@ -74,14 +96,31 @@ async function getProduct(productId) {
   }
 }
 
-async function buildOrderItems(rawItems, customer) {
+async function getBloodBookingInvite(inviteId) {
+  if (!inviteId) return null
+  try {
+    const { data } = await db.collection('blood_booking_invites').doc(inviteId).get()
+    if (!data || data.status !== 'active') return null
+    const expiresAt = new Date(String(data.expiresAt || '').replace(/-/g, '/'))
+    if (Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) return null
+    return data
+  } catch (_e) {
+    return null
+  }
+}
+
+async function buildOrderItems(rawItems, customer, systemConfig, booking = {}) {
   const items = []
+  let bloodBookingPricing = null
 
   for (const raw of rawItems) {
     const quantity = Math.max(1, Number(raw.quantity || 1))
     if (raw.bookingRequest === true || raw.productType === 'blood_booking') {
-      if (customer.customerType !== 'institution' || customer.verificationStatus !== 'approved') {
-        return { error: '用血预约仅限已认证医院客户提交' }
+      const isInstitutionBooking = customer.customerType === 'institution' && customer.verificationStatus === 'approved'
+      const invite = booking.inviteId ? await getBloodBookingInvite(String(booking.inviteId)) : null
+      const isPersonalInviteBooking = customer.customerType === 'personal' && !!invite
+      if (!isInstitutionBooking && !isPersonalInviteBooking) {
+        return { error: '用血预约仅限已认证医院客户，或个人客户通过医院预约二维码提交' }
       }
       const species = String(raw.species || '').trim()
       const bloodType = String(raw.bloodType || '').trim()
@@ -91,14 +130,27 @@ async function buildOrderItems(rawItems, customer) {
       if (!Number.isFinite(volumeMl) || volumeMl <= 0) return { error: '请输入需要的血量' }
 
       const speciesLabel = species === 'dog' ? '犬血' : '猫血'
+      const pricePair = getBloodBookingPrice(systemConfig, species, bloodType, volumeMl)
+      const unitPrice = isPersonalInviteBooking ? pricePair.retailPrice : pricePair.storePrice
+      if (!unitPrice || unitPrice <= 0) return { error: '当前血型和血量暂未配置价格，请联系客服' }
+      bloodBookingPricing = {
+        priceMode: isPersonalInviteBooking ? 'retail' : 'store',
+        storePrice: pricePair.storePrice,
+        retailPrice: pricePair.retailPrice,
+        hospitalReferrerId: invite ? invite.hospitalId : '',
+        hospitalReferrerName: invite ? (invite.hospitalName || '') : '',
+        inviteId: invite ? invite._id : '',
+        hospitalCommissionAmount: isPersonalInviteBooking ? Math.max(0, roundMoney(pricePair.retailPrice - pricePair.storePrice)) : 0,
+        hospitalCommissionStatus: isPersonalInviteBooking ? 'pending_payment' : '',
+      }
       items.push({
         productId: raw.productId || `blood_booking_${species}`,
         productName: raw.productName || `${speciesLabel}预约`,
         productImage: raw.productImage || '',
         spec: raw.spec || `${bloodType} · ${volumeMl}ml`,
         quantity: 1,
-        unitPrice: 0,
-        totalPrice: 0,
+        unitPrice,
+        totalPrice: unitPrice,
         testReportCode: '',
         batchNo: '',
         stockManaged: false,
@@ -141,7 +193,7 @@ async function buildOrderItems(rawItems, customer) {
     })
   }
 
-  return { items }
+  return { items, bloodBookingPricing }
 }
 
 // --- 优惠券验证与核销 ---
@@ -222,6 +274,46 @@ async function getUserIdentity(userId) {
     return data || {}
   } catch (_e) {
     return {}
+  }
+}
+
+async function resolveCommissionPlan(customer, type, bloodBookingPricing, actualAmount, commissionRate) {
+  if (type === 'card_order') {
+    return {
+      salespersonId: customer._id,
+      baseAmount: actualAmount,
+      amount: roundMoney(actualAmount * commissionRate),
+      sourceType: 'order',
+    }
+  }
+
+  const isPersonalHospitalInviteBooking = (
+    type === 'booking' &&
+    customer.customerType === 'personal' &&
+    bloodBookingPricing &&
+    bloodBookingPricing.hospitalReferrerId &&
+    Number(bloodBookingPricing.storePrice || 0) > 0
+  )
+
+  if (isPersonalHospitalInviteBooking) {
+    const hospital = await getUserIdentity(bloodBookingPricing.hospitalReferrerId)
+    const salespersonId = hospital.boundSalespersonId || ''
+    const baseAmount = roundMoney(bloodBookingPricing.storePrice || 0)
+    return {
+      salespersonId,
+      baseAmount,
+      amount: salespersonId ? roundMoney(baseAmount * commissionRate) : 0,
+      sourceType: 'hospital_invite_booking',
+      hospitalId: hospital._id || bloodBookingPricing.hospitalReferrerId,
+      hospitalName: hospital.nickname || hospital.realName || hospital.name || bloodBookingPricing.hospitalReferrerName || '',
+    }
+  }
+
+  return {
+    salespersonId: customer.boundSalespersonId || '',
+    baseAmount: actualAmount,
+    amount: roundMoney(actualAmount * commissionRate),
+    sourceType: 'order',
   }
 }
 
@@ -332,8 +424,10 @@ exports.main = async (event) => {
 
   // 读取系统配置（佣金率等）
   let commissionRate = 0.2
+  let systemConfig = {}
   try {
     const { data: configDoc } = await db.collection('config').doc('system').get()
+    systemConfig = configDoc || {}
     if (configDoc && typeof configDoc.commissionRate === 'number') commissionRate = configDoc.commissionRate
   } catch (_e) { /* use default */ }
 
@@ -343,7 +437,7 @@ exports.main = async (event) => {
   const rawItems = Array.isArray(event.items) ? event.items : []
   if (!rawItems.length) return error('订单商品不能为空')
 
-  const built = await buildOrderItems(rawItems, customer)
+  const built = await buildOrderItems(rawItems, customer, systemConfig, event.booking || {})
   if (built.error) return error(built.error)
 
   const type = event.type === 'booking' ? 'booking' : event.type === 'card_voucher' ? 'card_order' : 'normal'
@@ -399,15 +493,15 @@ exports.main = async (event) => {
     const requested = Math.min(Number(event.pointsToUse), balance)
     if (requested >= 100) {
       pointsDeduction = Math.floor(requested / 100)  // 100积分=1元
-      pointsConsumed = pointsDeduction * 100
       actualAmount = Math.max(0.01, Math.round((actualAmount - pointsDeduction) * 100) / 100)
     }
   }
 
-  const initialStatus = type === 'booking' && event.booking && event.booking.bloodBooking === true
+  const initialStatus = type === 'booking' && actualAmount <= 0
     ? 'pending_confirmation'
     : 'pending_payment'
   const paymentStatus = initialStatus === 'pending_payment' ? 'unpaid' : 'not_required'
+  const commissionPlan = await resolveCommissionPlan(customer, type, built.bloodBookingPricing, actualAmount, commissionRate)
 
   const order = {
     orderNo: `DD${Date.now()}`,
@@ -416,7 +510,7 @@ exports.main = async (event) => {
     customerId: customer._id,
     customerName: customer.nickname || customer.name || customer.phone || '客户',
     customerOpenid: openid,
-    salespersonId: type === 'card_order' ? customer._id : (customer.boundSalespersonId || ''),
+    salespersonId: commissionPlan.salespersonId || '',
     clerkId: null,
     items: built.items,
     pricing: {
@@ -427,6 +521,7 @@ exports.main = async (event) => {
       ...(couponRecord ? { coupon: couponRecord } : {}),
     },
     payment: { status: paymentStatus, method: '', paidAt: '', transactionId: '' },
+    ...(initialStatus === 'pending_payment' ? { pendingPaymentAt: now } : {}),
     shipping: {
       address: shippingAddress,
       trackingNo: null,
@@ -434,11 +529,16 @@ exports.main = async (event) => {
       logistics: [],
       ...(isUrgent ? { urgent: true } : {}),
     },
-    ...(type === 'booking' ? { booking: event.booking } : {}),
+    ...(type === 'booking' ? { booking: { ...(event.booking || {}), ...(built.bloodBookingPricing || {}) } } : {}),
     returnRecordId: null,
     commission: {
       status: 'pending',
-      amount: Math.round(actualAmount * commissionRate * 100) / 100,
+      amount: commissionPlan.amount,
+      rate: commissionRate,
+      baseAmount: commissionPlan.baseAmount,
+      sourceType: commissionPlan.sourceType,
+      ...(commissionPlan.hospitalId ? { hospitalId: commissionPlan.hospitalId } : {}),
+      ...(commissionPlan.hospitalName ? { hospitalName: commissionPlan.hospitalName } : {}),
       settledAt: null,
     },
     ...(event.remark ? { remark: event.remark } : {}),
@@ -497,8 +597,14 @@ exports.main = async (event) => {
           orderId: _id,
           orderNo: order.orderNo,
           amount: order.commission.amount,
+          commission: order.commission.amount,
+          orderAmount: actualAmount,
+          commissionBaseAmount: order.commission.baseAmount,
+          commissionRate,
           status: 'pending',
-          sourceType: 'order',
+          sourceType: order.commission.sourceType || 'order',
+          ...(order.commission.hospitalId ? { hospitalId: order.commission.hospitalId } : {}),
+          ...(order.commission.hospitalName ? { hospitalName: order.commission.hospitalName } : {}),
           description: `订单 ${order.orderNo} 提成 ¥${order.commission.amount}`,
           createdAt: now,
           updatedAt: now,

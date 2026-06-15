@@ -1,4 +1,4 @@
-const { formatMoney, getProductVisualImage, canPurchase, requireBoundPhone, getCartItems, clearCart, updateCartItem, removeCartItem } = require('../../services/index')
+const { formatMoney, getProductVisualImage, canPurchase, requireBoundPhone, getCartItems, clearCart, updateCartItem, removeCartItem, getEffectivePrice } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 const tracking = require('../../services/tracking')
 
@@ -27,7 +27,7 @@ Page({
   },
 
   redirectStaffRole() {
-    const role = getApp().globalData.userRole || 'customer_personal'
+    const role = getApp().globalData.userRole || 'customer_institution'
     if (!isStaffRole(role)) return false
     wx.switchTab({ url: '/pages/home/home' })
     return true
@@ -46,15 +46,14 @@ Page({
 
   refreshCart() {
     const user = getApp().globalData.userInfo
-    const isInst = user?.customerType === 'institution'
     const total = cartStore.reduce((s: number, item: any) => {
-      const price = item.unitPrice ?? (isInst ? item.institutionPrice : (item.personalPrice || item.institutionPrice))
+      const price = item.unitPrice ?? getEffectivePrice(item, user)
       return s + price * item.quantity
     }, 0)
     const colors = ['orange', 'purple', 'mint', 'pink']
     this.setData({
       items: cartStore.map((item: any, idx: number) => {
-        const price = item.unitPrice ?? (isInst ? item.institutionPrice : (item.personalPrice || item.institutionPrice))
+        const price = item.unitPrice ?? getEffectivePrice(item, user)
         return {
           ...item,
           lineTotal: formatMoney(price * item.quantity),

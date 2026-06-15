@@ -147,6 +147,7 @@ Page({
     const customerMenuItems = [
       { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
       { id: 'wallet', icon: '余', title: '钱包与积分', tap: 'onWalletTap', desc: '充值余额，查看积分和优惠' },
+      ...(isInstitution ? [{ id: 'bloodCommission', icon: '佣', title: '用血提成', tap: 'onBloodCommissionTap', desc: '查看个人扫码预约产生的门店提成' }] : []),
       { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
       { id: 'service', icon: '客', title: '售后与客服', tap: 'onHelpTap', desc: '订单、物流、售后咨询' },
     ]
@@ -160,7 +161,7 @@ Page({
       ],
       statNote: '',
       compactProfile: false,
-      showVerifyState: true,
+      showVerifyState: isInstitution,
       showOrderBar: true,
       orderCounts: {
         all: orders.length,
@@ -253,6 +254,10 @@ Page({
 
   onReferralTap() {
     wx.navigateTo({ url: '/pages/referral/share/share' })
+  },
+
+  onBloodCommissionTap() {
+    wx.navigateTo({ url: '/pages/blood/commission/commission' })
   },
 
   onVerifyTap() {

@@ -1,4 +1,4 @@
-const { createOrder, requireBoundPhone } = require('../../../services/index')
+const { createOrder, requireBoundPhone, getSystemConfig, getBloodBookingInvite } = require('../../../services/index')
 
 type Species = 'dog' | 'cat'
 
@@ -46,6 +46,11 @@ const catBloodTypes = [
   '未检测，需协助配血',
 ]
 
+const defaultVolumes = {
+  dog: [100, 200, 300, 400, 500],
+  cat: [50, 100, 150, 200],
+}
+
 const speciesOptions = [
   { value: 'dog', label: '犬血', hint: '重点关注 DEA1.1、DEA7，二次输血必须交叉配血。' },
   { value: 'cat', label: '猫血', hint: '猫需严格同型优先，首次输血也必须交叉配血。' },
@@ -60,11 +65,21 @@ Page({
   data: {
     isInstitution: false,
     isVerified: false,
+    isPersonalInvite: false,
+    inviteId: '',
+    invite: null as any,
+    inviteError: '',
+    priceMode: 'store' as 'store' | 'retail',
     species: 'dog' as Species,
     speciesOptions,
     bloodTypes: dogBloodTypes,
     bloodTypeIndex: 0,
-    volumeMl: '',
+    volumeOptions: defaultVolumes.dog,
+    volumeIndex: 0,
+    volumeMl: defaultVolumes.dog[0],
+    priceRules: [] as any[],
+    bookingAmount: 0,
+    bookingAmountText: '0.00',
     bookingDate: getDefaultBookingDate(),
     bookingHourIndex: 2,
     bookingHours: hourOptions,
@@ -79,26 +94,62 @@ Page({
     submitting: false,
   },
 
+  onLoad(options: Record<string, string | undefined> = {}) {
+    const scene = options.scene ? decodeURIComponent(options.scene) : ''
+    const inviteId = options.invite || scene.replace(/^invite=/, '')
+    this.setData({ inviteId })
+  },
+
   onShow() {
     this.initForm()
   },
 
-  initForm() {
+  async initForm() {
     const user = getApp().globalData.userInfo
-    if (!requireBoundPhone(user)) return
+    if (!user?.phone && this.data.inviteId) {
+      wx.navigateTo({ url: `/pages/register/register?bloodInvite=${encodeURIComponent(this.data.inviteId)}` })
+      return
+    }
+    if (!requireBoundPhone(user)) {
+      return
+    }
+
+    const [config, invite] = await Promise.all([
+      getSystemConfig(),
+      this.data.inviteId ? getBloodBookingInvite(this.data.inviteId).catch((err: any) => ({ error: err?.message || '预约二维码无效' })) : Promise.resolve(null),
+    ])
 
     const isInstitution = user?.customerType === 'institution'
     const isVerified = user?.verificationStatus === 'approved'
+    const isPersonalInvite = user?.customerType === 'personal' && !!this.data.inviteId && !!invite && !invite.error
+    const bloodBookingConfig = config?.bloodBookingConfig || {}
+    const dogTypes = Array.isArray(bloodBookingConfig.dogBloodTypes) && bloodBookingConfig.dogBloodTypes.length ? bloodBookingConfig.dogBloodTypes : dogBloodTypes
+    const catTypes = Array.isArray(bloodBookingConfig.catBloodTypes) && bloodBookingConfig.catBloodTypes.length ? bloodBookingConfig.catBloodTypes : catBloodTypes
+    const dogVolumes = Array.isArray(bloodBookingConfig.dogVolumeOptions) && bloodBookingConfig.dogVolumeOptions.length ? bloodBookingConfig.dogVolumeOptions : defaultVolumes.dog
+    const catVolumes = Array.isArray(bloodBookingConfig.catVolumeOptions) && bloodBookingConfig.catVolumeOptions.length ? bloodBookingConfig.catVolumeOptions : defaultVolumes.cat
+    const bloodTypes = this.data.species === 'dog' ? dogTypes : catTypes
+    const volumeOptions = this.data.species === 'dog' ? dogVolumes : catVolumes
     const address = getDefaultAddress(user)
     this.setData({
       isInstitution,
       isVerified,
+      isPersonalInvite,
+      invite: invite && !invite.error ? invite : null,
+      inviteError: invite && invite.error ? invite.error : '',
+      priceMode: isPersonalInvite ? 'retail' : 'store',
+      bloodTypes,
+      bloodTypeIndex: Math.min(this.data.bloodTypeIndex, Math.max(0, bloodTypes.length - 1)),
+      volumeOptions,
+      volumeIndex: Math.min(this.data.volumeIndex || 0, Math.max(0, volumeOptions.length - 1)),
+      volumeMl: volumeOptions[Math.min(this.data.volumeIndex || 0, Math.max(0, volumeOptions.length - 1))] || '',
+      priceRules: Array.isArray(bloodBookingConfig.priceRules) ? bloodBookingConfig.priceRules : [],
       selectedAddress: address,
       contactName: address?.name || user?.nickname || user?.realName || '',
       contactPhone: address?.phone || user?.phone || '',
       addressText: formatAddressText(address),
     })
     this.updateSafetyTips()
+    this.updateBookingAmount()
   },
 
   updateSafetyTips() {
@@ -120,14 +171,61 @@ Page({
 
   onSpeciesTap(e: any) {
     const species = e.currentTarget.dataset.value as Species
-    const bloodTypes = species === 'dog' ? dogBloodTypes : catBloodTypes
-    this.setData({ species, bloodTypes, bloodTypeIndex: 0 })
+    const bloodTypes = species === 'dog' ? this.data.bloodTypes.filter((item: string) => dogBloodTypes.includes(item)) : catBloodTypes
+    const priceRules = this.data.priceRules || []
+    const configuredTypes = Array.from(new Set(priceRules.filter((rule: any) => rule.species === species).map((rule: any) => rule.bloodType).filter(Boolean))) as string[]
+    const nextBloodTypes = configuredTypes.length ? configuredTypes : (species === 'dog' ? dogBloodTypes : catBloodTypes)
+    const volumeOptions = species === 'dog'
+      ? (priceRules.filter((rule: any) => rule.species === 'dog').map((rule: any) => Number(rule.volumeMl)).filter(Boolean) || defaultVolumes.dog)
+      : (priceRules.filter((rule: any) => rule.species === 'cat').map((rule: any) => Number(rule.volumeMl)).filter(Boolean) || defaultVolumes.cat)
+    const uniqueVolumes = Array.from(new Set(volumeOptions)).sort((a, b) => a - b)
+    this.setData({
+      species,
+      bloodTypes: nextBloodTypes,
+      bloodTypeIndex: 0,
+      volumeOptions: uniqueVolumes.length ? uniqueVolumes : defaultVolumes[species],
+      volumeIndex: 0,
+      volumeMl: (uniqueVolumes.length ? uniqueVolumes : defaultVolumes[species])[0],
+    })
     this.updateSafetyTips()
+    this.updateBookingAmount()
   },
 
   onBloodTypeChange(e: any) {
     this.setData({ bloodTypeIndex: Number(e.detail.value) })
     this.updateSafetyTips()
+    this.updateBookingAmount()
+  },
+
+  onVolumeChange(e: any) {
+    const volumeIndex = Number(e.detail.value)
+    this.setData({
+      volumeIndex,
+      volumeMl: this.data.volumeOptions[volumeIndex] || 0,
+    })
+    this.updateBookingAmount()
+  },
+
+  getCurrentPriceRule() {
+    const bloodType = this.data.bloodTypes[this.data.bloodTypeIndex] || ''
+    const volumeMl = Number(this.data.volumeMl || 0)
+    return (this.data.priceRules || []).find((rule: any) => (
+      rule.species === this.data.species &&
+      String(rule.bloodType || '') === bloodType &&
+      Number(rule.volumeMl) === volumeMl
+    ))
+  },
+
+  updateBookingAmount() {
+    const rule = this.getCurrentPriceRule()
+    const legacyPrice = Number(rule?.price || 0)
+    const storePrice = Number(rule?.storePrice || legacyPrice || 0)
+    const retailPrice = Number(rule?.retailPrice || (storePrice > 0 ? storePrice * 2 : 0))
+    const amount = this.data.priceMode === 'retail' ? retailPrice : storePrice
+    this.setData({
+      bookingAmount: amount,
+      bookingAmountText: Number(amount || 0).toFixed(2),
+    })
   },
 
   onDateChange(e: any) {
@@ -169,10 +267,12 @@ Page({
   },
 
   validateForm() {
-    if (!this.data.isInstitution) return '当前仅医院客户可提交用血预约'
-    if (!this.data.isVerified) return '请先完成门店认证'
+    if (!this.data.isInstitution && !this.data.isPersonalInvite) return '请通过医院提供的预约二维码进入'
+    if (this.data.isInstitution && !this.data.isVerified) return '请先完成门店认证'
+    if (this.data.inviteId && this.data.inviteError) return this.data.inviteError
     const volume = Number(this.data.volumeMl)
     if (!Number.isFinite(volume) || volume <= 0) return '请输入需要的血量'
+    if (!this.data.bookingAmount || this.data.bookingAmount <= 0) return '当前血型和血量暂未配置价格'
     if (volume > 5000) return '单次预约血量请勿超过5000ml'
     if (!this.data.bookingDate) return '请选择预约日期'
     if (!this.data.selectedAddress) return '请选择收货地址'
@@ -206,6 +306,10 @@ Page({
       contactPhone: selectedAddress.phone,
       address: addressText,
       urgent: this.data.isUrgent,
+      inviteId: this.data.inviteId,
+      hospitalReferrerId: this.data.invite?.hospitalId || '',
+      hospitalReferrerName: this.data.invite?.hospitalName || '',
+      priceMode: this.data.priceMode,
     }
 
     try {

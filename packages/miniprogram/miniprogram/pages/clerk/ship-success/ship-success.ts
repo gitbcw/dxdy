@@ -4,9 +4,6 @@ Page({
   data: {
     orderId: '',
     orderNo: '',
-    recipient: '',
-    phone: '',
-    address: '',
     expressCompany: '',
     expressNo: '',
     packageType: '',
@@ -21,9 +18,6 @@ Page({
     this.setData({
       orderId: params.orderId || '',
       orderNo: params.orderNo || '',
-      recipient: params.recipient || '',
-      phone: params.phone || '',
-      address: params.address || '',
       expressCompany: params.expressCompany || '',
       expressNo: params.expressNo || '',
       packageType: params.packageType || '',

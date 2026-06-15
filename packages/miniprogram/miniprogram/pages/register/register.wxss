@@ -1,0 +1,157 @@
+.page {
+  min-height: 100vh;
+  padding: 56rpx 36rpx 48rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.brand-panel {
+  padding-bottom: 28rpx;
+  border-bottom: 1rpx solid #edf1ee;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 18rpx;
+  background: #f0f7f2;
+}
+
+.logo-icon {
+  width: 42rpx;
+  height: 42rpx;
+}
+
+.brand-name {
+  display: block;
+  color: #17231f;
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.brand-sub {
+  display: block;
+  margin-top: 6rpx;
+  color: #6c7770;
+  font-size: 22rpx;
+}
+
+.form-card {
+  margin-top: 34rpx;
+}
+
+.title {
+  display: block;
+  color: #17231f;
+  font-size: 38rpx;
+  font-weight: 900;
+}
+
+.subtitle {
+  display: block;
+  margin-top: 10rpx;
+  color: #7a8580;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14rpx;
+  margin-top: 26rpx;
+}
+
+.role-item {
+  padding: 22rpx 24rpx;
+  border: 1rpx solid #edf1ee;
+  border-radius: 16rpx;
+  background: #ffffff;
+}
+
+.role-item.active {
+  border-color: #176f56;
+  background: #f4faf7;
+}
+
+.role-title,
+.role-desc {
+  display: block;
+}
+
+.role-title {
+  color: #17231f;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.role-desc {
+  margin-top: 8rpx;
+  color: #7a8580;
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  height: 92rpx;
+  margin-top: 18rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid #edf1ee;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.field-row.first {
+  margin-top: 28rpx;
+}
+
+.field-icon,
+.placeholder-icon {
+  flex-shrink: 0;
+  width: 38rpx;
+  height: 38rpx;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  color: #17231f;
+  font-size: 27rpx;
+}
+
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  margin-top: 30rpx;
+  border-radius: 16rpx;
+  color: #ffffff;
+  font-size: 29rpx;
+  font-weight: 900;
+  background: #176f56;
+}
+
+.login-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+  margin-top: 16rpx;
+  color: #176f56;
+  font-size: 25rpx;
+  font-weight: 800;
+}

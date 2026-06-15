@@ -226,3 +226,107 @@
   font-size: 28rpx;
   font-weight: 900;
 }
+
+/* 首页风格统一覆盖 */
+.page {
+  padding: 34rpx 28rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 48%, #ffffff 100%);
+}
+
+.hero,
+.summary-card,
+.order-card,
+.empty-state {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.hero {
+  padding: 34rpx 30rpx;
+  color: #16372d;
+  background: linear-gradient(135deg, rgba(226, 248, 237, 0.98) 0%, rgba(255, 255, 255, 0.98) 62%, rgba(255, 245, 229, 0.98) 100%);
+}
+
+.eyebrow {
+  color: #176f56;
+  letter-spacing: 0;
+}
+
+.title {
+  color: #10291f;
+}
+
+.subtitle {
+  color: #68776f;
+}
+
+.summary-grid {
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+
+.summary-card {
+  padding: 24rpx 16rpx;
+}
+
+.summary-value {
+  color: #176f56;
+}
+
+.summary-label,
+.order-date,
+.goods-meta,
+.empty-desc {
+  color: #68776f;
+}
+
+.tab {
+  color: #60766c;
+  background: #eef7f2;
+}
+
+.tab.active {
+  background: #176f56;
+  box-shadow: 0 10rpx 22rpx rgba(23, 111, 86, 0.18);
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+}
+
+.order-card {
+  margin-bottom: 0;
+  padding: 26rpx;
+}
+
+.order-no,
+.customer-name,
+.goods-name,
+.empty-title {
+  color: #10291f;
+}
+
+.status,
+.customer-type {
+  color: #176f56;
+  background: #e9f7ef;
+}
+
+.customer-row {
+  border: 1rpx solid #edf4ef;
+  border-radius: 20rpx;
+  background: #f8fcf9;
+}
+
+.goods-icon {
+  border-radius: 18rpx;
+  background: #edf8f2;
+}
+
+.amount {
+  color: #d85b3d;
+}

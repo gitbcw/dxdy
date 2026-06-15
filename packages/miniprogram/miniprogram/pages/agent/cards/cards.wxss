@@ -28,7 +28,7 @@
   margin-bottom: 16rpx;
   box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06);
 }
-.card-item.status-expired, .card-item.status-voided, .card-item.status-verified { opacity: 0.6; }
+.card-item.status-voided { opacity: 0.6; }
 
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .card-no { font-size: 24rpx; color: #999; font-family: monospace; }
@@ -37,8 +37,6 @@
 .status-gifted { background: #e6f7ff; color: #0958d9; }
 .status-claimed { background: #f6ffed; color: #389e0d; }
 .status-redeemed { background: #f9f0ff; color: #531dab; }
-.status-verified { background: #f0f0f0; color: #999; }
-.status-expired { background: #fff1f0; color: #cf1322; }
 .status-voided { background: #f0f0f0; color: #999; }
 
 .card-body { margin-bottom: 8rpx; }
@@ -58,3 +56,104 @@
 }
 
 .empty { text-align: center; padding: 80rpx 0; color: #ccc; font-size: 28rpx; }
+
+/* 首页风格统一覆盖 */
+.page {
+  min-height: 100vh;
+  padding: 34rpx 28rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 46%, #ffffff 100%);
+  box-sizing: border-box;
+}
+
+.hero,
+.card-item,
+.empty {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.hero {
+  padding: 30rpx;
+  color: #17352b;
+  background: linear-gradient(135deg, #f7fdf9 0%, #e9f8f1 100%);
+}
+
+.eyebrow {
+  display: block;
+  color: #176f56;
+  font-size: 23rpx;
+  font-weight: 900;
+}
+
+.title {
+  display: block;
+  margin-top: 10rpx;
+  color: #17231f;
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.subtitle {
+  display: block;
+  margin-top: 10rpx;
+  color: #68776f;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.filter-bar {
+  margin: 20rpx 0 14rpx;
+  padding: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.filter-item {
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  background: #edf4f3;
+  color: #627678;
+}
+
+.filter-item.active {
+  color: #ffffff;
+  font-weight: 900;
+  background: #176f56;
+}
+
+.summary {
+  margin-top: 0;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid #edf3ef;
+  border-radius: 24rpx;
+  color: #68776f;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.card-list {
+  padding: 16rpx 0 0;
+}
+
+.card-product {
+  color: #17231f;
+  font-weight: 900;
+}
+
+.card-meta,
+.card-holder,
+.card-no {
+  color: #68776f;
+}
+
+.card-status,
+.btn-gift {
+  border-radius: 999rpx;
+  font-weight: 900;
+}
+
+.btn-gift {
+  background: #176f56;
+}

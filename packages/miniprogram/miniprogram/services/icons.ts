@@ -71,6 +71,7 @@ export const profile = user
 
 export const packageBox = iconSvg('<path d="M16 24 32 15l16 9v18l-16 9-16-9V24z"/><path d="m16 24 16 9 16-9M32 33v18"/>', { color: '#2563EB', fill: '#EEF5FF' })
 export const truck = iconSvg('<path d="M14 24h24v18H14z"/><path d="M38 30h8l5 7v5H38z"/><circle cx="23" cy="45" r="4"/><circle cx="44" cy="45" r="4"/>', { color: '#16A34A', fill: '#EAF8EE' })
+export const pickupAddress = iconSvg('<path d="M15 26h24v18H15z"/><path d="M39 32h7l5 7v5H39z"/><circle cx="24" cy="47" r="4"/><circle cx="45" cy="47" r="4"/><path d="M32 14c5 0 9 4 9 9 0 7-9 15-9 15s-9-8-9-15c0-5 4-9 9-9z"/><circle cx="32" cy="23" r="3"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const bell = iconSvg('<path d="M20 39V29a12 12 0 0 1 24 0v10l5 7H15l5-7z"/><path d="M27 50a6 6 0 0 0 10 0"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const scan = iconSvg('<path d="M18 26v-8h8M38 18h8v8M46 38v8h-8M26 46h-8v-8"/><path d="M22 32h20"/>')
 export const lock = iconSvg('<rect x="18" y="29" width="28" height="21" rx="5"/><path d="M24 29v-6a8 8 0 0 1 16 0v6"/>', { color: '#6B7280', fill: '#F3F4F6' })
@@ -115,6 +116,7 @@ export const iconByKey: Record<string, string> = {
   profile,
   packageBox,
   truck,
+  pickupAddress,
   bell,
   scan,
   building,

@@ -1,4 +1,37 @@
-const { getMyCards, getGiftedCards } = require('../../services/index')
+const { getMyCards, getGiftedCards, formatMoney } = require('../../services/index')
+
+const statusTextMap: Record<string, string> = {
+  ungifted: '待赠送',
+  gifted: '待认领',
+  claimed: '可使用',
+  redeemed: '已兑换',
+  verified: '已核销',
+  expired: '已过期',
+  voided: '已作废',
+}
+
+function getDeductionAmount(card: any): number {
+  return Number(card?.deductionAmount ?? card?.discountAmount ?? card?.amount ?? 0) || 0
+}
+
+function formatCardDate(value?: string): string {
+  if (!value) return '未设置'
+  return String(value).slice(0, 16)
+}
+
+function mapCard(card: any) {
+  const amount = getDeductionAmount(card)
+  return {
+    ...card,
+    id: card.id || card._id || card.cardNo,
+    productName: card.productName || card.name || '血包卡券',
+    amountText: formatMoney(amount),
+    statusText: statusTextMap[card.status] || card.status || '未知',
+    claimedAtText: card.claimedAt ? formatCardDate(card.claimedAt) : '',
+    redeemedAtText: card.redeemedAt ? formatCardDate(card.redeemedAt) : '',
+    sortTime: card.updatedAt || card.createdAt || card.expiresAt || '',
+  }
+}
 
 Page({
   data: {
@@ -11,6 +44,8 @@ Page({
     ],
     allCards: [] as any[],
     visibleCards: [] as any[],
+    totalCount: 0,
+    availableCount: 0,
   },
 
   onShow() {
@@ -26,12 +61,13 @@ Page({
       getGiftedCards(),
       getMyCards(),
     ])
-    // 合并去重（gifted 可能也在 all 里）
+    // 合并去重，gifted 可能也在 all 里。
     const map = new Map<string, any>()
-    for (const c of [...all, ...gifted]) {
-      map.set(c.id, c)
+    for (const card of [...all, ...gifted]) {
+      const mapped = mapCard(card)
+      map.set(mapped.id, mapped)
     }
-    const allCards = Array.from(map.values())
+    const allCards = Array.from(map.values()).sort((a, b) => String(b.sortTime).localeCompare(String(a.sortTime)))
     this.setData({ allCards })
     this.applyTab()
   },
@@ -46,7 +82,11 @@ Page({
     const visibleCards = activeTab === 'all'
       ? allCards
       : allCards.filter((c: any) => c.status === activeTab)
-    this.setData({ visibleCards })
+    this.setData({
+      visibleCards,
+      totalCount: allCards.length,
+      availableCount: allCards.filter((c: any) => c.status === 'claimed').length,
+    })
   },
 
   onCardTap(e: any) {

@@ -8,8 +8,8 @@
   <view wx:elif="{{!userInfo}}" class="login-prompt">
     <view class="brand">大熊动医</view>
     <text class="login-title">欢迎来到大熊动医</text>
-    <text class="login-desc">登录后查看订单、认证、售后和检测报告</text>
-    <view class="login-btn dx-orange-btn" bindtap="onLoginTap">立即登录</view>
+    <text class="login-desc">登录后查看订单、认证、售后和账户服务</text>
+    <view class="login-btn" bindtap="onLoginTap">立即登录</view>
   </view>
 
   <view wx:else>
@@ -66,7 +66,7 @@
       </view>
     </view>
 
-    <view class="cert-row" wx:if="{{showOrderBar}}" bindtap="onVerifyTap">
+    <view class="cert-row" wx:if="{{showVerifyState}}" bindtap="onVerifyTap">
       <image class="cert-icon" src="{{certIcon}}" mode="aspectFit" />
       <view class="cert-copy">
         <text class="cert-title">门店认证</text>
@@ -89,7 +89,7 @@
         >
           <view class="focus-top">
             <text class="focus-badge">{{item.badge}}</text>
-            <text class="focus-arrow">›</text>
+          <text class="focus-arrow">›</text>
           </view>
           <text class="focus-title">{{item.title}}</text>
           <text class="focus-desc">{{item.desc}}</text>

@@ -1,4 +1,4 @@
-const { getCommissionSummary, requestWithdrawalByAmount, getCommissionRecords } = require('../../../services/index')
+const { getAgentCommissionOverview, formatMoney } = require('../../../services/index')
 
 Page({
   data: {
@@ -12,25 +12,39 @@ Page({
   },
 
   async loadData() {
-    const user = getApp().globalData.userInfo
-    const [summary, records] = await Promise.all([
-      getCommissionSummary(),
-      user?.id ? getCommissionRecords(user.id) : Promise.resolve([]),
-    ])
+    wx.showLoading({ title: '加载中...' })
+    try {
+      const { summary, records } = await getAgentCommissionOverview()
 
-    // 格式化提成记录
-    const formattedRecords = records.map((r: any) => ({
-      ...r,
-      amountText: r.amount >= 0 ? `+${r.amount.toFixed(2)}` : r.amount.toFixed(2),
-      amountClass: r.amount >= 0 ? 'positive' : 'negative',
-      sourceLabel: this.getSourceLabel(r.sourceType),
-    }))
+      // 格式化提成记录
+      const formattedRecords = records.map((r: any) => {
+        const signedAmount = this.getSignedAmount(r)
+        return {
+          ...r,
+          amountText: `${signedAmount >= 0 ? '+' : '-'}${formatMoney(Math.abs(signedAmount))}`,
+          amountClass: signedAmount >= 0 ? 'positive' : 'negative',
+          sourceLabel: this.getSourceLabel(r.sourceType),
+          statusLabel: this.getStatusLabel(r.status),
+        }
+      })
 
-    this.setData({
-      summary,
-      canWithdraw: summary.withdrawable >= 100,
-      records: formattedRecords,
-    })
+      this.setData({
+        summary: {
+          ...summary,
+          total: formatMoney(summary.total || 0),
+          pending: formatMoney(summary.pending || summary.pendingLock || 0),
+          withdrawable: formatMoney(summary.withdrawable || 0),
+          withdrawn: formatMoney(summary.withdrawn || 0),
+        },
+        canWithdraw: (summary.withdrawable || 0) >= 100,
+        records: formattedRecords,
+      })
+    } catch (e) {
+      console.error('load commission failed', e)
+      wx.showToast({ title: '提成数据加载失败', icon: 'none' })
+    } finally {
+      wx.hideLoading()
+    }
   },
 
   getSourceLabel(type: string): string {
@@ -41,6 +55,23 @@ Page({
       price_modification: '改价调整',
     }
     return map[type] || type
+  },
+
+  getStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      pending: '待核算',
+      locked: '冻结中',
+      settled: '可提现',
+      deducted: '已扣减',
+      cancelled: '已取消',
+    }
+    return map[status] || status || '同步中'
+  },
+
+  getSignedAmount(record: any): number {
+    const amount = Number(record?.signedAmount ?? record?.amount ?? 0) || 0
+    if (record?.status === 'deducted' || record?.sourceType === 'return_deduction') return -Math.abs(amount)
+    return amount
   },
 
   onWithdraw() {

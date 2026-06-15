@@ -11,9 +11,6 @@ Page({
     trackingNo: '',
     shipTime: '',
     status: '',
-    recipient: '',
-    phone: '',
-    address: '',
     packageType: '',
     coldChainMethod: '',
     packageWeight: '',
@@ -54,8 +51,6 @@ Page({
     }
     const shipping = order.shipping || {}
     const coldChain = shipping.coldChain || {}
-    const addr = shipping.address || order.shippingAddress || {}
-
     const tracks = this.buildTracks(order, shipping)
     const abnormal = shipping.abnormal || {}
     this.setData({
@@ -67,9 +62,6 @@ Page({
       trackingNo: shipping.trackingNo || '',
       shipTime: shipping.shippedAt || '',
       status: order.rawStatus === 'pending_receipt' ? '配送中' : order.status === 'shipped' ? '已发货' : '待发货',
-      recipient: addr.recipient || order.customerName || '',
-      phone: addr.phone || order.customerPhone || '',
-      address: [addr.province, addr.city, addr.district, addr.detail].filter(Boolean).join('') || order.address || '',
       packageType: coldChain.packageType || order.packageType || '',
       coldChainMethod: coldChain.method || order.coldChainMethod || '',
       packageWeight: coldChain.weight || order.packageWeight || '',

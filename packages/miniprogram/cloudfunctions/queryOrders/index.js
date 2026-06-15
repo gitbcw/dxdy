@@ -3,6 +3,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const _ = db.command
 
 function normalize(doc) {
   if (!doc) return doc
@@ -50,7 +51,7 @@ function canReadOrder(user, order) {
     const assignedIds = Array.isArray(user.assignedOrderIds) ? user.assignedOrderIds : []
     return order.clerkId === user._id || assignedIds.includes(order._id)
   }
-  if (order.customerId === user._id || order.customerOpenid === user._openid || order.customerOpenid === user.boundOpenid) return true
+  if (user.role === 'customer' && order.customerId === user._id) return true
   if (user.role === 'salesperson' && order.salespersonId === user._id) return true
   return false
 }
@@ -147,6 +148,7 @@ exports.main = async (event = {}) => {
   } else if (user.role === 'salesperson') {
     cond.salespersonId = user._id
     if (event.customerId) cond.customerId = String(event.customerId)
+    cond.type = _.neq('card_order')
   } else if (user.role === 'clerk') {
     cond.clerkId = user._id
   }

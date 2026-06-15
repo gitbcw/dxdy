@@ -1,4 +1,4 @@
-<view class="page">
+<view class="page" catchtouchmove="noop">
   <view wx:if="{{checkingSession}}" class="session-check">
     <view class="session-logo">
       <image class="session-logo-icon" src="{{logoIcon}}" mode="aspectFit" />
@@ -7,57 +7,37 @@
   </view>
 
   <block wx:else>
-  <view class="brand-hero">
-    <view class="brand-row">
-      <view class="logo-mark">
-        <image class="logo-icon" src="{{logoIcon}}" mode="aspectFit" />
+    <image class="login-bg" src="{{loginBackgroundImage}}" mode="aspectFill" />
+    <view class="login-shade"></view>
+
+    <view class="login-content">
+      <view class="brand-logo-panel">
+        <image class="brand-logo-image" src="{{brandLogo}}" mode="aspectFit" />
       </view>
-      <view>
-        <text class="brand-name">大熊动医</text>
-        <text class="brand-sub">DaXiong Vet</text>
+
+      <view class="brand-panel">
+        <image class="brand-hero-image" src="{{loginHeroImage}}" mode="aspectFill" />
       </view>
-    </view>
-    <view class="hero-visual">
-      <image class="hero-image" src="{{loginHeroImage}}" mode="widthFix" />
-    </view>
-  </view>
 
-  <view class="form dx-card">
-    <text class="title">手机号登录</text>
+      <view class="form">
+        <view class="field-row">
+          <image class="field-icon" src="{{phoneIcon}}" mode="aspectFit" />
+          <input class="field-input" placeholder="请输入手机号码" placeholder-class="field-placeholder" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
+        </view>
 
-    <view class="field-row">
-      <image class="field-icon" src="{{phoneIcon}}" mode="aspectFit" />
-      <input class="field-input" placeholder="请输入手机号" type="number" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
-    </view>
+        <view class="field-row">
+          <image class="field-icon" src="{{shieldIcon}}" mode="aspectFit" />
+          <input class="field-input" placeholder="请输入密码" placeholder-class="field-placeholder" password value="{{password}}" bindinput="onPasswordInput" />
+        </view>
 
-    <view class="field-row">
-      <image class="field-icon" src="{{shieldIcon}}" mode="aspectFit" />
-      <input class="field-input" placeholder="请输入密码" password value="{{password}}" bindinput="onPasswordInput" />
-    </view>
-
-    <view class="agreement">
-      <view class="radio-dot"></view>
-      <text>我已阅读并同意</text>
-      <text class="link">《用户协议》</text>
-      <text>和</text>
-      <text class="link">《隐私政策》</text>
-    </view>
-
-    <view class="submit-btn dx-orange-btn" bindtap="onSubmit">登录</view>
-
-    <view wx:if="{{demoLoginEnabled}}" class="demo-box">
-      <view class="demo-head" bindtap="toggleDemoAccounts">
-        <text class="demo-title">演示账号</text>
-        <text class="demo-toggle">{{showDemoAccounts ? '收起' : '展开'}}</text>
-      </view>
-      <view wx:if="{{showDemoAccounts}}" class="demo-list">
-        <view wx:for="{{demoAccounts}}" wx:key="phone" class="demo-item" data-phone="{{item.phone}}" bindtap="useDemoAccount">
-          <text class="demo-label">{{item.label}}</text>
-          <text class="demo-phone">{{item.phone}}</text>
-          <text class="demo-password">密码 123456</text>
+        <view class="form-links">
+          <view class="secondary-action" bindtap="onRegisterTap">注册</view>
         </view>
       </view>
+
+      <view class="submit-orbit" bindtap="onSubmit">
+        <view class="submit-btn">登录</view>
+      </view>
     </view>
-  </view>
   </block>
 </view>

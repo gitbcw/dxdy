@@ -24,6 +24,10 @@ function mapInvoiceOrder(order: any) {
   }
 }
 
+function isInvoiceEligibleOrder(order: any) {
+  return order?.type !== 'recharge' && order?.payment?.status === 'paid'
+}
+
 Page({
   data: {
     invoiceType: 'electronic',
@@ -57,6 +61,10 @@ Page({
       wx.showToast({ title: '订单不存在', icon: 'none' })
       return
     }
+    if (!isInvoiceEligibleOrder(order)) {
+      wx.showToast({ title: '充值订单无需申请发票', icon: 'none' })
+      return
+    }
     const invoice = await getInvoiceByOrderId(order.id)
     const mapped = mapInvoiceOrder(order)
     this.setData({
@@ -74,7 +82,7 @@ Page({
     try {
       const orders = await getOrders({ status: 'completed' })
       const orderOptions = (orders || [])
-        .filter((order: any) => order.payment?.status === 'paid')
+        .filter(isInvoiceEligibleOrder)
         .map(mapInvoiceOrder)
       this.setData({ orderOptions, loadingOrders: false })
     } catch (e: any) {

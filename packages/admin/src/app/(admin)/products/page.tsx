@@ -41,6 +41,8 @@ type ProductFormState = {
   personalPrice: string;
   visibility: ProductVisibility;
   stock: string;
+  salesCount: string;
+  serviceTags: string;
   specs: string;
   images: string[];
   productType: ProductType;
@@ -70,7 +72,6 @@ type ProductFormState = {
 const visibilityLabel: Record<string, string> = {
   all: '全部可见',
   institution_only: '仅医院',
-  personal_only: '仅个人',
 };
 
 const productStatusLabel: Record<'all' | Product['status'], string> = {
@@ -92,6 +93,7 @@ const STOCK_WARNING_THRESHOLD = 10;
 const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
 const PRODUCT_IMAGE_PUBLIC_BASE_URL = 'https://636c-cloud1-d7g7ctn4m86bada89-1433980811.tcb.qcloud.la';
 const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const DEFAULT_SERVICE_TAGS = ['冷链配送', '支持预约', '质量问题售后'];
 
 function RequiredMark() {
   return <span className="ml-0.5 text-destructive">*</span>;
@@ -157,6 +159,8 @@ const emptyProductForm = (): ProductFormState => ({
   personalPrice: '',
   visibility: 'all',
   stock: '',
+  salesCount: '',
+  serviceTags: DEFAULT_SERVICE_TAGS.join(','),
   specs: '',
   images: [],
   productType: 'physical',
@@ -185,6 +189,17 @@ const emptyProductForm = (): ProductFormState => ({
 
 function productSpecsToText(specs: Product['specs']) {
   return specs.map(spec => spec.value).join(',');
+}
+
+function serviceTagsToText(tags?: string[]) {
+  return Array.isArray(tags) ? tags.join(',') : DEFAULT_SERVICE_TAGS.join(',');
+}
+
+function parseServiceTags(value: string) {
+  return value
+    .split(/[,，]/)
+    .map(tag => tag.trim())
+    .filter(Boolean);
 }
 
 function getSafeImageFileName(file: File) {
@@ -395,9 +410,11 @@ export default function ProductsPage() {
         description: target.description || '',
         category: target.category,
         institutionPrice: String(target.institutionPrice),
-        personalPrice: String(target.personalPrice),
-        visibility: target.visibility,
+        personalPrice: String(target.personalPrice ?? target.institutionPrice ?? ''),
+        visibility: String(target.visibility) === 'personal_only' ? 'all' : target.visibility,
         stock: String(target.stock),
+        salesCount: String(target.salesCount ?? 0),
+        serviceTags: serviceTagsToText(target.serviceTags),
         specs: productSpecsToText(target.specs || []),
         images: target.images ?? [],
         productType: 'physical',
@@ -478,6 +495,8 @@ export default function ProductsPage() {
         personalPrice: parseFloat(editForm.personalPrice) || 0,
         visibility: editForm.visibility,
         stock: parseInt(editForm.stock, 10) || 0,
+        salesCount: Math.max(0, parseInt(editForm.salesCount, 10) || 0),
+        serviceTags: parseServiceTags(editForm.serviceTags),
         specs,
         images: editForm.images,
         ...buildExtendedFields(editForm),
@@ -567,8 +586,7 @@ export default function ProductsPage() {
       { valid: createForm.name.trim(), message: '请填写商品名称' },
       { valid: createForm.category, message: '请选择分类' },
       { valid: createForm.institutionPrice.trim(), message: '请填写医院价' },
-      { valid: createForm.personalPrice.trim(), message: '请填写个人价' },
-      { valid: createForm.visibility, message: '请选择可见范围' },
+      { valid: createForm.personalPrice.trim(), message: '请填写未认证价' },
       { valid: createForm.stock.trim(), message: '请填写初始库存' },
       { valid: createForm.specs.trim(), message: '请填写规格' },
       { valid: createForm.images.length > 0, message: '请上传商品图片' },
@@ -595,8 +613,9 @@ export default function ProductsPage() {
       specs,
       institutionPrice: parseFloat(createForm.institutionPrice) || 0,
       personalPrice: parseFloat(createForm.personalPrice) || 0,
-      visibility: createForm.visibility,
+      visibility: 'all',
       stock: parseInt(createForm.stock, 10) || 0,
+      serviceTags: parseServiceTags(createForm.serviceTags),
       status: 'on_sale',
       images: createForm.images,
       returnPolicy: { enabled: true, deadlineDays: 7, note: '' },
@@ -857,11 +876,10 @@ export default function ProductsPage() {
               <SelectTrigger>
                 <SelectValue>{visibilityLabel[visibilityFilter]}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部可见</SelectItem>
-                <SelectItem value="institution_only">仅医院</SelectItem>
-                <SelectItem value="personal_only">仅个人</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="all">全部可见</SelectItem>
+                  <SelectItem value="institution_only">仅医院</SelectItem>
+                </SelectContent>
             </Select>
             <Select
               value={stockFilter}
@@ -900,7 +918,7 @@ export default function ProductsPage() {
                 <TableHead>商品名</TableHead>
                 <TableHead>分类</TableHead>
                 <TableHead>医院价</TableHead>
-                <TableHead>个人价</TableHead>
+                <TableHead>未认证价</TableHead>
                 <TableHead>可见性</TableHead>
                 <TableHead>库存</TableHead>
                 <TableHead>状态</TableHead>
@@ -910,7 +928,7 @@ export default function ProductsPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     加载商品数据中...
                   </TableCell>
                 </TableRow>
@@ -943,9 +961,7 @@ export default function ProductsPage() {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{catMap[product.category] ?? product.category}</TableCell>
                   <TableCell>¥{formatMoney(product.institutionPrice)}</TableCell>
-                  <TableCell>
-                    {product.personalPrice > 0 ? `¥${formatMoney(product.personalPrice)}` : '-'}
-                  </TableCell>
+                  <TableCell>¥{formatMoney(product.personalPrice ?? product.institutionPrice)}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
                       {visibilityLabel[product.visibility] ?? product.visibility}
@@ -984,7 +1000,7 @@ export default function ProductsPage() {
               ))}
               {!loading && pagedProducts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     没有符合当前筛选条件的商品
                   </TableCell>
                 </TableRow>
@@ -1169,9 +1185,9 @@ export default function ProductsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="editPers">个人价</Label>
+                <Label htmlFor="editPersonal">未认证价</Label>
                 <Input
-                  id="editPers"
+                  id="editPersonal"
                   type="number"
                   value={editForm.personalPrice}
                   onChange={event => setEditForm(form => ({ ...form, personalPrice: event.target.value }))}
@@ -1208,7 +1224,7 @@ export default function ProductsPage() {
                 </div>
               )}
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="editStock">库存</Label>
                 <Input
@@ -1216,6 +1232,16 @@ export default function ProductsPage() {
                   type="number"
                   value={editForm.stock}
                   onChange={event => setEditForm(form => ({ ...form, stock: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editSalesCount">销量</Label>
+                <Input
+                  id="editSalesCount"
+                  type="number"
+                  min="0"
+                  value={editForm.salesCount}
+                  onChange={event => setEditForm(form => ({ ...form, salesCount: event.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -1239,10 +1265,19 @@ export default function ProductsPage() {
                   <SelectContent>
                     <SelectItem value="all">全部可见</SelectItem>
                     <SelectItem value="institution_only">仅宠物医院</SelectItem>
-                    <SelectItem value="personal_only">仅普通客户</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editServiceTags">商品详情标签</Label>
+              <Input
+                id="editServiceTags"
+                value={editForm.serviceTags}
+                onChange={event => setEditForm(form => ({ ...form, serviceTags: event.target.value }))}
+                placeholder="冷链配送,支持预约,质量问题售后"
+              />
+              <p className="text-xs text-muted-foreground">多个标签用逗号分隔，保存后会显示在小程序商品详情页。</p>
             </div>
             <div className="space-y-3">
               <Label htmlFor="editImages">商品图片</Label>
@@ -1347,9 +1382,9 @@ export default function ProductsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prodPersPrice">个人价<RequiredMark /></Label>
+                <Label htmlFor="prodPersonalPrice">未认证价<RequiredMark /></Label>
                 <Input
-                  id="prodPersPrice"
+                  id="prodPersonalPrice"
                   type="number"
                   required
                   value={createForm.personalPrice}
@@ -1389,23 +1424,7 @@ export default function ProductsPage() {
                 </div>
               )}
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="prodVis">可见范围<RequiredMark /></Label>
-                <Select
-                  value={createForm.visibility}
-                  onValueChange={value => setCreateForm(form => ({ ...form, visibility: value as ProductVisibility }))}
-                >
-                  <SelectTrigger aria-required="true">
-                    <SelectValue>{visibilityLabel[createForm.visibility]}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部可见</SelectItem>
-                    <SelectItem value="institution_only">仅宠物医院</SelectItem>
-                    <SelectItem value="personal_only">仅普通客户</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="prodStock">初始库存<RequiredMark /></Label>
                 <Input
@@ -1426,6 +1445,16 @@ export default function ProductsPage() {
                   placeholder="5mL/支,10mL/支"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prodServiceTags">商品详情标签</Label>
+              <Input
+                id="prodServiceTags"
+                value={createForm.serviceTags}
+                onChange={event => setCreateForm(form => ({ ...form, serviceTags: event.target.value }))}
+                placeholder="冷链配送,支持预约,质量问题售后"
+              />
+              <p className="text-xs text-muted-foreground">多个标签用逗号分隔，保存后会显示在小程序商品详情页。</p>
             </div>
             <div className="space-y-3">
               <Label htmlFor="prodImages">商品图片<RequiredMark /></Label>

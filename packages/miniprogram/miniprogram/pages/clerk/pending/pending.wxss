@@ -304,3 +304,166 @@
   color: #8b9994;
   font-size: 24rpx;
 }
+
+/* 首页风格统一覆盖 */
+.page {
+  padding: 34rpx 28rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 48%, #ffffff 100%);
+}
+
+.notify-card,
+.summary-card,
+.search-row,
+.order-card,
+.empty-state {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.notify-card {
+  align-items: center;
+  padding: 30rpx;
+  background: linear-gradient(135deg, rgba(226, 248, 237, 0.98) 0%, rgba(255, 255, 255, 0.98) 62%, rgba(255, 245, 229, 0.98) 100%);
+}
+
+.bell {
+  width: 64rpx;
+  height: 64rpx;
+  background: #176f56;
+  box-shadow: 0 10rpx 22rpx rgba(23, 111, 86, 0.18);
+}
+
+.notify-title,
+.summary-value,
+.pin {
+  color: #176f56;
+}
+
+.notify-desc,
+.address,
+.booking-time,
+.product-spec,
+.empty-hint {
+  color: #68776f;
+}
+
+.summary-grid {
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+
+.summary-card {
+  padding: 24rpx 18rpx;
+}
+
+.summary-label,
+.hospital,
+.order-no,
+.product-name,
+.empty-text {
+  color: #10291f;
+}
+
+.search-row {
+  height: 76rpx;
+  margin-top: 24rpx;
+  padding: 0 24rpx;
+}
+
+.search-icon {
+  color: #9aac9f;
+}
+
+.filter {
+  color: #176f56;
+}
+
+.tabs {
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.tab {
+  padding: 14rpx 22rpx;
+  color: #60766c;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8rpx 18rpx rgba(32, 98, 76, 0.05);
+}
+
+.tab.active {
+  color: #176f56;
+  background: #e9f7ef;
+}
+
+.tab.urgent {
+  color: #d85b3d;
+  background: #fff2ec;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+  margin-top: 22rpx;
+}
+
+.order-card {
+  margin-bottom: 0;
+  padding: 26rpx;
+}
+
+.badge {
+  border-radius: 999rpx;
+  background: #d85b3d;
+}
+
+.badge.exchange {
+  background: #dc6a2c;
+}
+
+.status {
+  padding: 6rpx 0;
+  color: #d85b3d;
+}
+
+.status-preparing {
+  color: #2f80ed;
+}
+
+.hospital-row {
+  margin-top: 22rpx;
+}
+
+.product-row {
+  border: 1rpx solid #edf3ef;
+  border-radius: 22rpx;
+  background: #f8fcf9;
+}
+
+.product-img {
+  border-radius: 18rpx;
+  background: #f1f8f4;
+}
+
+.product-img image {
+  object-fit: cover;
+}
+
+.cold-tag {
+  border-radius: 999rpx;
+  color: #2f80ed;
+  background: #edf5ff;
+}
+
+.orange-btn {
+  min-height: 82rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #f1a24a 0%, #dc6a2c 100%);
+  box-shadow: 0 14rpx 30rpx rgba(216, 91, 61, 0.18);
+}
+
+.empty-state {
+  margin-top: 28rpx;
+}

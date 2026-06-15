@@ -39,6 +39,10 @@ function cents(amount) {
   return Math.round(Number(amount || 0) * 100)
 }
 
+function roundMoney(value) {
+  return Math.round(Number(value || 0) * 100) / 100
+}
+
 function getPlannedPoints(order) {
   const pricing = order && order.pricing ? order.pricing : {}
   const points = Number(pricing.pointsConsumed || 0)
@@ -119,6 +123,48 @@ async function settleCommission(order, nextStatus, paidAt) {
   } catch (_e) {}
 }
 
+async function lockBloodCommission(order, paidAt) {
+  const booking = order.booking || {}
+  const amount = roundMoney(booking.hospitalCommissionAmount || 0)
+  const hospitalId = booking.hospitalReferrerId || ''
+  if (order.type !== 'booking' || !hospitalId || amount <= 0) return
+
+  const payload = {
+    hospitalId,
+    hospitalName: booking.hospitalReferrerName || '',
+    customerId: order.customerId,
+    customerName: order.customerName || '',
+    orderId: order._id,
+    orderNo: order.orderNo || '',
+    amount,
+    storePrice: roundMoney(booking.storePrice || 0),
+    retailPrice: roundMoney(booking.retailPrice || 0),
+    status: 'locked',
+    sourceType: 'blood_booking',
+    lockedAt: paidAt,
+    updatedAt: paidAt,
+  }
+
+  const { data } = await db.collection('blood_commission_records').where({
+    orderId: order._id,
+    sourceType: 'blood_booking',
+  }).limit(1).get()
+  if (data && data[0]) {
+    await db.collection('blood_commission_records').doc(data[0]._id).update({ data: payload })
+  } else {
+    await db.collection('blood_commission_records').add({
+      data: { ...payload, createdAt: paidAt },
+    })
+  }
+
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      'booking.hospitalCommissionStatus': 'locked',
+      updatedAt: paidAt,
+    },
+  })
+}
+
 async function creditRecharge(order, actualAmount, paidAt) {
   if (order.type !== 'recharge') return
   const tier = order.rechargeTier || {}
@@ -149,6 +195,29 @@ async function redeemCardVoucher(order, paidAt) {
       updatedAt: paidAt,
     },
   })
+}
+
+async function fulfillCardPurchase(order, paidAt) {
+  if (order.type !== 'card_order' || !order.cardVoucherId) return { success: true }
+  const { data: card } = await db.collection('card_vouchers').doc(order.cardVoucherId).get()
+  if (!card) return { success: false, error: 'card not found' }
+  if (card.status !== 'ungifted') return { success: false, error: 'card unavailable' }
+  if (card.purchaserId && card.purchaserId !== order.customerId) return { success: false, error: 'card sold' }
+  if (card.purchaseOrderId && card.purchaseOrderId !== order._id) return { success: false, error: 'card locked' }
+
+  await db.collection('card_vouchers').doc(order.cardVoucherId).update({
+    data: {
+      purchaseOrderId: order._id,
+      purchaseOrderNo: order.orderNo || '',
+      purchaserId: order.customerId,
+      purchaserName: order.customerName || '',
+      purchaserOpenid: order.customerOpenid || '',
+      currentHolderId: null,
+      currentHolderName: '',
+      updatedAt: paidAt,
+    },
+  })
+  return { success: true }
 }
 
 async function deductPointsIfNeeded(order, paidAt) {
@@ -193,6 +262,12 @@ exports.main = async (event) => {
   }
 
   if (order.payment && order.payment.status === 'paid') {
+    const paidAt = order.payment.paidAt || formatDateTime(new Date())
+    const cardPurchaseResult = await fulfillCardPurchase(order, paidAt)
+    if (!cardPurchaseResult.success) {
+      return { errcode: 1, errmsg: cardPurchaseResult.error || 'card purchase failed' }
+    }
+    await lockBloodCommission(order, paidAt)
     return { errcode: 0, errmsg: 'ok' }
   }
 
@@ -206,6 +281,10 @@ exports.main = async (event) => {
   const pointsResult = await deductPointsIfNeeded(order, paidAt)
   if (!pointsResult.success) {
     return { errcode: 1, errmsg: pointsResult.error || 'points deduction failed' }
+  }
+  const cardPurchaseResult = await fulfillCardPurchase(order, paidAt)
+  if (!cardPurchaseResult.success) {
+    return { errcode: 1, errmsg: cardPurchaseResult.error || 'card purchase failed' }
   }
 
   await db.collection('orders').doc(order._id).update({
@@ -221,7 +300,7 @@ exports.main = async (event) => {
         totalFee: getTotalFee(payload),
       },
       ...(pointsResult.points ? { 'pricing.pointsConsumed': pointsResult.points, 'pricing.pointsDeductedAt': paidAt } : {}),
-      ...(order.type !== 'recharge' ? { 'commission.status': 'locked' } : {}),
+      ...(order.type !== 'recharge' && order.type !== 'card_order' ? { 'commission.status': 'locked' } : {}),
       updatedAt: paidAt,
     },
   })
@@ -229,6 +308,7 @@ exports.main = async (event) => {
   await redeemCardVoucher(order, paidAt)
   await creditRecharge(order, actualAmount, paidAt)
   await settleCommission(order, nextStatus, paidAt)
+  await lockBloodCommission(order, paidAt)
 
   return { errcode: 0, errmsg: 'ok' }
 }

@@ -8,14 +8,15 @@ const db = wx.cloud.database()
 const _ = db.command
 
 export const GENERATED_ASSETS = {
-  loginHero: '/assets/generated/optimized/login-vet-hero.webp',
-  homeBanner: '/assets/generated/optimized/home-vet-banner.webp',
+  loginHero: '/assets/generated/optimized/login-vet-hero.jpg',
+  loginFullscreen: '/assets/generated/optimized/login-fullscreen-bg-v3.png',
+  homeBanner: '/assets/generated/optimized/home-vet-banner.jpg',
   bloodBag: '/assets/generated/optimized/product-blood-bag.webp',
   vaccineKit: '/assets/generated/optimized/product-vaccine-kit.webp',
   testCard: '/assets/generated/optimized/product-test-card.webp',
   coldChain: '/assets/generated/optimized/cold-chain-logistics.webp',
   testTraceability: '/assets/generated/optimized/product-test-card.webp',
-  agentPromotion: '/assets/generated/optimized/home-vet-banner.webp',
+  agentPromotion: '/assets/generated/optimized/home-vet-banner.jpg',
 }
 
 // ===== Helpers =====
@@ -253,6 +254,12 @@ export async function ensureOpenidUser(options?: { referralCode?: string }) {
     const openid = getCurrentOpenid()
     if (!openid) return { success: false, error: 'openid unavailable' }
 
+    const cached = getCurrentUser()
+    if (cached?.id || cached?._id) {
+      return { success: true, user: cached }
+    }
+
+
     const { data } = await db.collection('users').where({ _openid: openid }).limit(1).get()
     if (data && data.length > 0) {
       const user = normalize(data[0])
@@ -384,6 +391,41 @@ export async function registerCustomer(phone: string, nickname: string, customer
 
 // ===== 商品服务 =====
 
+export async function registerAccount(params: {
+  phone: string
+  password: string
+  registerType: 'personal' | 'institution' | 'agent'
+  nickname?: string
+  referralCode?: string
+}) {
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'registerCustomer',
+      data: {
+        action: 'register',
+        phone: params.phone,
+        password: params.password,
+        registerType: params.registerType,
+        nickname: params.nickname || '',
+        referralCode: params.referralCode || '',
+      },
+    }) as any
+    if (result?.success && result.user) {
+      const user = result.user
+      const app = getApp()
+      app.globalData.userInfo = user
+      app.globalData.userRole = app.resolveRole?.(user) || inferUserRole(user)
+      app.globalData.authResolved = true
+      wx.setStorageSync('current_user', JSON.stringify(user))
+      wx.setStorageSync('user_role', app.globalData.userRole)
+      return { success: true, user, registerType: result.registerType || params.registerType }
+    }
+    return { success: false, error: result?.error || '注册失败' }
+  } catch (err) {
+    return { success: false, error: '注册失败' }
+  }
+}
+
 function normalizeProductVisibility(visibility: any): string {
   const value = String(visibility || '').trim()
   if (!value || value === 'all' || value === 'public') return 'all'
@@ -412,6 +454,8 @@ const PRODUCT_LIST_FIELDS = {
   personalPrice: true,
   visibility: true,
   stock: true,
+  salesCount: true,
+  serviceTags: true,
   status: true,
   returnPolicy: true,
   isPrescription: true,
@@ -460,19 +504,21 @@ export async function getCategories() {
 // ===== 订单服务 =====
 
 export async function getOrders(options?: { customerId?: string; salespersonId?: string; clerkId?: string; status?: string }) {
+  const user = getCurrentUser()
   const { result } = await wx.cloud.callFunction({
     name: 'queryOrders',
-    data: { action: 'listOrders', ...(options || {}) },
+    data: { action: 'listOrders', operatorId: user?.id, ...(options || {}) },
   }) as any
   if (!result?.success) throw new Error(result?.error || '订单读取失败')
   return result.orders || []
 }
 
 export async function getOrderById(id: string) {
+  const user = getCurrentUser()
   try {
     const { result } = await wx.cloud.callFunction({
       name: 'queryOrders',
-      data: { action: 'getOrderById', orderId: id },
+      data: { action: 'getOrderById', orderId: id, operatorId: user?.id },
     }) as any
     return result?.success ? result.order : null
   } catch { return null }
@@ -490,20 +536,36 @@ export async function queryLogistics(orderId: string) {
   }
 }
 
+export async function queryWxExpressOrder(params: { orderId?: string; waybillNo?: string; trackingNo?: string }) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'queryWxExpressOrder',
+    data: {
+      ...params,
+      operatorId: getCurrentUser()?.id,
+    },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '微信物流订单查询失败')
+  }
+  return result
+}
+
 export async function getOrderByNo(orderNo: string) {
+  const user = getCurrentUser()
   try {
     const { result } = await wx.cloud.callFunction({
       name: 'queryOrders',
-      data: { action: 'getOrderByNo', orderNo },
+      data: { action: 'getOrderByNo', orderNo, operatorId: user?.id },
     }) as any
     return result?.success ? result.order : null
   } catch { return null }
 }
 
 export async function deleteOrder(orderId: string) {
+  const user = getCurrentUser()
   const { result } = await wx.cloud.callFunction({
     name: 'queryOrders',
-    data: { action: 'deleteOrder', orderId },
+    data: { action: 'deleteOrder', orderId, operatorId: user?.id },
   }) as any
   if (!result?.success) {
     throw new Error(result?.error || '订单删除失败')
@@ -865,29 +927,122 @@ export async function getTestReportByCode(code: string) {
 
 // ===== 佣金与提成服务 =====
 
-export async function getCommissionRecords(salespersonId: string) {
+const EMPTY_COMMISSION_SUMMARY = {
+  total: 0,
+  available: 0,
+  withdrawable: 0,
+  withdrawn: 0,
+  pending: 0,
+  pendingDeduction: 0,
+  pendingLock: 0,
+}
+
+async function getCommissionRecordsFromDatabase(salespersonId: string) {
   const { data } = await db.collection('commission_records').where({ salespersonId }).orderBy('createdAt', 'desc').limit(100).get()
   return normalizeList(data)
 }
 
-export async function getCommissionSummary() {
+export async function getAgentCommissionOverview() {
   const user = getCurrentUser()
-  if (!user) return { total: 0, available: 0, withdrawn: 0, pendingDeduction: 0, pendingLock: 0 }
-  try {
-    const { data } = await db.collection('users').doc(user.id).get()
-    const u = normalize(data)
+  if (!user) return { summary: { ...EMPTY_COMMISSION_SUMMARY }, records: [] }
+  if (user.role !== 'salesperson' && user.role !== 'agent') {
+    const commission = user.commission || {}
     return {
-      total: u.commission?.total || 0,
-      available: u.commission?.available || 0,
-      withdrawable: u.commission?.available || 0,
-      withdrawn: u.commission?.withdrawn || 0,
-      pending: u.commission?.pendingDeduction || 0,
-      pendingDeduction: u.commission?.pendingDeduction || 0,
-      pendingLock: 0,
+      summary: {
+        ...EMPTY_COMMISSION_SUMMARY,
+        total: commission.total || 0,
+        available: commission.available || 0,
+        withdrawable: commission.available || 0,
+        withdrawn: commission.withdrawn || 0,
+        pending: commission.pendingDeduction || 0,
+        pendingDeduction: commission.pendingDeduction || 0,
+      },
+      records: [],
     }
-  } catch {
-    return { total: 0, available: 0, withdrawable: 0, withdrawn: 0, pending: 0, pendingDeduction: 0, pendingLock: 0 }
   }
+  try {
+    const { result } = await wx.cloud.callFunction({
+      name: 'toggleSalesmanCustomerFocus',
+      data: {
+        action: 'commissions',
+        userId: user.id,
+      },
+    }) as any
+    if (result?.success) {
+      return {
+        summary: { ...EMPTY_COMMISSION_SUMMARY, ...(result.summary || {}) },
+        records: normalizeList(result.records || []),
+      }
+    }
+  } catch (e) {
+    console.warn('getAgentCommissionOverview failed, fallback to local cache', e)
+  }
+
+  try {
+    const records = await getCommissionRecordsFromDatabase(user.id)
+    return {
+      summary: buildCommissionSummaryFromRecords(records, user.commission || {}),
+      records: records.filter((record: any) => record.status !== 'cancelled'),
+    }
+  } catch (e) {
+    console.warn('getCommissionRecords fallback failed', e)
+    const commission = user.commission || {}
+    return {
+      summary: {
+        ...EMPTY_COMMISSION_SUMMARY,
+        total: commission.total || 0,
+        available: commission.available || 0,
+        withdrawable: commission.available || 0,
+        withdrawn: commission.withdrawn || 0,
+        pending: commission.pendingDeduction || 0,
+        pendingDeduction: commission.pendingDeduction || 0,
+      },
+      records: [],
+    }
+  }
+}
+
+function getCommissionSignedAmount(record: any): number {
+  const amount = Number(record?.signedAmount ?? record?.amount ?? 0) || 0
+  if (record?.status === 'deducted' || record?.sourceType === 'return_deduction') return -Math.abs(amount)
+  return amount
+}
+
+function buildCommissionSummaryFromRecords(records: any[], commission: any) {
+  const summary = {
+    ...EMPTY_COMMISSION_SUMMARY,
+    available: Number(commission.available || 0),
+    withdrawable: Number(commission.available || 0),
+    withdrawn: Number(commission.withdrawn || 0),
+    pendingDeduction: Number(commission.pendingDeduction || 0),
+  }
+  for (const record of records || []) {
+    if (!record || record.status === 'cancelled') continue
+    const signedAmount = getCommissionSignedAmount(record)
+    summary.total += signedAmount
+    if (record.status === 'pending' || record.status === 'locked') {
+      summary.pending += Math.max(0, signedAmount)
+      summary.pendingLock += Math.max(0, signedAmount)
+    }
+  }
+  summary.total = Math.max(0, Math.round(summary.total * 100) / 100)
+  summary.pending = Math.max(0, Math.round(summary.pending * 100) / 100)
+  summary.pendingLock = Math.max(0, Math.round(summary.pendingLock * 100) / 100)
+  return summary
+}
+
+export async function getCommissionRecords(salespersonId: string) {
+  const user = getCurrentUser()
+  if (user?.id === salespersonId) {
+    const overview = await getAgentCommissionOverview()
+    return overview.records
+  }
+  return getCommissionRecordsFromDatabase(salespersonId)
+}
+
+export async function getCommissionSummary() {
+  const overview = await getAgentCommissionOverview()
+  return overview.summary
 }
 
 export async function getSalesmanCustomers() {
@@ -972,7 +1127,13 @@ export async function getAgentOrders(options?: { status?: string; customerId?: s
     getSalesmanCustomers(),
   ])
   if (!result?.success) return []
-  return (result.orders || []).map((order: any) => {
+  const customerIds = new Set(customers.map((item: any) => item.id).filter(Boolean))
+  return (result.orders || []).filter((order: any) => {
+    if (order.type === 'card_order') return false
+    if (!customerIds.has(order.customerId)) return false
+    if (options?.customerId && order.customerId !== options.customerId) return false
+    return true
+  }).map((order: any) => {
     const customer = customers.find((item: any) => item.id === order.customerId)
     return {
       ...order,
@@ -1086,8 +1247,37 @@ export async function getAgentApplication(userId?: string) {
   const id = userId || user?.id
   if (!id) return null
   try {
-    const { data } = await db.collection('users').doc(id).get()
-    const u = normalize(data)
+    if (!userId && user) {
+      const approved = isApprovedAgent(user)
+      const fallbackInfo = approved ? {
+        contactName: user?.agentApplication?.contactName || user?.verificationInfo?.realName || user?.nickname || '',
+        contactPhone: user?.agentApplication?.contactPhone || user?.phone || '',
+        submittedAt: user?.agentApplication?.submittedAt || user?.agentApprovedAt || user?.updatedAt || user?.createdAt || '',
+        idNumber: user?.agentApplication?.idNumber || user?.verificationInfo?.idCard || '',
+        idCardFront: user?.agentApplication?.idCardFront || '',
+        idCardBack: user?.agentApplication?.idCardBack || '',
+      } : {}
+      return {
+        status: user?.agentStatus || (approved ? 'approved' : 'none'),
+        info: { ...fallbackInfo, ...(user?.agentApplication || {}) },
+        user,
+      }
+    }
+
+    let u: any = null
+    try {
+      const { data } = await db.collection('users').doc(id).get()
+      u = normalize(data)
+    } catch (_e) {
+      u = null
+    }
+
+    if ((!u || (!u.agentStatus && u.role !== 'salesperson')) && user?.phone) {
+      const { data } = await db.collection('users').where({ phone: user.phone }).limit(1).get()
+      if (data && data.length > 0) u = normalize(data[0])
+    }
+    if (!u) return null
+
     const approved = isApprovedAgent(u)
     const fallbackInfo = approved ? {
       contactName: u?.agentApplication?.contactName || u?.verificationInfo?.realName || u?.nickname || '',
@@ -1253,6 +1443,40 @@ export async function getSystemConfig() {
       pointsRate: 1, pointsExpiryDays: 365, rechargeTiers: [],
     }
   }
+}
+
+export async function createBloodBookingInvite() {
+  const user = getCurrentUser()
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageBloodBookingInvite',
+    data: { action: 'create', userId: user?.id || user?._id || '' },
+  }) as any
+  if (!result?.success) throw new Error(result?.error || '生成预约二维码失败')
+  if (!result.invite?.qrcodeUrl && result.invite?.id) {
+    const codeResult = await manageCardVoucher({ action: 'bloodInviteCode', inviteId: result.invite.id, userId: user?.id || user?._id || '' })
+    result.invite.qrcodeFileId = codeResult.fileID || ''
+    result.invite.qrcodeUrl = codeResult.fileID || ''
+  }
+  return result.invite
+}
+
+export async function getBloodBookingInvite(inviteId: string) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageBloodBookingInvite',
+    data: { action: 'get', inviteId },
+  }) as any
+  if (!result?.success) throw new Error(result?.error || '预约二维码无效')
+  return result.invite
+}
+
+export async function getBloodCommissionRecords() {
+  const user = getCurrentUser()
+  const { result } = await wx.cloud.callFunction({
+    name: 'manageBloodBookingInvite',
+    data: { action: 'listCommissions', userId: user?.id || user?._id || '' },
+  }) as any
+  if (!result?.success) throw new Error(result?.error || '读取用血提成失败')
+  return normalizeList(result.records || [])
 }
 
 export async function getUserNotifications(userId: string) {
@@ -1556,8 +1780,11 @@ export async function getCardVoucherProducts() {
 }
 
 export async function manageCardVoucher(params: {
-  action: 'gift' | 'claim' | 'regift' | 'redeem' | 'void' | 'shareCode' | 'claimShared'
-  cardId: string
+  action: 'gift' | 'claim' | 'regift' | 'redeem' | 'void' | 'shareCode' | 'claimShared' | 'bloodInviteCode' | 'agentPromoCode' | 'recordAgentPromoVisit' | 'agentPromoStats'
+  cardId?: string
+  inviteId?: string
+  userId?: string
+  referralCode?: string
   toUserId?: string
   redeemProductId?: string
   shippingAddress?: any

@@ -1,12 +1,10 @@
 <view class="page">
-  <!-- 卡券信息 -->
   <view wx:if="{{card}}" class="card-info">
     <text class="card-no">{{card.cardNo}}</text>
     <text class="card-product">{{card.productName}}</text>
-    <text class="card-meta">有效期至 {{card.expiresAt}}</text>
+    <text class="card-meta">有效期至 {{card.expiresAt || '未设置'}}</text>
   </view>
 
-  <!-- 搜索 -->
   <view class="search-bar">
     <input
       placeholder="搜索客户名称或手机号"
@@ -15,7 +13,6 @@
     />
   </view>
 
-  <!-- 客户列表 -->
   <view class="customer-list">
     <view
       wx:for="{{filteredCustomers}}"
@@ -41,7 +38,6 @@
     </view>
   </view>
 
-  <!-- 底部按钮 -->
   <view class="footer">
     <view wx:if="{{selectedName}}" class="selected-info">已选择：{{selectedName}}</view>
     <button class="btn-confirm" bindtap="onConfirmGift" disabled="{{!selectedId || loading}}" loading="{{loading}}">

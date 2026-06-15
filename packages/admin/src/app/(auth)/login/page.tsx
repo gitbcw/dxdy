@@ -79,11 +79,6 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? '登录中...' : '登录'}
           </Button>
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-muted-foreground text-center">
-              测试账号：dxdy_admin / dxdy_service / dxdy_product（任意密码）
-            </p>
-          )}
         </form>
       </CardContent>
     </Card>

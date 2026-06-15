@@ -44,7 +44,6 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
   const chartData = [...data].reverse().map((d) => ({
     date: formatDateLabel(d.date),
     institution: d.byCustomerType?.institution?.revenue || 0,
-    personal: d.byCustomerType?.personal?.revenue || 0,
   }))
 
   return (
@@ -63,31 +62,14 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
                 stroke="#94a3b8"
                 tickFormatter={(v: number) => `¥${v >= 10000 ? `${(v / 10000).toFixed(1)}w` : v}`}
               />
-              <Tooltip
-                formatter={(value, name) => [
-                  `¥${formatMoney(Number(value))}`,
-                  name === 'institution' ? '机构客户' : '普通客户',
-                ]}
-              />
-              <Legend
-                formatter={(value: string) =>
-                  value === 'institution' ? '机构客户' : '普通客户'
-                }
-              />
+              <Tooltip formatter={(value) => [`¥${formatMoney(Number(value))}`, '医院客户']} />
+              <Legend formatter={() => '医院客户'} />
               <Area
                 type="monotone"
                 dataKey="institution"
                 stackId="1"
                 stroke="#0f766e"
                 fill="#0f766e"
-                fillOpacity={0.6}
-              />
-              <Area
-                type="monotone"
-                dataKey="personal"
-                stackId="1"
-                stroke="#5eead4"
-                fill="#5eead4"
                 fillOpacity={0.6}
               />
             </AreaChart>

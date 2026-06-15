@@ -20,7 +20,6 @@ export interface AnalyticsDaily {
   agentContribution: AgentContribution[]
   byCustomerType: {
     institution: { revenue: number; orderCount: number; newCustomers: number }
-    personal: { revenue: number; orderCount: number; newCustomers: number }
   }
   createdAt: string
 }

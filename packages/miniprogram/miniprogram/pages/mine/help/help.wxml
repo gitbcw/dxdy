@@ -14,6 +14,7 @@
         wx:key="id"
         class="faq-item {{item.open ? 'is-open' : ''}}"
         data-id="{{item.id}}"
+        data-index="{{index}}"
         bindtap="onToggleFaq"
       >
         <!-- 左侧序号 + 强调条 -->
@@ -30,7 +31,7 @@
               <view class="toggle-line toggle-v {{item.open ? 'is-hidden' : ''}}"></view>
             </view>
           </view>
-          <view class="faq-answer-wrap" wx:if="{{item.open}}">
+          <view class="faq-answer-wrap">
             <text class="faq-answer">{{item.answer}}</text>
           </view>
         </view>
@@ -70,12 +71,6 @@
           <view class="phone-icon"></view>
         </view>
         <text>拨打客服热线</text>
-      </view>
-      <view class="ca-btn ca-secondary" bindtap="onOnlineService">
-        <view class="ca-btn-icon">
-          <view class="chat-icon"></view>
-        </view>
-        <text>在线咨询</text>
       </view>
     </view>
 

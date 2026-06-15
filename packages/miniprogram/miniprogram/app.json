@@ -1,8 +1,11 @@
 {
   "pages": [
     "pages/login/login",
+    "pages/register/register",
     "pages/home/home",
     "pages/blood/booking/booking",
+    "pages/blood/invite/invite",
+    "pages/blood/commission/commission",
     "pages/transfusion/assistant/assistant",
     "pages/catalog/catalog",
     "pages/cart/cart",
@@ -30,6 +33,7 @@
     "pages/clerk/order-detail/order-detail",
     "pages/clerk/ship-success/ship-success",
     "pages/clerk/logistics/logistics",
+    "pages/clerk/pickup-address/pickup-address",
     "pages/verify/verify",
     "pages/product-detail/product-detail",
     "pages/mine/address/address",

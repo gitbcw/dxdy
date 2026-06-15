@@ -10,7 +10,6 @@ Page({
       region: '',
       regionArray: [] as string[],
       detail: '',
-      hospitalName: '',
       isDefault: true,
     } as any,
     addresses: [] as any[],
@@ -80,7 +79,6 @@ Page({
         region,
         regionArray,
         detail: item.detail,
-        hospitalName: item.hospitalName || '',
         isDefault: item.isDefault,
       },
     })
@@ -124,7 +122,6 @@ Page({
         region: '',
         regionArray: [],
         detail: '',
-        hospitalName: '',
         isDefault: this.data.addresses.length === 0,
       },
     })
@@ -176,7 +173,6 @@ Page({
       city: form.regionArray[1] || '',
       district: form.regionArray[2] || '',
       detail: form.detail,
-      hospitalName: form.hospitalName,
       isDefault: form.isDefault,
     }
     wx.showLoading({ title: '保存中...' })

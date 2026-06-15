@@ -1,0 +1,39 @@
+<view class="page">
+  <view class="hero">
+    <text class="title">用血提成</text>
+    <text class="desc">个人客户通过门店二维码预约并完成订单后，零售价与门店价的差额会结算到这里。</text>
+  </view>
+
+  <view class="summary-grid">
+    <view class="summary-card">
+      <text class="summary-label">冻结中</text>
+      <text class="summary-value">¥{{summary.locked}}</text>
+    </view>
+    <view class="summary-card">
+      <text class="summary-label">已结算</text>
+      <text class="summary-value">¥{{summary.settled}}</text>
+    </view>
+    <view class="summary-card">
+      <text class="summary-label">已取消</text>
+      <text class="summary-value muted">¥{{summary.cancelled}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty-card">正在加载...</view>
+  <view wx:elif="{{records.length === 0}}" class="empty-card">暂无用血提成记录</view>
+
+  <view wx:else class="list">
+    <view wx:for="{{records}}" wx:key="id" class="record-card">
+      <view class="record-head">
+        <text class="order-no">{{item.orderNo || item.orderId}}</text>
+        <text class="status {{item.status}}">{{item.statusText}}</text>
+      </view>
+      <view class="amount-row">
+        <text class="amount">¥{{item.amountText}}</text>
+        <text class="formula">零售价 ¥{{item.retailPriceText}} - 门店价 ¥{{item.storePriceText}}</text>
+      </view>
+      <text class="meta">客户：{{item.customerName || '个人客户'}}</text>
+      <text class="meta">时间：{{item.createdAt}}</text>
+    </view>
+  </view>
+</view>

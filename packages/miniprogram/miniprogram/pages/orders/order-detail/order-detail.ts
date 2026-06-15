@@ -6,6 +6,7 @@ const {
   payOrder,
   getMyCards,
   getReturns,
+  getSystemConfig,
   formatMoney,
   formatDateTime,
   getOrderStatusText,
@@ -41,7 +42,11 @@ Page({
     selectedCardVoucher: null as any,
     cardDiscountText: '0.00',
     payableAmountText: '0.00',
+    paymentTimeoutMinutes: 30,
   },
+
+  _paymentTimer: 0 as any,
+  _autoCancelling: {} as Record<string, boolean>,
 
   onLoad(options: any) {
     if (options.customerId) {
@@ -58,6 +63,15 @@ Page({
     if (!this.data.isDetailMode) {
       this.loadOrders()
     }
+    this.startPaymentCountdown()
+  },
+
+  onHide() {
+    this.stopPaymentCountdown()
+  },
+
+  onUnload() {
+    this.stopPaymentCountdown()
   },
 
   async loadOrders() {
@@ -66,6 +80,7 @@ Page({
       this.setData({ isEmpty: true, orders: [] })
       return
     }
+    await this.ensureSystemConfig()
     const orders = await getOrders({ customerId: this.data.queryCustomerId || user.id })
     const mapped = await Promise.all(orders.map((order: any) => this.mapOrder(order)))
     this.setData({
@@ -77,9 +92,11 @@ Page({
       selectedReturn: null,
       isDetailMode: false,
     })
+    this.startPaymentCountdown()
   },
 
   async loadOrderDetail(orderId: string) {
+    await this.ensureSystemConfig()
     const order = await getOrderById(orderId)
     if (!order) {
       wx.showToast({ title: '订单不存在', icon: 'none' })
@@ -101,6 +118,7 @@ Page({
       payableAmountText: mapped.totalText,
     })
     this.loadCardVouchersForOrder(mapped)
+    this.startPaymentCountdown()
   },
 
   async loadCardVouchersForOrder(order: any) {
@@ -130,14 +148,18 @@ Page({
     const returnRecord = returns[0] || null
     const firstItem = order.items?.[0] || {}
     const priceChanged = order.pricing.priceLog?.length > 0
+    const paymentTimeout = this.getPaymentTimeoutInfo(order)
+    const canQueryLogistics = this.canQueryLogistics(order)
     return {
       ...order,
+      canQueryLogistics,
       statusText: getOrderStatusText(order.status),
       statusDesc: getOrderStatusDesc(order.status),
       totalText: formatMoney(order.pricing.actualAmount),
       originalText: formatMoney(order.pricing.originalAmount),
       savedText: formatMoney(Math.max(0, order.pricing.originalAmount - order.pricing.actualAmount)),
       dateText: formatDateTime(order.createdAt),
+      paymentTimeout,
       paymentMethodText: this.getPaymentMethodText(order.payment?.method),
       firstProductName: firstItem.productName,
       firstProductSpec: firstItem.spec,
@@ -170,10 +192,19 @@ Page({
       commissionText: this.getCommissionText(order, returnRecord),
       logisticsText: order.shipping?.deliveryMode === 'direct' || order.shipping?.directDelivery?.status === 'departed'
         ? `制单员已出发，预计 ${order.shipping?.directDelivery?.estimatedArrivalAt || order.shipping?.eta || '待更新'} 到达`
+        : order.shipping?.deliveryMode === 'sf_pickup' || order.shipping?.wxExpress
+          ? '顺丰散单上门揽收，暂不支持在线查询'
         : order.shipping?.trackingNo
           ? `${order.shipping.company} ${order.shipping.trackingNo}`
           : '等待制单员录入快递单号',
     }
+  },
+
+  canQueryLogistics(order: any) {
+    const shipping = order?.shipping || {}
+    if (shipping.deliveryMode === 'direct' || shipping.directDelivery?.status === 'departed') return true
+    if (shipping.deliveryMode === 'sf_pickup' || shipping.wxExpress) return false
+    return !!shipping.trackingNo
   },
 
   getSummaryCards(orders: any[]) {
@@ -197,6 +228,148 @@ Page({
       exchange_completed: '换货完成',
     }
     return map[status] || status
+  },
+
+  async ensureSystemConfig() {
+    try {
+      const config = await getSystemConfig()
+      this.setData({ paymentTimeoutMinutes: Number(config?.paymentTimeoutMinutes || 30) })
+    } catch (_e) {
+      this.setData({ paymentTimeoutMinutes: 30 })
+    }
+  },
+
+  parseDate(value: any) {
+    if (!value) return null
+    if (value instanceof Date) return value
+    const text = String(value).trim()
+    if (!text) return null
+    const utcLike = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/)
+    if (utcLike) {
+      return new Date(Date.UTC(
+        Number(utcLike[1]),
+        Number(utcLike[2]) - 1,
+        Number(utcLike[3]),
+        Number(utcLike[4]),
+        Number(utcLike[5]),
+        Number(utcLike[6] || 0),
+      ))
+    }
+    const date = new Date(text.includes('T') ? text : text.replace(' ', 'T'))
+    if (!Number.isNaN(date.getTime())) return date
+    const fallback = new Date(text.replace(/-/g, '/'))
+    return Number.isNaN(fallback.getTime()) ? null : fallback
+  },
+
+  getPaymentTimeoutInfo(order: any) {
+    if (!order || order.status !== 'pending_payment') return null
+    const minutes = Number(this.data.paymentTimeoutMinutes || 30)
+    if (!minutes) {
+      return {
+        enabled: false,
+        deadlineText: '',
+        notice: '当前订单未开启自动取消，请尽快完成支付',
+      }
+    }
+    const baseTime = this.parseDate(order.pendingPaymentAt || order.confirmedAt || order.createdAt)
+    if (!baseTime) return null
+    const deadline = new Date(baseTime.getTime() + minutes * 60 * 1000)
+    const remainingSeconds = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 1000))
+    const expired = remainingSeconds <= 0
+    const countdownText = this.formatCountdown(remainingSeconds)
+    return {
+      enabled: true,
+      deadlineText: formatDateTime(deadline),
+      remainingSeconds,
+      countdownText,
+      expired,
+      notice: expired
+        ? '订单已超过支付期限，系统将自动取消'
+        : `剩余支付时间 ${countdownText}，超时订单将自动取消`,
+    }
+  },
+
+  formatCountdown(totalSeconds: number) {
+    const seconds = Math.max(0, Number(totalSeconds || 0))
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    const mm = String(m).padStart(2, '0')
+    const ss = String(s).padStart(2, '0')
+    if (h > 0) return `${h}:${mm}:${ss}`
+    return `${mm}:${ss}`
+  },
+
+  startPaymentCountdown() {
+    this.stopPaymentCountdown()
+    const hasPending = this.hasPendingPaymentOrders()
+    if (!hasPending) return
+    this._paymentTimer = setInterval(() => {
+      this.tickPaymentCountdown()
+    }, 1000)
+  },
+
+  stopPaymentCountdown() {
+    if (this._paymentTimer) {
+      clearInterval(this._paymentTimer)
+      this._paymentTimer = 0
+    }
+  },
+
+  hasPendingPaymentOrders() {
+    if (this.data.selectedOrder?.status === 'pending_payment') return true
+    return (this.data.orders || []).some((order: any) => order.status === 'pending_payment')
+  },
+
+  tickPaymentCountdown() {
+    const mapOrderCountdown = (order: any) => {
+      if (!order || order.status !== 'pending_payment') return order
+      const paymentTimeout = this.getPaymentTimeoutInfo(order)
+      return { ...order, paymentTimeout }
+    }
+    const orders = (this.data.orders || []).map(mapOrderCountdown)
+    const selectedOrder = this.data.selectedOrder ? mapOrderCountdown(this.data.selectedOrder) : null
+    this.setData({
+      orders,
+      visibleOrders: this.filterOrders(orders, this.data.activeTab),
+      selectedOrder,
+    })
+
+    const expiredOrders = [
+      ...orders.filter((order: any) => order.status === 'pending_payment' && order.paymentTimeout?.remainingSeconds <= 0),
+      ...(selectedOrder?.status === 'pending_payment' && selectedOrder.paymentTimeout?.remainingSeconds <= 0 ? [selectedOrder] : []),
+    ]
+    expiredOrders.forEach((order: any) => this.autoCancelTimeoutOrder(order))
+    if (!this.hasPendingPaymentOrders()) this.stopPaymentCountdown()
+  },
+
+  async autoCancelTimeoutOrder(order: any) {
+    const orderId = order?.id
+    if (!orderId || this._autoCancelling[orderId]) return
+    this._autoCancelling[orderId] = true
+    try {
+      await updateOrderStatus(orderId, 'cancelled')
+      const nextOrder = {
+        ...order,
+        status: 'cancelled',
+        statusText: getOrderStatusText('cancelled'),
+        statusDesc: getOrderStatusDesc('cancelled'),
+        paymentTimeout: null,
+        canDelete: true,
+      }
+      const orders = (this.data.orders || []).map((item: any) => item.id === orderId ? nextOrder : item)
+      this.setData({
+        orders,
+        visibleOrders: this.filterOrders(orders, this.data.activeTab),
+        selectedOrder: this.data.selectedOrder?.id === orderId ? nextOrder : this.data.selectedOrder,
+        summaryCards: this.getSummaryCards(orders),
+      })
+      wx.showToast({ title: '订单已超时取消', icon: 'none' })
+    } catch (_e) {
+      this.loadOrders()
+    } finally {
+      delete this._autoCancelling[orderId]
+    }
   },
 
   getPaymentMethodText(method: string) {
@@ -254,7 +427,9 @@ Page({
     }
     if (order.status === 'pending_receipt') {
       actions.push({ key: 'confirm', label: '确认收货', primary: true })
-      actions.push({ key: 'logistics', label: '查看物流' })
+      if (this.canQueryLogistics(order)) {
+        actions.push({ key: 'logistics', label: '查看物流' })
+      }
     }
     if (order.status === 'completed' && !order.returnRecord) {
       actions.push({ key: 'return', label: '发起退换货', primary: true })
@@ -309,12 +484,21 @@ Page({
   onLogisticsTap() {
     const order = this.data.selectedOrder
     if (!order) return
+    if (!order.canQueryLogistics) {
+      wx.showToast({ title: '顺丰散单暂不支持在线查询', icon: 'none' })
+      return
+    }
     wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${order.id}` })
   },
 
   onLogisticsFromList(e: any) {
     const id = e.currentTarget.dataset.id
     if (!id) return
+    const order = (this.data.visibleOrders || []).find((item: any) => item.id === id)
+    if (order && !order.canQueryLogistics) {
+      wx.showToast({ title: '顺丰散单暂不支持在线查询', icon: 'none' })
+      return
+    }
     wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${id}` })
   },
 
@@ -495,6 +679,10 @@ Page({
     }
 
     if (key === 'logistics') {
+      if (!order.canQueryLogistics) {
+        wx.showToast({ title: '顺丰散单暂不支持在线查询', icon: 'none' })
+        return
+      }
       wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${order.id}` })
       return
     }

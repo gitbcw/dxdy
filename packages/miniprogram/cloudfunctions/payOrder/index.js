@@ -34,6 +34,63 @@ async function getOrder(orderId) {
   }
 }
 
+async function getSystemConfig() {
+  try {
+    const { data } = await db.collection('config').doc('system').get()
+    return data || {}
+  } catch (_e) {
+    return {}
+  }
+}
+
+async function getSystemOperator() {
+  const { data } = await db.collection('users').where({
+    role: _.in(['system_admin', 'admin']),
+    status: _.neq('disabled'),
+  }).limit(1).get()
+  return data && data[0] ? data[0] : null
+}
+
+function parseDate(value) {
+  if (!value) return null
+  const text = String(value).trim()
+  if (!text) return null
+  const date = new Date(text.includes('T') ? text : text.replace(' ', 'T'))
+  if (!Number.isNaN(date.getTime())) return date
+  const fallback = new Date(text.replace(/-/g, '/'))
+  return Number.isNaN(fallback.getTime()) ? null : fallback
+}
+
+function getPendingPaymentBaseTime(order) {
+  return parseDate(order?.pendingPaymentAt)
+    || parseDate(order?.confirmedAt)
+    || parseDate(order?.createdAt)
+}
+
+async function cancelIfPaymentExpired(order) {
+  const config = await getSystemConfig()
+  const minutes = Math.max(0, Number(config.paymentTimeoutMinutes || 30))
+  if (!minutes) return { expired: false }
+  const baseTime = getPendingPaymentBaseTime(order)
+  if (!baseTime) return { expired: false }
+  if (Date.now() - baseTime.getTime() <= minutes * 60 * 1000) return { expired: false }
+
+  const operator = await getSystemOperator()
+  if (operator) {
+    await cloud.callFunction({
+      name: 'updateOrderStatus',
+      data: {
+        orderId: order._id,
+        status: 'cancelled',
+        operatorId: operator._id,
+        operatorName: '系统自动取消',
+        autoCancel: true,
+      },
+    })
+  }
+  return { expired: true, minutes }
+}
+
 function isOwner(order, openid) {
   if (order.customerOpenid) return order.customerOpenid === openid
   return order._openid === openid
@@ -122,6 +179,29 @@ async function redeemCardVoucher(order, cardUsage, paidAt) {
   })
 }
 
+async function fulfillCardPurchase(order, paidAt) {
+  if (order.type !== 'card_order' || !order.cardVoucherId) return { success: true }
+  const { data: card } = await db.collection('card_vouchers').doc(order.cardVoucherId).get()
+  if (!card) return error('卡券不存在', 'CARD_NOT_FOUND')
+  if (card.status !== 'ungifted') return error('该卡券当前不可购买', 'CARD_UNAVAILABLE')
+  if (card.purchaserId && card.purchaserId !== order.customerId) return error('该卡券已被购买', 'CARD_SOLD')
+  if (card.purchaseOrderId && card.purchaseOrderId !== order._id) return error('该卡券已被其他订单锁定', 'CARD_LOCKED')
+
+  await db.collection('card_vouchers').doc(order.cardVoucherId).update({
+    data: {
+      purchaseOrderId: order._id,
+      purchaseOrderNo: order.orderNo || '',
+      purchaserId: order.customerId,
+      purchaserName: order.customerName || '',
+      purchaserOpenid: order.customerOpenid || '',
+      currentHolderId: null,
+      currentHolderName: '',
+      updatedAt: paidAt,
+    },
+  })
+  return { success: true }
+}
+
 async function deductPointsIfNeeded(order, paidAt) {
   const points = getPlannedPoints(order)
   if (!points || points <= 0 || order.pricing?.pointsDeductedAt) return { success: true }
@@ -197,6 +277,48 @@ async function payWithWallet(order, actualAmount, paidAt) {
   }
 }
 
+async function lockBloodCommission(order, paidAt) {
+  const booking = order.booking || {}
+  const amount = roundMoney(booking.hospitalCommissionAmount || 0)
+  const hospitalId = booking.hospitalReferrerId || ''
+  if (order.type !== 'booking' || !hospitalId || amount <= 0) return
+
+  const payload = {
+    hospitalId,
+    hospitalName: booking.hospitalReferrerName || '',
+    customerId: order.customerId,
+    customerName: order.customerName || '',
+    orderId: order._id,
+    orderNo: order.orderNo || '',
+    amount,
+    storePrice: roundMoney(booking.storePrice || 0),
+    retailPrice: roundMoney(booking.retailPrice || 0),
+    status: 'locked',
+    sourceType: 'blood_booking',
+    lockedAt: paidAt,
+    updatedAt: paidAt,
+  }
+
+  const { data } = await db.collection('blood_commission_records').where({
+    orderId: order._id,
+    sourceType: 'blood_booking',
+  }).limit(1).get()
+  if (data && data[0]) {
+    await db.collection('blood_commission_records').doc(data[0]._id).update({ data: payload })
+  } else {
+    await db.collection('blood_commission_records').add({
+      data: { ...payload, createdAt: paidAt },
+    })
+  }
+
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      'booking.hospitalCommissionStatus': 'locked',
+      updatedAt: paidAt,
+    },
+  })
+}
+
 async function markPaid(order, method, actualAmount, cardUsage = null) {
   const paidAt = formatDateTime(new Date())
   const nextStatus = getNextStatus(order.type)
@@ -215,6 +337,8 @@ async function markPaid(order, method, actualAmount, cardUsage = null) {
   }
 
   await redeemCardVoucher(order, cardUsage, paidAt)
+  const cardPurchaseResult = await fulfillCardPurchase(order, paidAt)
+  if (!cardPurchaseResult.success) return cardPurchaseResult
 
   await db.collection('orders').doc(order._id).update({
     data: {
@@ -231,7 +355,7 @@ async function markPaid(order, method, actualAmount, cardUsage = null) {
         'pricing.cardVoucherDiscount': cardUsage.discountAmount,
         'pricing.cardVoucher': cardUsage,
       } : {}),
-      ...(order.type !== 'recharge' ? { 'commission.status': 'locked' } : {}),
+      ...(order.type !== 'recharge' && order.type !== 'card_order' ? { 'commission.status': 'locked' } : {}),
       updatedAt: paidAt,
     },
   })
@@ -273,7 +397,11 @@ async function markPaid(order, method, actualAmount, cardUsage = null) {
     }
   } catch (_e) {}
 
-  if (nextStatus === 'completed' && order.salespersonId) {
+  try {
+    await lockBloodCommission(order, paidAt)
+  } catch (_e) {}
+
+  if (nextStatus === 'completed' && order.type !== 'card_order' && order.salespersonId) {
     try {
       const { data: commissionRecords } = await db.collection('commission_records').where({
         orderId: order._id,
@@ -351,6 +479,12 @@ exports.main = async (event) => {
   if (!order) return error('订单不存在', 'NOT_FOUND')
   if (!isOwner(order, openid)) return error('只能支付自己的订单', 'FORBIDDEN')
   if (order.status !== 'pending_payment') return error('仅待支付订单可支付', 'INVALID_STATUS', { ...order, id: order._id })
+
+  const timeoutResult = await cancelIfPaymentExpired(order)
+  if (timeoutResult.expired) {
+    const latest = await getOrder(order._id)
+    return error('订单支付超时，已自动取消', 'PAYMENT_TIMEOUT', latest ? { ...latest, id: latest._id } : { ...order, id: order._id, status: 'cancelled' })
+  }
 
   const originalAmount = getActualAmount(order)
   if (originalAmount <= 0) return error('订单金额异常')

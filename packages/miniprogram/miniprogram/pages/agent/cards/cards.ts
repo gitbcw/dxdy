@@ -1,4 +1,4 @@
-const { getAgentCards } = require('../../../services/index')
+const { getAgentCards, formatMoney } = require('../../../services/index')
 
 const statusLabels: Record<string, string> = {
   all: '全部',
@@ -6,9 +6,11 @@ const statusLabels: Record<string, string> = {
   gifted: '已赠送',
   claimed: '已认领',
   redeemed: '已兑换',
-  verified: '已核销',
-  expired: '已过期',
   voided: '已作废',
+}
+
+function getAmount(card: any) {
+  return Number(card.deductionAmount ?? card.discountAmount ?? card.amount ?? 0) || 0
 }
 
 Page({
@@ -29,7 +31,11 @@ Page({
   },
 
   async loadCards() {
-    const cards = await getAgentCards()
+    const cards = (await getAgentCards()).map((card: any) => ({
+      ...card,
+      amountText: formatMoney(getAmount(card)),
+      statusText: statusLabels[card.status] || card.status || '未知',
+    }))
     const counts: Record<string, number> = { all: cards.length }
     for (const card of cards) {
       counts[card.status] = (counts[card.status] || 0) + 1

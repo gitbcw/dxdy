@@ -22,31 +22,6 @@
       </view>
     </view>
 
-    <!-- 客户信息区 -->
-    <view class="section-card">
-      <view class="section-title">客户信息</view>
-      <view class="info-row">
-        <text class="info-label">姓名</text>
-        <text class="info-value">{{order.customerName}}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">电话</text>
-        <text class="info-value">{{order.customerPhone}}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">地址</text>
-        <text class="info-value">{{order.address}}</text>
-      </view>
-      <view class="info-row">
-        <text class="info-label">预计送达</text>
-        <text class="info-value">{{order.eta || '按订单预约时间送达'}}</text>
-      </view>
-      <view wx:if="{{order.isUrgentBooking}}" class="info-row">
-        <text class="info-label">配送方式</text>
-        <text class="info-value">制单员线下加急送达</text>
-      </view>
-    </view>
-
     <!-- 商品列表 -->
     <view class="section-card">
       <view class="section-title">商品清单</view>
@@ -74,6 +49,26 @@
     </view>
 
     <!-- 快递信息区（已发货时显示） -->
+    <view wx:if="{{order.shipping.wxExpress && order.shipping.wxExpress.pickupStatus}}" class="section-card">
+      <view class="section-title">顺丰揽收信息</view>
+      <view class="info-row">
+        <text class="info-label">揽收状态</text>
+        <text class="info-value">{{order.shipping.wxExpress.pickupStatus === 'waiting_pickup' ? '等待上门揽收' : order.shipping.wxExpress.pickupStatus}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">预计时间</text>
+        <text class="info-value">{{order.shipping.wxExpress.expectTime || '-'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">运单号</text>
+        <text class="info-value express-no">{{order.expressNo || '顺丰上门生成'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">面单</text>
+        <text class="info-value">快递员上门打印/粘贴</text>
+      </view>
+    </view>
+
     <view wx:if="{{order.status === 'shipped' && order.expressCompany}}" class="section-card">
       <block wx:if="{{order.deliveryMode === 'direct'}}">
         <view class="section-title">加急配送信息</view>
@@ -108,15 +103,12 @@
     </view>
 
     <!-- 底部按钮（待发货/备货中时显示） -->
-    <view wx:if="{{order.status === 'pending' || order.status === 'preparing'}}" class="bottom-bar">
+    <view wx:if="{{(order.status === 'pending' || order.status === 'preparing') && !(order.shipping.wxExpress && order.shipping.wxExpress.pickupStatus)}}" class="bottom-bar">
       <view wx:if="{{order.status === 'pending'}}" class="btn-scan" bindtap="onStartPreparing">
         <text>开始备货</text>
       </view>
-      <view wx:if="{{!order.isUrgentBooking}}" class="btn-scan" bindtap="onScanTap">
-        <text>扫码</text>
-      </view>
-      <view class="btn-submit" bindtap="onInputExpress">
-        <text>{{order.isUrgentBooking ? '已出发' : '录入快递'}}</text>
+      <view wx:if="{{order.status === 'preparing'}}" class="btn-submit" bindtap="onInputExpress">
+        <text>{{order.isUrgentBooking ? '已出发' : '顺丰揽收'}}</text>
       </view>
     </view>
 
@@ -128,6 +120,77 @@
   </view>
 
   <!-- 快递录入面板 -->
+  <view wx:if="{{showSfPickupPanel}}" class="express-panel">
+    <view class="mask" bindtap="onClosePanel"></view>
+    <view class="panel-content">
+      <view class="panel-header">
+        <text class="panel-title">预约顺丰上门揽收</text>
+        <view class="panel-close" bindtap="onClosePanel">
+          <text>✕</text>
+        </view>
+      </view>
+
+      <view class="warm-tip">
+        <text>隐私发货</text>
+        <text>制单员只填写寄件信息。客户姓名、电话和地址由系统在云端提交给微信物流助手，不在制单员端展示；顺丰上门时打印/粘贴电子面单。</text>
+      </view>
+
+      <view class="panel-section-title">揽收地址</view>
+      <view class="pickup-address-card" bindtap="onSelectPickupAddress">
+        <block wx:if="{{selectedPickupAddress}}">
+          <view class="pickup-address-head">
+            <text class="pickup-address-name">{{selectedPickupAddress.name}}</text>
+            <text class="pickup-address-phone">{{selectedPickupAddress.phone}}</text>
+            <text class="pickup-address-action">更换</text>
+          </view>
+          <text wx:if="{{selectedPickupAddress.label}}" class="pickup-address-label">{{selectedPickupAddress.label}}</text>
+          <text class="pickup-address-detail">{{selectedPickupAddress.province}}{{selectedPickupAddress.city}}{{selectedPickupAddress.district}}{{selectedPickupAddress.detail}}</text>
+        </block>
+        <block wx:else>
+          <text class="pickup-address-empty">请选择或新增揽收地址</text>
+          <text class="pickup-address-action">去添加</text>
+        </block>
+      </view>
+
+      <view class="panel-section-title">包裹信息</view>
+      <view class="cold-input-grid">
+        <view class="cold-input-wrap">
+          <text>物品名称</text>
+          <input placeholder="宠物医疗用品" value="{{cargoName}}" data-field="cargoName" bindinput="onSenderFieldInput" />
+        </view>
+        <view class="cold-input-wrap">
+          <text>重量（kg）</text>
+          <input type="digit" placeholder="如 1.5" value="{{sfWeight}}" data-field="sfWeight" bindinput="onSenderFieldInput" />
+        </view>
+      </view>
+      <view class="express-input-wrap with-top">
+        <input class="express-input" placeholder="包裹备注（选填）" value="{{sfRemark}}" data-field="sfRemark" bindinput="onSenderFieldInput" />
+      </view>
+
+      <view class="panel-section-title">上门揽收时间</view>
+      <view class="cold-input-grid">
+        <view class="cold-input-wrap">
+          <text>揽收日期</text>
+          <picker mode="date" value="{{pickupDate}}" bindchange="onPickupDateChange">
+            <view class="picker-value">{{pickupDate || '请选择日期'}}</view>
+          </picker>
+        </view>
+        <view class="cold-input-wrap">
+          <text>揽收时间</text>
+          <picker mode="time" value="{{pickupTime}}" bindchange="onPickupTimeChange">
+            <view class="picker-value">{{pickupTime || '请选择时间'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="manual-link" bindtap="onManualExpressTap">接口异常时，改为手动录入快递</view>
+
+      <view class="btn-submit-panel" bindtap="onSubmitSfPickup">
+        <text>确认预约顺丰揽收</text>
+      </view>
+    </view>
+  </view>
+
   <view wx:if="{{showExpressPanel}}" class="express-panel">
     <view class="mask" bindtap="onClosePanel"></view>
     <view class="panel-content">

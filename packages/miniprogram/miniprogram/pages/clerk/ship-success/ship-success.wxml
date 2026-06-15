@@ -9,19 +9,6 @@
   <!-- 物流信息卡片 -->
   <view class="info-card">
     <view class="info-row">
-      <text class="info-label">收件人</text>
-      <text class="info-value">{{recipient}}</text>
-    </view>
-    <view class="info-row">
-      <text class="info-label">联系电话</text>
-      <text class="info-value">{{phone}}</text>
-    </view>
-    <view class="info-row">
-      <text class="info-label">收货地址</text>
-      <text class="info-value address">{{address}}</text>
-    </view>
-    <view class="divider"></view>
-    <view class="info-row">
       <text class="info-label">物流公司</text>
       <text class="info-value accent">{{expressCompany}}</text>
     </view>

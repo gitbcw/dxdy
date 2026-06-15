@@ -16,7 +16,7 @@ Page({
 
     const isAgent = user.role === 'salesperson' || user.agentStatus === 'approved'
     const isClerk = user.role === 'clerk'
-    const roleLabel = isAgent ? '代理商' : isClerk ? '制单员' : (user.roleName || '普通客户')
+    const roleLabel = isAgent ? '代理商' : isClerk ? '制单员' : user.customerType === 'institution' ? '医院客户' : '个人客户'
     const fields = [
       { key: 'avatar', label: '头像', value: '', type: 'avatar' },
       { key: 'nickname', label: '昵称', value: user.nickname || '', type: 'text' },

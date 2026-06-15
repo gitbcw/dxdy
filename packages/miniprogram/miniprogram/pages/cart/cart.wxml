@@ -44,11 +44,11 @@
             <text class="price-unit">小计</text>
           </view>
           <view class="quantity-control">
-            <view class="qty-btn" data-index="{{index}}" data-delta="{{-1}}" bindtap="onQuantityChange">
+            <view class="qty-btn" data-index="{{index}}" data-delta="{{-1}}" catchtap="onQuantityChange">
               <text class="qty-icon">−</text>
             </view>
             <text class="qty-value">{{item.quantity}}</text>
-            <view class="qty-btn" data-index="{{index}}" data-delta="{{1}}" bindtap="onQuantityChange">
+            <view class="qty-btn" data-index="{{index}}" data-delta="{{1}}" catchtap="onQuantityChange">
               <text class="qty-icon">+</text>
             </view>
           </view>

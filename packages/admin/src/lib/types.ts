@@ -77,7 +77,7 @@ export interface AdminUser {
 // --- 商品 ---
 
 export interface ProductSpec { name: string; value: string; }
-export type ProductVisibility = 'all' | 'institution_only' | 'personal_only';
+export type ProductVisibility = 'all' | 'institution_only';
 export type ProductStatus = 'on_sale' | 'off_sale';
 export type ProductType = 'physical' | 'blood_pack' | 'test_service' | 'card_voucher';
 
@@ -116,11 +116,13 @@ export interface Product {
   category: string;
   specs: ProductSpec[];
   institutionPrice: number;
-  personalPrice: number;
+  personalPrice?: number;
   pointsPrice?: number;
   exchangePoints?: number;
   visibility: ProductVisibility;
   stock: number;
+  salesCount?: number;
+  serviceTags?: string[];
   status: ProductStatus;
   returnPolicy: ReturnPolicy;
   isPrescription?: boolean;
@@ -222,12 +224,31 @@ export interface Order {
 
 export interface RechargeTier { amount: number; bonus: number; label?: string; }
 
+export interface BloodBookingPriceRule {
+  species: 'dog' | 'cat';
+  bloodType: string;
+  volumeMl: number;
+  price?: number;
+  storePrice: number;
+  retailPrice: number;
+}
+
+export interface BloodBookingConfig {
+  dogBloodTypes: string[];
+  catBloodTypes: string[];
+  dogVolumeOptions: number[];
+  catVolumeOptions: number[];
+  volumeOptions?: number[];
+  priceRules?: BloodBookingPriceRule[];
+}
+
 export interface SystemConfig {
   commissionRate: number;
   commissionLockDays: number;
   minWithdrawAmount: number;
   withdrawReviewEnabled: boolean;
   paymentTimeoutMinutes: number;
+  autoReceiptDays: number;
   returnDeadlineDays: number;
   returnAddress: string;
   reviewTimeoutHours: number;
@@ -236,6 +257,7 @@ export interface SystemConfig {
   pointsExpiryDays: number;
   rechargeTiers: RechargeTier[];
   referralRewardPoints: number;
+  bloodBookingConfig: BloodBookingConfig;
 }
 
 export interface OperationLog {
@@ -327,6 +349,9 @@ export interface CardVoucher {
   productName: string;
   productImage: string;
   redeemableCategory: string;
+  purchaseAmount?: number;
+  deductionAmount?: number;
+  discountAmount?: number;
   validDays: number;
   expiresAt: string;
   purchaserId: string;

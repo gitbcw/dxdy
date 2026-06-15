@@ -56,7 +56,7 @@ Page({
       itemText: `${firstItem.productName || '订单商品'} · ${firstItem.spec || ''}`,
       productImage: firstItem.productImage || getProductVisualImage(firstItem.productName),
       itemCount: (order.items || []).reduce((sum: number, item: any) => sum + (item.quantity || 0), 0),
-      customerTypeText: order.customerType === 'institution' ? '医院' : '个人',
+      customerTypeText: '医院',
       returnText: order.returnRecord ? '售后中' : '',
       dateText: order.createdAt || '',
     }

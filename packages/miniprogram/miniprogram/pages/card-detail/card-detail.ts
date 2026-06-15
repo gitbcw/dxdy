@@ -1,6 +1,7 @@
 const {
   getCardById,
   manageCardVoucher,
+  formatMoney,
 } = require('../../services/index')
 
 const statusText: Record<string, string> = {
@@ -19,6 +20,21 @@ function decodeScene(options: any) {
   return ''
 }
 
+function getDeductionAmount(card: any): number {
+  return Number(
+    card?.deductionAmount ??
+    card?.discountAmount ??
+    card?.amount ??
+    card?.faceValue ??
+    card?.value ??
+    0
+  ) || 0
+}
+
+function getAmountText(card: any): string {
+  return formatMoney(getDeductionAmount(card))
+}
+
 Page({
   data: {
     card: null as any,
@@ -30,6 +46,7 @@ Page({
     showRegiftPanel: false,
     shareQrcodeUrl: '',
     shareLink: '',
+    amountText: '0.00',
     loading: false,
   },
 
@@ -61,6 +78,7 @@ Page({
     const isHolder = !!user && card.currentHolderId === user.id
     this.setData({
       card,
+      amountText: getAmountText(card),
       statusText: statusText[card.status] || card.status,
       isHolder,
       canClaim: isHolder && card.status === 'gifted',
@@ -92,6 +110,7 @@ Page({
       if (card) {
         this.setData({
           card,
+          amountText: getAmountText(card),
           statusText: statusText[card.status] || card.status,
           canClaim: false,
           canRegift: true,
@@ -130,13 +149,6 @@ Page({
 
   onCloseRegiftPanel() {
     this.setData({ showRegiftPanel: false })
-  },
-
-  onCopyShareLink() {
-    wx.setClipboardData({
-      data: this.data.shareLink,
-      success: () => wx.showToast({ title: '链接已复制', icon: 'success' }),
-    })
   },
 
   onShareAppMessage() {

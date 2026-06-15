@@ -15,25 +15,24 @@ function getUnitPrice(product, customer, now = new Date()) {
       return Number(product.promotionPrice)
     }
   }
-  const customerType = customer.customerType || 'personal'
-  if (customerType === 'institution') {
+  if (customer.customerType === 'institution' && customer.verificationStatus === 'approved') {
     return Number(product.institutionPrice || product.personalPrice || 0)
   }
   return Number(product.personalPrice || product.institutionPrice || 0)
 }
 
 function validateProductForOrder(product, customer, quantity) {
-  if (!product) return { success: false, error: '商品不存在' }
+  if (!product) return { success: false, error: '商品不存�? }
   if (product.status !== 'on_sale') return { success: false, error: `商品已下架：${product.name}` }
-  if (!isVisibleToCustomer(product, customer)) return { success: false, error: `当前客户类型不可购买：${product.name}` }
+  if (!isVisibleToCustomer(product, customer)) return { success: false, error: `当前客户类型不可购买�?{product.name}` }
   if (product.isBloodPack && (customer.customerType !== 'institution' || customer.verificationStatus !== 'approved')) {
-    return { success: false, error: `血包商品仅限已认证医院客户购买：${product.name}` }
+    return { success: false, error: `血包商品仅限已认证医院客户购买�?{product.name}` }
   }
   if (product.productType === 'card_voucher' && customer.role !== 'salesperson') {
     return { success: false, error: `卡券商品仅限代理商购买：${product.name}` }
   }
   if (typeof product.stock === 'number' && product.stock < quantity) {
-    return { success: false, error: `库存不足：${product.name}` }
+    return { success: false, error: `库存不足�?{product.name}` }
   }
   return { success: true }
 }
@@ -46,7 +45,7 @@ function calculateCouponDiscount(coupon, orderItems, totalAmount) {
   }
   if (coupon.scope === 'products') {
     const match = orderItems.some(item => coupon.scopeIds.includes(item.productId))
-    if (!match) return { success: false, error: '优惠券不适用于当前商品' }
+    if (!match) return { success: false, error: '优惠券不适用于当前商�? }
   }
 
   let discountAmount = 0

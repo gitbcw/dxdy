@@ -1,26 +1,34 @@
 .page {
   min-height: 100vh;
-  background: var(--bg-page);
+  padding: 34rpx 28rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 48%, #ffffff 100%);
+  box-sizing: border-box;
 }
 
 .profile-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48rpx 24rpx 36rpx;
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-light));
+  padding: 46rpx 30rpx 40rpx;
+  border: 1rpx solid #edf3ef;
+  border-radius: 34rpx;
+  background: linear-gradient(135deg, rgba(226, 248, 237, 0.98) 0%, rgba(255, 255, 255, 0.98) 62%, rgba(255, 245, 229, 0.98) 100%);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
 }
 
 .avatar-large {
-  width: 128rpx;
-  height: 128rpx;
-  line-height: 128rpx;
-  border-radius: 36rpx;
-  background: rgba(255, 255, 255, 0.2);
+  width: 138rpx;
+  height: 138rpx;
+  line-height: 138rpx;
+  border: 6rpx solid rgba(255, 255, 255, 0.88);
+  border-radius: 42rpx;
+  background: linear-gradient(135deg, #176f56 0%, #41b47f 100%);
   color: #fff;
   font-size: 52rpx;
   font-weight: 900;
   text-align: center;
+  box-shadow: 0 14rpx 30rpx rgba(23, 111, 86, 0.18);
+  box-sizing: border-box;
 }
 
 .avatar-image {
@@ -28,17 +36,18 @@
 }
 
 .profile-name {
-  margin-top: 16rpx;
+  margin-top: 20rpx;
   font-size: 34rpx;
   font-weight: 800;
-  color: #fff;
+  color: #10291f;
 }
 
 .field-list {
-  margin: 24rpx;
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+  margin: 24rpx 0 0;
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
   overflow: hidden;
 }
 
@@ -46,8 +55,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28rpx;
-  border-bottom: 1rpx solid var(--divider-color);
+  min-height: 96rpx;
+  padding: 26rpx 28rpx;
+  border-bottom: 1rpx solid #edf3ef;
+  box-sizing: border-box;
 }
 
 .field-item:last-child {
@@ -55,13 +66,13 @@
 }
 
 .field-item.readonly {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .field-label {
   font-size: 28rpx;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 800;
+  color: #10291f;
   flex-shrink: 0;
 }
 
@@ -72,15 +83,16 @@
 }
 
 .avatar-small {
-  width: 64rpx;
-  height: 64rpx;
-  line-height: 64rpx;
-  border-radius: 18rpx;
-  background: linear-gradient(135deg, #063e46, #0a6e7c);
+  width: 68rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #176f56 0%, #41b47f 100%);
   color: #fff;
   font-size: 28rpx;
   font-weight: 900;
   text-align: center;
+  box-shadow: 0 8rpx 18rpx rgba(23, 111, 86, 0.16);
 }
 
 .avatar-picker-mask {
@@ -95,7 +107,7 @@
 .avatar-picker-panel {
   width: 100%;
   padding: 30rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
-  border-radius: 28rpx 28rpx 0 0;
+  border-radius: 32rpx 32rpx 0 0;
   background: #ffffff;
   box-sizing: border-box;
 }
@@ -107,45 +119,50 @@
 }
 
 .avatar-picker-title {
-  color: var(--text-primary);
+  color: #10291f;
   font-size: 30rpx;
   font-weight: 900;
 }
 
 .avatar-picker-desc {
   margin-top: 10rpx;
-  color: var(--text-secondary);
+  color: #68776f;
   font-size: 24rpx;
 }
 
 .wechat-avatar-button {
   margin-top: 24rpx;
-  border-radius: 16rpx;
+  border-radius: 999rpx;
   color: #ffffff;
   font-size: 28rpx;
   font-weight: 900;
-  background: linear-gradient(180deg, #18a34a 0%, #139445 100%);
+  background: #176f56;
+  box-shadow: 0 12rpx 26rpx rgba(23, 111, 86, 0.16);
+}
+
+.wechat-avatar-button::after {
+  border: none;
 }
 
 .avatar-picker-cancel {
   margin-top: 16rpx;
   height: 76rpx;
   line-height: 76rpx;
-  border-radius: 16rpx;
-  color: var(--text-secondary);
+  border-radius: 999rpx;
+  color: #68776f;
   font-size: 26rpx;
   font-weight: 800;
   text-align: center;
-  background: #f4f6f5;
+  background: #f4faf7;
 }
 
 .field-value {
   font-size: 26rpx;
-  color: var(--text-secondary);
+  color: #68776f;
   text-align: right;
 }
 
 .field-arrow {
   font-size: 32rpx;
-  color: var(--text-tertiary);
+  color: #a8b4ad;
 }

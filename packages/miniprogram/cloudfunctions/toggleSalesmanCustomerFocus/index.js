@@ -21,6 +21,42 @@ function formatDateTime(date) {
   return `${formatDate(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
+function getCommissionSignedAmount(record) {
+  const amount = Number(record && record.amount) || 0
+  if (record && (record.status === 'deducted' || record.sourceType === 'return_deduction')) return -Math.abs(amount)
+  return amount
+}
+
+function buildCommissionSummary(records, user) {
+  const commission = (user && user.commission) || {}
+  const summary = {
+    total: 0,
+    available: Number(commission.available || 0),
+    withdrawable: Number(commission.available || 0),
+    withdrawn: Number(commission.withdrawn || 0),
+    pending: 0,
+    pendingDeduction: Number(commission.pendingDeduction || 0),
+    pendingLock: 0,
+  }
+
+  for (const record of records || []) {
+    if (!record || record.status === 'cancelled') continue
+    const signedAmount = getCommissionSignedAmount(record)
+    summary.total += signedAmount
+    if (record.status === 'pending' || record.status === 'locked') {
+      summary.pending += Math.max(0, signedAmount)
+      summary.pendingLock += Math.max(0, signedAmount)
+    }
+  }
+
+  summary.total = Math.max(0, Math.round(summary.total * 100) / 100)
+  summary.available = Math.max(0, Math.round(summary.available * 100) / 100)
+  summary.withdrawable = Math.max(0, Math.round(summary.withdrawable * 100) / 100)
+  summary.pending = Math.max(0, Math.round(summary.pending * 100) / 100)
+  summary.pendingLock = Math.max(0, Math.round(summary.pendingLock * 100) / 100)
+  return summary
+}
+
 function error(message, code = 'BAD_REQUEST') {
   return { success: false, code, error: message }
 }
@@ -87,7 +123,7 @@ exports.main = async (event) => {
       const focusRecord = focusMap.get(customer.id)
       return {
         ...customer,
-        type: customer.customerType || 'personal',
+        type: customer.customerType || 'institution',
         totalAmount,
         monthAmount,
         orderCount: customerOrders.length,
@@ -101,6 +137,25 @@ exports.main = async (event) => {
       }
     })
     return { success: true, customers }
+  }
+
+  if (action === 'commissions') {
+    const { data: recordDocs } = await db.collection('commission_records')
+      .where({ salespersonId: user._id })
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get()
+    const records = (recordDocs || [])
+      .filter((record) => record.status !== 'cancelled')
+      .map((record) => ({
+        ...normalize(record),
+        signedAmount: getCommissionSignedAmount(record),
+      }))
+    return {
+      success: true,
+      summary: buildCommissionSummary(recordDocs || [], user),
+      records,
+    }
   }
 
   const customerId = String(event.customerId || '').trim()
@@ -131,7 +186,7 @@ exports.main = async (event) => {
       detail: {
         customer: {
           ...normalize(customer),
-          type: customer.customerType || 'personal',
+          type: customer.customerType || 'institution',
           boundAt: customer.boundAt || customer.createdAt || '',
         },
         orders,

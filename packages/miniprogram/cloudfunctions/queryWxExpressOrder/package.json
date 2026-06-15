@@ -1,0 +1,9 @@
+{
+  "name": "queryWxExpressOrder",
+  "version": "1.0.0",
+  "description": "Query WeChat logistics order status",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

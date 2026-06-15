@@ -1,8 +1,8 @@
 const tracking = require('./services/tracking')
 
 const ROLE_HOME_PATHS: Record<string, string> = {
-  customer_personal: '/pages/home/home',
   customer_institution: '/pages/home/home',
+  customer_personal: '/pages/home/home',
   salesperson: '/pages/home/home',
   clerk: '/pages/home/home',
   admin: '/pages/home/home',
@@ -106,7 +106,7 @@ App<IAppOption>({
   resolveRole(user: any): string {
     if (!user) return ''
     if (user.role === 'customer') {
-      return user.customerType === 'institution' ? 'customer_institution' : 'customer_personal'
+      return user.customerType === 'personal' ? 'customer_personal' : 'customer_institution'
     }
     return user.role
   },

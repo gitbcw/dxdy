@@ -18,6 +18,7 @@ type DemoRole = 'customer_personal' | 'customer_institution' | 'salesperson' | '
 type HomeAction =
   | 'catalog'
   | 'blood'
+  | 'bloodInvite'
   | 'orders'
   | 'agentApply'
   | 'agentStatus'
@@ -50,8 +51,8 @@ function toProductBoardItem(product: any) {
     type: 'product',
     badge: product.isBloodPack ? '服务商品' : '热销',
     title: product.name,
-    desc: product.specs?.[0]?.value || '标准规格',
-    meta: `¥${formatMoney(product.personalPrice || product.institutionPrice || 0)} · 库存 ${product.stock}`,
+    desc: '',
+    meta: `¥${formatMoney(product.personalPrice || product.institutionPrice || 0)}`,
     imageUrl: getProductVisualImage(product),
     institutionPrice: product.institutionPrice,
     personalPrice: product.personalPrice,
@@ -200,7 +201,6 @@ Page({
             actionText: '看订单',
           }] : [],
           quickActions: [
-            { icon: '单', title: '我的订单', action: 'orders' },
             { icon: '证', title: '去认证', action: 'verify' },
             { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
           ],
@@ -219,7 +219,8 @@ Page({
         .map((product: any) => ({
           ...toProductBoardItem(product),
           badge: product.visibility === 'institution_only' ? '机构价' : '常购',
-          meta: `¥${formatMoney(product.institutionPrice || product.personalPrice || 0)} · 库存 ${product.stock}`,
+          desc: '',
+          meta: `¥${formatMoney(product.institutionPrice || product.personalPrice || 0)}`,
         }))
 
       const taskCards: any[] = []
@@ -251,8 +252,8 @@ Page({
         taskCards,
         quickActions: [
           { icon: '血', title: '门店预约', action: 'blood' },
+          { icon: '码', title: '预约二维码', action: 'bloodInvite' },
           { iconKey: 'transfusionAssistant', icon: '配', title: '门店帮手', action: 'transfusionAssistant' },
-          { icon: '单', title: '我的订单', action: 'orders' },
           { icon: '券', title: '我的卡券', action: 'cardWallet' },
         ],
         boardTitle: '常购商品',
@@ -291,14 +292,14 @@ Page({
           },
         ],
         quickActions: [
-          { icon: '审', title: '代理状态', action: 'agentStatus' },
-          { icon: '客', title: '客户管理', action: 'customers' },
-          { icon: '券', title: '购买卡券', action: 'cardVoucherProducts' },
-          { icon: '卡', title: '我的卡券', action: 'cards' },
-          { icon: '单', title: '客户订单', action: 'agentOrders' },
-          { icon: '佣', title: '提成中心', action: 'commission' },
-          { icon: '提', title: '提现管理', action: 'withdraw' },
-          { icon: '推', title: '推广工具', action: 'promote' },
+          { iconKey: 'agentStatus', icon: '审', title: '代理状态', desc: '资质进度', action: 'agentStatus' },
+          { iconKey: 'customers', icon: '客', title: '客户管理', desc: '门店客户', action: 'customers' },
+          { iconKey: 'cardVoucherProducts', icon: '券', title: '购买卡券', desc: '血包卡券', action: 'cardVoucherProducts' },
+          { iconKey: 'cards', icon: '卡', title: '我的卡券', desc: '赠送核销', action: 'cards' },
+          { iconKey: 'agentOrders', icon: '单', title: '客户订单', desc: '订单追踪', action: 'agentOrders' },
+          { iconKey: 'commission', icon: '佣', title: '提成中心', desc: '收益明细', action: 'commission' },
+          { iconKey: 'withdraw', icon: '提', title: '提现管理', desc: '银行卡', action: 'withdraw' },
+          { iconKey: 'promote', icon: '推', title: '推广工具', desc: '专属二维码', action: 'promote' },
         ],
         boardTitle: '',
         boardMoreText: '',
@@ -364,25 +365,9 @@ Page({
       displayName: name,
       identityTag: '普通客户',
       identityTagClass: 'default',
-      banner: {
-        status: 'none',
-        text: '完成机构认证后可切换为机构客户，解锁机构专属商品与价格',
-        actionText: '去认证',
-        rejectReason: '',
-      },
-      taskCards: data.pendingOrders.length > 0 ? [{
-        badge: '订单',
-        title: getDisplayOrderNo(data.pendingOrders[0]),
-        desc: `${data.pendingOrders[0].items?.[0]?.name || data.pendingOrders[0].items?.[0]?.productName || '订单商品'} · ${getOrderStatusText(data.pendingOrders[0].status)}`,
-        meta: '',
-        action: 'orders',
-        actionText: '看订单',
-      }] : [],
-      quickActions: [
-        { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
-        { icon: '单', title: '我的订单', action: 'orders' },
-        { icon: '代', title: data.user?.agentStatus ? '代理状态' : '申请代理', action: data.user?.agentStatus ? 'agentStatus' : 'agentApply' },
-      ],
+      banner: null,
+      taskCards: [],
+      quickActions: [],
       boardTitle: '热销推荐',
       boardMoreText: '查看全部',
       boardItems: data.products.slice(0, 3).map(toProductBoardItem),
@@ -393,6 +378,7 @@ Page({
     const routes: Record<string, string> = {
       testQuery: '/pages/tests/query/query',
       blood: '/pages/blood/booking/booking',
+      bloodInvite: '/pages/blood/invite/invite',
       promote: '/pages/agent/promote/promote',
       commission: '/pages/agent/commission/commission',
       customers: '/pages/agent/customers/customers',

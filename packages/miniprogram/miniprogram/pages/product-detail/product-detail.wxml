@@ -14,7 +14,7 @@
       <view>
         <text class="product-name">{{productName}}</text>
         <view class="tag-row">
-          <text class="audience-tag">{{isCardVoucher ? '代理商专属卡券' : isBloodProduct ? '仅限认证医院购买' : '医院/个人可购'}}</text>
+          <text class="audience-tag">{{isCardVoucher ? '代理商专属卡券' : isBloodProduct ? '仅限认证医院购买' : '医院客户可购'}}</text>
           <text wx:if="{{isOnPromotion}}" class="promotion-tag">限时促销</text>
         </view>
       </view>
@@ -33,19 +33,13 @@
         <text class="meta-value">{{spec}}</text>
       </view>
       <view class="meta-item">
-        <text class="meta-label">血型</text>
-        <text class="meta-value">{{bloodType}}</text>
-      </view>
-      <view class="meta-item">
         <text class="meta-label">库存</text>
         <text class="meta-value">{{stock}}</text>
       </view>
     </view>
 
-    <view class="service-row">
-      <text class="service-tag">冷链配送</text>
-      <text class="service-tag">支持预约</text>
-      <text class="service-tag">质量问题售后</text>
+    <view wx:if="{{serviceTags.length}}" class="service-row">
+      <text wx:for="{{serviceTags}}" wx:key="*this" class="service-tag">{{item}}</text>
     </view>
 
     <view wx:if="{{isCardVoucher}}" class="permission-card">

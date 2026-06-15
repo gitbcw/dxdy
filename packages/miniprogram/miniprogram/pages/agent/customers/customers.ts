@@ -25,12 +25,10 @@ Page({
         avatarText: (customer.nickname || customer.phone || '客').charAt(0),
         amountText: formatMoney(customer.totalAmount || 0),
         monthAmountText: formatMoney(customer.monthAmount || 0),
-        priorityTag: customer.type === 'institution' ? '机构客户' : '普通客户',
+        priorityTag: '医院客户',
         priorityText: customer.orderCount >= 3
           ? '高活跃'
-          : customer.type === 'institution'
-            ? '机构客户'
-            : '新客户',
+          : '医院客户',
         verificationText: customer.verificationStatus === 'approved' ? '已认证' : customer.verificationStatus === 'pending' ? '认证中' : '未认证',
         boundAtText: customer.boundAt || '未记录',
         lastOrderText: customer.lastOrderAt ? `${customer.lastOrderNo} · ${customer.lastOrderAt}` : '暂无订单',
@@ -43,7 +41,6 @@ Page({
     const filters = [
       { key: 'all', label: '全部', count: mappedCustomers.length },
       { key: 'institution', label: '医院', count: mappedCustomers.filter((item: any) => item.type === 'institution').length },
-      { key: 'personal', label: '个人', count: mappedCustomers.filter((item: any) => item.type !== 'institution').length },
       { key: 'active', label: '高活跃', count: mappedCustomers.filter((item: any) => item.orderCount >= 3).length },
       { key: 'afterSale', label: '售后关注', count: mappedCustomers.filter((item: any) => item.exchangeCount > 0).length },
     ]
@@ -65,7 +62,6 @@ Page({
 
   filterCustomers(customers: any[], filterKey: string) {
     if (filterKey === 'institution') return customers.filter((item: any) => item.type === 'institution')
-    if (filterKey === 'personal') return customers.filter((item: any) => item.type !== 'institution')
     if (filterKey === 'active') return customers.filter((item: any) => item.orderCount >= 3)
     if (filterKey === 'afterSale') return customers.filter((item: any) => item.exchangeCount > 0)
     return customers

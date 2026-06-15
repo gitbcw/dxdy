@@ -1,12 +1,45 @@
 .page {
-  min-height: 100vh;
-  padding: 64rpx 40rpx 48rpx;
-  background: linear-gradient(180deg, #f7fbf8 0%, #f6f7f6 100%);
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: #edf7f1;
+  box-sizing: border-box;
+}
+
+.login-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.login-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 46%, rgba(16, 64, 50, 0.08) 100%);
+}
+
+.login-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  padding: 92rpx 64rpx 76rpx;
   box-sizing: border-box;
 }
 
 .session-check {
-  min-height: calc(100vh - 112rpx);
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -21,7 +54,7 @@
   width: 88rpx;
   height: 88rpx;
   border-radius: 24rpx;
-  background: #e7f7ec;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .session-logo-icon {
@@ -30,188 +63,194 @@
 }
 
 .session-text {
-  color: #6b7771;
+  color: rgba(255, 255, 255, 0.86);
   font-size: 24rpx;
   font-weight: 700;
 }
 
-.brand-hero {
-  position: relative;
-}
-
-.brand-row {
+.brand-logo-panel {
   display: flex;
   align-items: center;
-  gap: 18rpx;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 12rpx;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.brand-logo-image {
+  width: 720rpx;
+  height: 206rpx;
+}
+
+.brand-panel {
+  width: 100%;
+  padding: 14rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1rpx solid rgba(255, 255, 255, 0.64);
+  box-shadow: 0 12rpx 30rpx rgba(51, 112, 91, 0.1);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.brand-hero-image {
+  width: 100%;
+  height: 258rpx;
+  border-radius: 18rpx;
+  overflow: hidden;
+  background: #f4f6ee;
+  box-shadow: none;
 }
 
 .logo-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 66rpx;
-  height: 66rpx;
-  border: 1rpx solid rgba(22, 163, 74, 0.22);
-  border-radius: 18rpx;
-  background: #e7f7ec;
+  width: 104rpx;
+  height: 104rpx;
+  margin: 0 auto 18rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.24);
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18rpx 48rpx rgba(0, 0, 0, 0.22);
 }
 
 .logo-icon {
-  width: 42rpx;
-  height: 42rpx;
+  width: 62rpx;
+  height: 62rpx;
+}
+
+.brand-copy {
+  min-width: 0;
 }
 
 .brand-name {
   display: block;
-  color: #163322;
-  font-size: 34rpx;
+  color: #ffffff;
+  font-size: 50rpx;
   font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: 0 6rpx 22rpx rgba(0, 0, 0, 0.38);
 }
 
 .brand-sub {
   display: block;
-  margin-top: 4rpx;
-  color: #18a34a;
-  font-size: 18rpx;
+  margin-top: 10rpx;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 24rpx;
   font-weight: 700;
 }
 
-.hero-visual {
-  margin-top: 28rpx;
-  border-radius: 28rpx;
-  background: #edf7f0;
-  box-shadow: 0 14rpx 34rpx rgba(23, 48, 32, 0.10);
-  line-height: 0;
-  overflow: hidden;
-}
-
-.hero-image {
-  width: 100%;
-}
-
 .form {
-  margin-top: 28rpx;
-  padding: 32rpx;
-  border-radius: 28rpx;
-}
-
-.title {
-  display: block;
-  color: #16251e;
-  font-size: 31rpx;
-  font-weight: 900;
-}
-
-.subtitle {
-  display: block;
-  margin-top: 12rpx;
-  color: #6b7771;
-  font-size: 22rpx;
+  margin-top: 38rpx;
 }
 
 .field-row {
   display: flex;
   align-items: center;
-  gap: 18rpx;
-  margin-top: 24rpx;
-  min-height: 92rpx;
-  border-bottom: 1rpx solid #edf1ee;
+  gap: 20rpx;
+  height: 100rpx;
+  margin-top: 26rpx;
+  padding: 0 34rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.78);
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10rpx 24rpx rgba(41, 100, 80, 0.08);
+  box-sizing: border-box;
 }
 
 .field-icon {
-  width: 42rpx;
-  height: 42rpx;
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  opacity: 0.72;
 }
 
 .field-input {
   flex: 1;
   min-width: 0;
-  color: #1d2a23;
-  font-size: 26rpx;
-}
-
-.agreement {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 28rpx;
-  color: #8a958f;
-  font-size: 22rpx;
-}
-
-.radio-dot {
-  width: 24rpx;
-  height: 24rpx;
-  border: 2rpx solid #d5ded8;
-  border-radius: 50%;
-}
-
-.link {
-  color: #149447;
+  color: #163b30;
+  font-size: 30rpx;
   font-weight: 700;
 }
 
-.submit-btn {
-  margin-top: 30rpx;
+.field-placeholder {
+  color: rgba(22, 59, 48, 0.48);
+  font-weight: 500;
 }
 
-.demo-box {
-  margin-top: 32rpx;
-  padding-top: 28rpx;
-  border-top: 1rpx solid #edf1ee;
-}
-
-.demo-head {
+.form-links {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  height: 82rpx;
+  padding: 0 24rpx;
 }
 
-.demo-title {
-  display: block;
-  color: #16251e;
-  font-size: 24rpx;
+.secondary-action {
+  color: #0f8a61;
+  font-size: 27rpx;
   font-weight: 800;
+  text-shadow: 0 4rpx 14rpx rgba(255, 255, 255, 0.72);
 }
 
-.demo-toggle {
-  color: #149447;
-  font-size: 22rpx;
-  font-weight: 800;
+.submit-orbit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 202rpx;
+  height: 202rpx;
+  margin: 58rpx auto 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 14rpx 38rpx rgba(36, 132, 98, 0.14);
 }
 
-.demo-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14rpx;
-  margin-top: 18rpx;
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 156rpx;
+  height: 156rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: 900;
+  background: radial-gradient(circle at 38% 30%, #3fd799 0%, #16a374 68%, #0b6f52 100%);
+  box-shadow: 0 16rpx 36rpx rgba(22, 120, 86, 0.28), inset 0 8rpx 14rpx rgba(255, 255, 255, 0.18);
 }
 
-.demo-item {
-  padding: 16rpx;
-  border-radius: 16rpx;
-  background: #f8faf8;
-}
+@media (max-height: 720px) {
+  .login-content {
+    padding-top: 54rpx;
+    padding-bottom: 44rpx;
+  }
 
-.demo-label {
-  display: block;
-  color: #24342c;
-  font-size: 22rpx;
-  font-weight: 800;
-}
+  .brand-logo-panel {
+    margin-bottom: 8rpx;
+    padding: 0;
+  }
 
-.demo-phone {
-  display: block;
-  margin-top: 8rpx;
-  color: #9aa39f;
-  font-size: 19rpx;
-}
+  .brand-logo-image {
+    width: 640rpx;
+    height: 166rpx;
+  }
 
-.demo-password {
-  display: block;
-  margin-top: 6rpx;
-  color: #149447;
-  font-size: 19rpx;
-  font-weight: 800;
+  .brand-panel {
+    padding: 14rpx;
+  }
+
+  .brand-hero-image {
+    height: 208rpx;
+  }
+
+  .form {
+    margin-top: 24rpx;
+  }
+
+  .submit-orbit {
+    margin-top: 30rpx;
+  }
 }

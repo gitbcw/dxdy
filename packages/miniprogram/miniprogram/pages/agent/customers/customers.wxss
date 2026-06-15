@@ -317,11 +317,6 @@
   font-weight: 600;
 }
 
-.type-tag.tag-personal {
-  background: rgba(10, 110, 124, 0.12);
-  color: #0a6e7c;
-}
-
 .type-tag.tag-institution {
   background: rgba(212, 168, 83, 0.15);
   color: #b8923e;
@@ -399,4 +394,54 @@
   font-weight: 600;
   background: rgba(220, 53, 69, 0.1);
   color: #d14f4f;
+}
+
+/* 首页风格统一覆盖 */
+.page {
+  padding: 34rpx 28rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #eef9f4 0%, #f7fbf8 46%, #ffffff 100%);
+}
+
+.hero,
+.section,
+.summary-card,
+.customer-card,
+.empty-state {
+  border: 1rpx solid #edf3ef;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 40rpx rgba(32, 98, 76, 0.08);
+}
+
+.hero {
+  color: #17352b;
+  background: linear-gradient(135deg, #f7fdf9 0%, #e9f8f1 100%);
+}
+
+.hero-eyebrow,
+.summary-value,
+.section-more,
+.focus-badge {
+  color: #176f56;
+}
+
+.hero-subtitle,
+.summary-desc,
+.focus-desc,
+.focus-meta,
+.meta-text {
+  color: #68776f;
+}
+
+.filter-pill.active {
+  background: #176f56;
+}
+
+.focus-card,
+.focus-empty {
+  background: #f6fbf8;
+}
+
+.avatar {
+  background: linear-gradient(135deg, #176f56, #39a77c);
 }

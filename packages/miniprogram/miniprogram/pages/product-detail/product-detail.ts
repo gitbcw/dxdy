@@ -1,6 +1,8 @@
 const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice, requireBoundPhone } = require('../../services/index')
 const tracking = require('../../services/tracking')
 
+const DEFAULT_SERVICE_TAGS = ['冷链配送', '支持预约', '质量问题售后']
+
 function getProductImages(product: any): string[] {
   const images = Array.isArray(product?.images)
     ? product.images.filter((image: any) => typeof image === 'string' && image.trim())
@@ -21,6 +23,7 @@ Page({
     promotionCountdown: '',
     spec: '',
     stock: 0,
+    serviceTags: [] as string[],
     isBloodProduct: false,
     isCardVoucher: false,
     bloodType: '按商品标注',
@@ -41,7 +44,6 @@ Page({
 
     const app = getApp()
     const user = app.globalData.userInfo
-    const isInst = user?.customerType === 'institution'
     const onPromo = isOnPromotion(product)
 
     let price: number
@@ -49,9 +51,9 @@ Page({
 
     if (onPromo) {
       price = Number(product.promotionPrice)
-      originalPrice = formatMoney(getEffectivePrice(product, isInst ? 'institution' : 'personal'))
+      originalPrice = formatMoney(getEffectivePrice(product, user))
     } else {
-      price = isInst ? product.institutionPrice : (product.personalPrice || product.institutionPrice)
+      price = getEffectivePrice(product, user)
     }
 
     this.setData({
@@ -61,6 +63,7 @@ Page({
       isOnPromotion: onPromo,
       spec: product.specs?.[0]?.value || '标准规格',
       stock: product.stock,
+      serviceTags: Array.isArray(product.serviceTags) ? product.serviceTags : DEFAULT_SERVICE_TAGS,
       isBloodProduct: !!product.isBloodPack,
       isCardVoucher: product.productType === 'card_voucher',
       bloodType: product.specs?.find((item: any) => item.name === '血型')?.value || (product.isBloodPack ? '需指定' : '不适用'),

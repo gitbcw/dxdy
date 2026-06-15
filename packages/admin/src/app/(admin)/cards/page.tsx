@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { writeAdminLog } from '@/lib/admin-log';
 import { getApp } from '@/lib/cloudbase';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatMoney } from '@/lib/format';
 import {
   createCardVoucher,
   fetchCardVouchers,
@@ -28,23 +28,19 @@ import {
 } from '@/lib/services/database';
 import type { CardVoucher, CardVoucherStatus, Customer, Salesperson } from '@/lib/types';
 
-const statusLabel: Record<CardVoucherStatus, string> = {
+const statusLabel: Partial<Record<CardVoucherStatus, string>> = {
   ungifted: '未赠送',
   gifted: '已赠送',
   claimed: '已认领',
   redeemed: '已兑换',
-  verified: '已核销',
-  expired: '已过期',
   voided: '已作废',
 };
 
-const statusVariant: Record<CardVoucherStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+const statusVariant: Partial<Record<CardVoucherStatus, 'default' | 'secondary' | 'destructive' | 'outline'>> = {
   ungifted: 'secondary',
   gifted: 'outline',
   claimed: 'default',
   redeemed: 'default',
-  verified: 'default',
-  expired: 'secondary',
   voided: 'destructive',
 };
 
@@ -53,6 +49,7 @@ type StatusFilter = 'all' | CardVoucherStatus;
 type CardCreateForm = {
   productName: string;
   count: string;
+  purchaseAmount: string;
   deductionAmount: string;
   productImage: string;
 };
@@ -70,19 +67,34 @@ const tabs: { value: StatusFilter; label: string }[] = [
   { value: 'gifted', label: '已赠送' },
   { value: 'claimed', label: '已认领' },
   { value: 'redeemed', label: '已兑换' },
-  { value: 'verified', label: '已核销' },
-  { value: 'expired', label: '已过期' },
   { value: 'voided', label: '已作废' },
 ];
+
+function isHiddenCardStatus(status: CardVoucherStatus) {
+  return status === 'verified' || status === 'expired';
+}
 
 function normalizeDoc(doc: Record<string, unknown>): CardVoucher {
   const { _id, ...rest } = doc;
   return { id: String(_id || (doc as Record<string, unknown>).id || ''), ...rest } as CardVoucher;
 }
 
+function getCardDeductionAmount(card: CardVoucher) {
+  return card.deductionAmount ?? card.discountAmount ?? 0;
+}
+
+function getCardPurchaseAmount(card: CardVoucher) {
+  return card.purchaseAmount ?? getCardDeductionAmount(card);
+}
+
+function isAgentPurchasedCard(card: CardVoucher) {
+  return Boolean(card.purchaserId || card.purchaseOrderId || card.purchaseOrderNo);
+}
+
 const emptyCreateForm = (): CardCreateForm => ({
   productName: '',
   count: '1',
+  purchaseAmount: '',
   deductionAmount: '',
   productImage: '',
 });
@@ -179,13 +191,14 @@ export default function CardsPage() {
   const [tab, setTab] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createForm, setCreateForm] = useState<CardCreateForm>(emptyCreateForm());
   const [creating, setCreating] = useState(false);
   const [giftTargets, setGiftTargets] = useState<GiftTarget[]>([]);
   const [giftTarget, setGiftTarget] = useState<CardVoucher | null>(null);
   const [giftTargetId, setGiftTargetId] = useState('');
+  const [giftTargetSearch, setGiftTargetSearch] = useState('');
   const [gifting, setGifting] = useState(false);
 
   // 作废对话框
@@ -201,15 +214,7 @@ export default function CardsPage() {
         fetchUsers(),
       ]);
       setGiftTargets(buildGiftTargets(users.customers || [], users.salespersons || []));
-      // 惰性过期：标记已过期的卡券
-      const now = new Date().toISOString();
-      const updated = docs.map(card => {
-        if (['ungifted', 'gifted', 'claimed'].includes(card.status) && card.expiresAt && card.expiresAt < now) {
-          return { ...card, status: 'expired' as CardVoucherStatus };
-        }
-        return card;
-      });
-      setCards(updated);
+      setCards(docs.filter(card => !isHiddenCardStatus(card.status)));
     } catch (e) {
       console.error('加载卡券失败', e);
     } finally {
@@ -242,7 +247,18 @@ export default function CardsPage() {
     redeemed: cards.filter(c => c.status === 'redeemed').length,
   };
   const canAdminGiftCards = user?.role === 'system_admin';
+  const canAdminGiftCard = (card: CardVoucher) => canAdminGiftCards && card.status === 'ungifted' && !isAgentPurchasedCard(card);
   const selectedGiftTarget = giftTargets.find(item => item.id === giftTargetId);
+  const filteredGiftTargets = giftTargets.filter(target => {
+    const keyword = giftTargetSearch.trim().toLowerCase();
+    if (!keyword) return true;
+    const targetTypeLabel = target.type === 'salesperson' ? '实名代理商' : '医院客户';
+    return [
+      target.name,
+      target.phone,
+      targetTypeLabel,
+    ].some(value => value.toLowerCase().includes(keyword));
+  });
 
   async function handleVoid() {
     if (!voidTarget || !voidReason.trim()) return;
@@ -273,12 +289,24 @@ export default function CardsPage() {
   }
 
   function openGiftDialog(card: CardVoucher) {
+    if (isAgentPurchasedCard(card)) {
+      alert('该卡券已由代理商购买，系统管理员不能再赠送给其他人');
+      return;
+    }
     setGiftTarget(card);
     setGiftTargetId('');
+    setGiftTargetSearch('');
   }
 
   async function handleGiftCard() {
     if (!giftTarget || !giftTargetId) return;
+    if (isAgentPurchasedCard(giftTarget)) {
+      alert('该卡券已由代理商购买，系统管理员不能再赠送给其他人');
+      setGiftTarget(null);
+      setGiftTargetId('');
+      setGiftTargetSearch('');
+      return;
+    }
     const target = giftTargets.find(item => item.id === giftTargetId);
     if (!target) {
       alert('请选择赠送对象');
@@ -310,6 +338,7 @@ export default function CardsPage() {
       });
       setGiftTarget(null);
       setGiftTargetId('');
+      setGiftTargetSearch('');
       loadCards();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : '赠送卡券失败');
@@ -336,6 +365,7 @@ export default function CardsPage() {
 
   async function handleCreateCards() {
     const count = Math.min(Math.max(parseInt(createForm.count, 10) || 1, 1), 200);
+    const purchaseAmount = Math.round((Number(createForm.purchaseAmount) || 0) * 100) / 100;
     const deductionAmount = Math.round((Number(createForm.deductionAmount) || 0) * 100) / 100;
     const productName = createForm.productName.trim();
     if (!productName) {
@@ -344,6 +374,10 @@ export default function CardsPage() {
     }
     if (deductionAmount <= 0) {
       alert('请输入有效的卡券抵扣金额');
+      return;
+    }
+    if (purchaseAmount <= 0) {
+      alert('请输入有效的购买卡券金额');
       return;
     }
     if (!createForm.productImage) {
@@ -365,6 +399,7 @@ export default function CardsPage() {
           redeemableCategory: '',
           validDays: 0,
           expiresAt: '',
+          purchaseAmount,
           deductionAmount,
           discountAmount: deductionAmount,
           purchaserId: '',
@@ -454,10 +489,11 @@ export default function CardsPage() {
                     <TableHead>卡号</TableHead>
                     <TableHead>状态</TableHead>
                     <TableHead>商品名</TableHead>
+                    <TableHead>购买金额</TableHead>
+                    <TableHead>抵扣金额</TableHead>
                     <TableHead>购买人</TableHead>
                     <TableHead>持有人</TableHead>
                     <TableHead>关联订单</TableHead>
-                    <TableHead>到期时间</TableHead>
                     <TableHead>创建时间</TableHead>
                     <TableHead>操作</TableHead>
                   </TableRow>
@@ -465,11 +501,11 @@ export default function CardsPage() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">加载中...</TableCell>
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">加载中...</TableCell>
                     </TableRow>
                   ) : pagedCards.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">暂无卡券数据</TableCell>
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">暂无卡券数据</TableCell>
                     </TableRow>
                   ) : pagedCards.map(card => (
                     <TableRow key={card.id}>
@@ -480,13 +516,14 @@ export default function CardsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[160px] truncate">{card.productName}</TableCell>
+                      <TableCell className="font-medium">¥{formatMoney(getCardPurchaseAmount(card))}</TableCell>
+                      <TableCell className="font-medium">¥{formatMoney(getCardDeductionAmount(card))}</TableCell>
                       <TableCell className="text-sm">{card.purchaserName || '-'}</TableCell>
                       <TableCell className="text-sm">{card.currentHolderName || '-'}</TableCell>
                       <TableCell className="font-mono text-xs">{card.purchaseOrderNo || '-'}</TableCell>
-                      <TableCell className="text-xs">{card.expiresAt ? formatDateTime(card.expiresAt) : '-'}</TableCell>
                       <TableCell className="text-xs">{card.createdAt ? formatDateTime(card.createdAt) : '-'}</TableCell>
                       <TableCell>
-                        {canAdminGiftCards && card.status === 'ungifted' && (
+                        {canAdminGiftCard(card) && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -511,32 +548,46 @@ export default function CardsPage() {
                 </TableBody>
               </Table>
 
-              {/* 分页 */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-4 py-3">
-                  <p className="text-sm text-muted-foreground">
-                    第 {currentPage} / {totalPages} 页，共 {filteredCards.length} 条
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      上一页
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      下一页
-                    </Button>
-                  </div>
+              <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  第 <span className="font-medium text-foreground">{currentPage}</span> / <span className="font-medium text-foreground">{totalPages}</span> 页，
+                  每页 <span className="font-medium text-foreground">{pageSize}</span> 条，
+                  筛选结果 <span className="font-medium text-foreground">{filteredCards.length}</span> 条，
+                  卡券总数 <span className="font-medium text-foreground">{cards.length}</span> 条
+                </p>
+                <div className="flex gap-2">
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={value => {
+                      setPageSize(parseInt(value ?? '10', 10));
+                      resetPage();
+                    }}
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 / 页</SelectItem>
+                      <SelectItem value="20">20 / 页</SelectItem>
+                      <SelectItem value="50">50 / 页</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    上一页
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                  >
+                    下一页
+                  </Button>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -578,6 +629,17 @@ export default function CardsPage() {
                   placeholder="请输入抵扣金额"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>购买卡券金额</Label>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={createForm.purchaseAmount}
+                  onChange={e => setCreateForm(form => ({ ...form, purchaseAmount: e.target.value }))}
+                  placeholder="请输入购买金额"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>卡券封面</Label>
@@ -602,7 +664,7 @@ export default function CardsPage() {
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>取消</Button>
             <Button
               onClick={handleCreateCards}
-              disabled={creating || !createForm.productName.trim() || !createForm.deductionAmount || !createForm.productImage}
+              disabled={creating || !createForm.productName.trim() || !createForm.deductionAmount || !createForm.purchaseAmount || !createForm.productImage}
             >
               {creating ? '创建中...' : '确认创建'}
             </Button>
@@ -611,7 +673,7 @@ export default function CardsPage() {
       </Dialog>
 
       {/* 作废对话框 */}
-      <Dialog open={!!giftTarget} onOpenChange={open => { if (!open) setGiftTarget(null); }}>
+      <Dialog open={!!giftTarget} onOpenChange={open => { if (!open) { setGiftTarget(null); setGiftTargetSearch(''); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>赠送卡券</DialogTitle>
@@ -627,6 +689,11 @@ export default function CardsPage() {
             </div>
             <div className="space-y-2">
               <Label>赠送对象</Label>
+              <Input
+                value={giftTargetSearch}
+                onChange={e => setGiftTargetSearch(e.target.value)}
+                placeholder="搜索姓名 / 手机号 / 类型"
+              />
               <Select value={giftTargetId} onValueChange={value => setGiftTargetId(value || '')}>
                 <SelectTrigger className="w-full">
                   <SelectValue>
@@ -636,11 +703,16 @@ export default function CardsPage() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-80">
-                  {giftTargets.map(target => (
+                  {filteredGiftTargets.map(target => (
                     <SelectItem key={target.id} value={target.id}>
                       {target.name} · {target.type === 'salesperson' ? '实名代理商' : '医院客户'}{target.phone ? ` · ${target.phone}` : ''}
                     </SelectItem>
                   ))}
+                  {filteredGiftTargets.length === 0 && (
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                      未找到匹配的赠送对象
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
               {giftTargets.length === 0 && (
@@ -649,7 +721,7 @@ export default function CardsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGiftTarget(null)}>取消</Button>
+            <Button variant="outline" onClick={() => { setGiftTarget(null); setGiftTargetSearch(''); }}>取消</Button>
             <Button onClick={handleGiftCard} disabled={gifting || !giftTargetId}>
               {gifting ? '赠送中...' : '确认赠送'}
             </Button>

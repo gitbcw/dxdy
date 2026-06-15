@@ -122,7 +122,7 @@ export async function fetchDashboardData() {
     orders,
     returns,
     products: products.filter((product: any) => !product.isDeleted && !product.deletedAt),
-    customers: users.filter((u: any) => u.role === 'customer'),
+    customers: users.filter((u: any) => u.role === 'customer' && u.customerType === 'institution'),
     config: configRecords[0] || defaultSystemConfig,
   }
 }
@@ -132,7 +132,7 @@ export async function fetchDashboardData() {
 export async function fetchProductsAndCategories() {
   const productProjection = {
     _id: 1, id: 1, name: 1, category: 1, institutionPrice: 1, personalPrice: 1,
-    visibility: 1, stock: 1, status: 1, productType: 1, isBloodPack: 1, bookingConfig: 1,
+    visibility: 1, stock: 1, salesCount: 1, serviceTags: 1, status: 1, productType: 1, isBloodPack: 1, bookingConfig: 1,
     purchaseLimit: 1, agreementRequired: 1, salesCountEnabled: 1, urgentConfig: 1,
     redeemableCategory: 1, validDays: 1, promotionPrice: 1, promotionStart: 1, promotionEnd: 1,
     isDeleted: 1, deletedAt: 1, createdAt: 1, updatedAt: 1,
@@ -335,7 +335,15 @@ export async function updateRolePermissions(role: AdminRole, perms: Record<strin
 export async function fetchSystemConfig(): Promise<SystemConfig> {
   const docs = await readCollection('config')
   const match = docs.find((d: any) => d._id === 'system' || d.id === 'system')
-  return { ...defaultSystemConfig, ...((match as any) || {}) }
+  const saved = (match as any) || {}
+  return {
+    ...defaultSystemConfig,
+    ...saved,
+    bloodBookingConfig: {
+      ...defaultSystemConfig.bloodBookingConfig,
+      ...(saved.bloodBookingConfig || {}),
+    },
+  }
 }
 
 export async function saveSystemConfig(config: SystemConfig) {

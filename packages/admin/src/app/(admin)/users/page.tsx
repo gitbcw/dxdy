@@ -42,8 +42,9 @@ export default function UsersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salespersons, setSalespersons] = useState<Salesperson[]>([]);
   const [agentApplications, setAgentApplications] = useState<AgentApplicationUser[]>([]);
-  const [customerPage, setCustomerPage] = useState(1);
   const [customerPageSize, setCustomerPageSize] = useState(10);
+  const [personalCustomerPage, setPersonalCustomerPage] = useState(1);
+  const [institutionCustomerPage, setInstitutionCustomerPage] = useState(1);
   const [agentPage, setAgentPage] = useState(1);
   const [agentPageSize, setAgentPageSize] = useState(10);
   const [salespersonPage, setSalespersonPage] = useState(1);
@@ -63,7 +64,7 @@ export default function UsersPage() {
     setError('');
     try {
       const data = await fetchUsers();
-      setCustomers(data.customers);
+      setCustomers(data.customers || []);
       setSalespersons(data.salespersons);
       setAgentApplications(data.agentApplications as AgentApplicationUser[]);
     } catch (err) {
@@ -86,16 +87,24 @@ export default function UsersPage() {
     rejected: 'destructive',
   };
 
-  const customerTotalPages = Math.max(1, Math.ceil(customers.length / customerPageSize));
+  const personalCustomers = customers.filter(customer => customer.customerType === 'personal');
+  const institutionCustomers = customers.filter(customer => customer.customerType === 'institution');
+  const personalCustomerTotalPages = Math.max(1, Math.ceil(personalCustomers.length / customerPageSize));
+  const institutionCustomerTotalPages = Math.max(1, Math.ceil(institutionCustomers.length / customerPageSize));
   const agentTotalPages = Math.max(1, Math.ceil(agentApplications.length / agentPageSize));
   const salespersonTotalPages = Math.max(1, Math.ceil(salespersons.length / salespersonPageSize));
-  const pagedCustomers = customers.slice((customerPage - 1) * customerPageSize, customerPage * customerPageSize);
+  const pagedPersonalCustomers = personalCustomers.slice((personalCustomerPage - 1) * customerPageSize, personalCustomerPage * customerPageSize);
+  const pagedInstitutionCustomers = institutionCustomers.slice((institutionCustomerPage - 1) * customerPageSize, institutionCustomerPage * customerPageSize);
   const pagedAgentApplications = agentApplications.slice((agentPage - 1) * agentPageSize, agentPage * agentPageSize);
   const pagedSalespersons = salespersons.slice((salespersonPage - 1) * salespersonPageSize, salespersonPage * salespersonPageSize);
 
   useEffect(() => {
-    setCustomerPage(page => Math.min(page, customerTotalPages));
-  }, [customerTotalPages]);
+    setPersonalCustomerPage(page => Math.min(page, personalCustomerTotalPages));
+  }, [personalCustomerTotalPages]);
+
+  useEffect(() => {
+    setInstitutionCustomerPage(page => Math.min(page, institutionCustomerTotalPages));
+  }, [institutionCustomerTotalPages]);
 
   useEffect(() => {
     setAgentPage(page => Math.min(page, agentTotalPages));
@@ -208,7 +217,13 @@ export default function UsersPage() {
     const agentApplication = agent.agentApplication;
     const commission = salesperson.commission;
     const role = String(target.role);
-    const roleText = role === 'customer' ? '客户' : role === 'salesperson' ? '代理商' : role;
+    const roleText = role === 'customer'
+      ? customer.customerType === 'personal'
+        ? '个人客户'
+        : '医院客户'
+      : role === 'salesperson'
+        ? '代理商'
+        : role;
 
     return (
       <div className="max-h-[70vh] space-y-6 overflow-y-auto py-2">
@@ -225,7 +240,7 @@ export default function UsersPage() {
           <div className="space-y-3">
             <h3 className="text-sm font-medium">客户信息</h3>
             <div className="grid gap-4 md:grid-cols-2">
-              <DetailRow label="客户类型" value={target.customerType === 'institution' ? '医院' : '个人'} />
+              <DetailRow label="客户类型" value={target.customerType === 'personal' ? '个人' : '医院'} />
               <DetailRow label="钱包余额" value={target.wallet?.balance !== undefined ? `¥${target.wallet.balance.toFixed(2)}` : '-'} />
               <DetailRow label="积分余额" value={target.points?.balance ?? '-'} />
               <DetailRow label="推荐码" value={target.referralCode} />
@@ -282,6 +297,82 @@ export default function UsersPage() {
     );
   }
 
+  function renderCustomerTable(params: {
+    rows: Customer[];
+    currentPage: number;
+    totalPages: number;
+    total: number;
+    totalLabel: string;
+    onPageChange: (page: number) => void;
+  }) {
+    return (
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>昵称</TableHead>
+                <TableHead>手机</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead>认证</TableHead>
+                <TableHead>余额</TableHead>
+                <TableHead>推荐码</TableHead>
+                <TableHead>推荐人</TableHead>
+                <TableHead>注册时间</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 用户...</TableCell>
+                </TableRow>
+              )}
+              {!loading && params.rows.map(c => (
+                <TableRow key={c.id}>
+                  <TableCell>{c.nickname}</TableCell>
+                  <TableCell>{c.phone || '-'}</TableCell>
+                  <TableCell>{c.customerType === 'personal' ? '个人客户' : '医院客户'}</TableCell>
+                  <TableCell>
+                    <Badge variant={verifyVariant[c.verificationStatus]}>{verifyLabel[c.verificationStatus]}</Badge>
+                  </TableCell>
+                  <TableCell>¥{(c.wallet?.balance || 0).toFixed(2)}</TableCell>
+                  <TableCell className="font-mono text-xs">{c.referralCode || '-'}</TableCell>
+                  <TableCell className="text-xs">{c.referredBy || '-'}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.createdAt ? formatDate(c.createdAt) : '-'}</TableCell>
+                  <TableCell className="space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => setDetailUser(c)}>详情</Button>
+                    {c.customerType === 'institution' && c.verificationStatus === 'pending' && (
+                      <Button variant="outline" size="sm" onClick={() => setReviewTarget({ type: 'verification', user: c })}>审核</Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!loading && params.rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">暂无客户</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          {renderPaginationBar({
+            currentPage: params.currentPage,
+            totalPages: params.totalPages,
+            pageSize: customerPageSize,
+            total: params.total,
+            totalLabel: params.totalLabel,
+            onPageChange: params.onPageChange,
+            onPageSizeChange: pageSize => {
+              setCustomerPageSize(pageSize);
+              setPersonalCustomerPage(1);
+              setInstitutionCustomerPage(1);
+            },
+          })}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">用户管理</h1>
@@ -295,72 +386,39 @@ export default function UsersPage() {
         </TabsList>
 
         <TabsContent value="customers">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>昵称</TableHead>
-                    <TableHead>手机</TableHead>
-                    <TableHead>类型</TableHead>
-                    <TableHead>认证</TableHead>
-                    <TableHead>余额</TableHead>
-                    <TableHead>推荐码</TableHead>
-                    <TableHead>推荐人</TableHead>
-                    <TableHead>注册时间</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading && (
-                    <TableRow>
-                      <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 用户...</TableCell>
-                    </TableRow>
-                  )}
-                  {!loading && pagedCustomers.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-mono text-sm">{c.id}</TableCell>
-                      <TableCell>{c.nickname}</TableCell>
-                      <TableCell>{c.phone || '-'}</TableCell>
-                      <TableCell>{c.customerType === 'institution' ? '医院' : '个人'}</TableCell>
-                      <TableCell>
-                        <Badge variant={verifyVariant[c.verificationStatus]}>{verifyLabel[c.verificationStatus]}</Badge>
-                      </TableCell>
-                      <TableCell>¥{(c.wallet?.balance || 0).toFixed(2)}</TableCell>
-                      <TableCell className="font-mono text-xs">{c.referralCode || '-'}</TableCell>
-                      <TableCell className="text-xs">{c.referredBy || '-'}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{c.createdAt ? formatDate(c.createdAt) : '-'}</TableCell>
-                      <TableCell className="space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => setDetailUser(c)}>详情</Button>
-                        {c.verificationStatus === 'pending' && (
-                          <Button variant="outline" size="sm" onClick={() => setReviewTarget({ type: 'verification', user: c })}>审核</Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {renderPaginationBar({
-                currentPage: customerPage,
-                totalPages: customerTotalPages,
-                pageSize: customerPageSize,
-                total: customers.length,
-                totalLabel: '客户总数',
-                onPageChange: setCustomerPage,
-                onPageSizeChange: setCustomerPageSize,
+          <Tabs defaultValue="personal">
+            <TabsList>
+              <TabsTrigger value="personal">个人客户 ({personalCustomers.length})</TabsTrigger>
+              <TabsTrigger value="institution">医院客户 ({institutionCustomers.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="personal">
+              {renderCustomerTable({
+                rows: pagedPersonalCustomers,
+                currentPage: personalCustomerPage,
+                totalPages: personalCustomerTotalPages,
+                total: personalCustomers.length,
+                totalLabel: "个人客户总数",
+                onPageChange: setPersonalCustomerPage,
               })}
-            </CardContent>
-          </Card>
+            </TabsContent>
+            <TabsContent value="institution">
+              {renderCustomerTable({
+                rows: pagedInstitutionCustomers,
+                currentPage: institutionCustomerPage,
+                totalPages: institutionCustomerTotalPages,
+                total: institutionCustomers.length,
+                totalLabel: "医院客户总数",
+                onPageChange: setInstitutionCustomerPage,
+              })}
+            </TabsContent>
+          </Tabs>
         </TabsContent>
-
         <TabsContent value="agents">
           <Card>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
                     <TableHead>申请主体</TableHead>
                     <TableHead>联系人</TableHead>
                     <TableHead>手机</TableHead>
@@ -373,14 +431,13 @@ export default function UsersPage() {
                 <TableBody>
                   {loading && (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 代理商申请...</TableCell>
+                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">正在读取 CloudBase 代理商申请...</TableCell>
                     </TableRow>
                   )}
                   {!loading && pagedAgentApplications.map(user => {
                     const app = user.agentApplication || {};
                     return (
                       <TableRow key={user.id}>
-                        <TableCell className="font-mono text-sm">{user.id}</TableCell>
                         <TableCell>{app.companyName || user.nickname}</TableCell>
                         <TableCell>{app.contactName || user.nickname}</TableCell>
                         <TableCell>{app.contactPhone || user.phone || '-'}</TableCell>
@@ -396,7 +453,7 @@ export default function UsersPage() {
                   })}
                   {!loading && agentApplications.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">暂无待审核代理商申请</TableCell>
+                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">暂无待审核代理商申请</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -420,7 +477,6 @@ export default function UsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
                     <TableHead>昵称</TableHead>
                     <TableHead>手机</TableHead>
                     <TableHead>认证</TableHead>
@@ -433,7 +489,6 @@ export default function UsersPage() {
                 <TableBody>
                   {pagedSalespersons.map(s => (
                     <TableRow key={s.id}>
-                      <TableCell className="font-mono text-sm">{s.id}</TableCell>
                       <TableCell>{s.nickname}</TableCell>
                       <TableCell>{s.phone || '-'}</TableCell>
                       <TableCell>

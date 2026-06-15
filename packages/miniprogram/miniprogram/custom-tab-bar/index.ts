@@ -11,7 +11,7 @@ Component({
   methods: {
     sync(role?: string) {
       const app = getApp<IAppOption>()
-      const currentRole = role || app.globalData.userRole || 'customer_personal'
+      const currentRole = role || app.globalData.userRole || 'customer_institution'
       this.setData({
         tabs: getVisibleTabList(currentRole).map((item: any) => ({
           ...item,

@@ -65,6 +65,7 @@ export const defaultSystemConfig: SystemConfig = {
   minWithdrawAmount: 100,
   withdrawReviewEnabled: true,
   paymentTimeoutMinutes: 30,
+  autoReceiptDays: 7,
   returnDeadlineDays: 7,
   returnAddress: '广州市黄埔区科学城宠物医疗供应链中心A栋3层',
   reviewTimeoutHours: 24,
@@ -78,4 +79,17 @@ export const defaultSystemConfig: SystemConfig = {
     { amount: 1000, bonus: 100, label: '充1000送100' },
   ],
   referralRewardPoints: 500,
+  bloodBookingConfig: {
+    dogBloodTypes: [
+      'DEA1.1阳性',
+      'DEA1.1阴性',
+      'DEA1.1阴性 + DEA7阴性',
+      'DEA7阴性',
+      '未检测，需协助配血',
+    ],
+    catBloodTypes: ['A型', 'B型', 'AB型', '未检测，需协助配血'],
+    dogVolumeOptions: [100, 200, 300, 400, 500],
+    catVolumeOptions: [50, 100, 150, 200],
+    priceRules: [],
+  },
 };

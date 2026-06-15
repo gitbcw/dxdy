@@ -1,4 +1,4 @@
-const { formatMoney, getProductVisualImage } = require('../../services/index')
+const { formatMoney, getProductVisualImage, getEffectivePrice } = require('../../services/index')
 
 function resolveProductImage(product: any): string {
   if (!product) return ''
@@ -58,10 +58,8 @@ Component({
         })
         return
       }
-      const isInst = this.data.isInstitution
-      const price = isInst
-        ? product.institutionPrice
-        : (product.personalPrice || product.institutionPrice)
+      const user = getApp().globalData.userInfo
+      const price = getEffectivePrice(product, user)
       this.setData({
         displayPrice: '¥' + formatMoney(price || 0),
         stock: product.stock || 0,

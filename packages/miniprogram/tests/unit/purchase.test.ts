@@ -29,7 +29,7 @@ describe('purchase checks', () => {
 
     expect(canPurchase(
       { status: 'on_sale', stock: 1 },
-      { customerType: 'personal', role: 'customer' },
+      { customerType: 'institution', role: 'customer' },
       2,
     )).toMatchObject({ allowed: false, code: 'stock_insufficient' })
 
@@ -39,7 +39,7 @@ describe('purchase checks', () => {
         stock: 10,
         purchaseLimit: { minQuantity: 2, maxQuantityPerOrder: 5, maxQuantityPerUser: 10 },
       },
-      { customerType: 'personal', role: 'customer' },
+      { customerType: 'institution', role: 'customer' },
       1,
     )).toMatchObject({ allowed: false, code: 'purchase_limit' })
     expect(canPurchase(
@@ -48,7 +48,7 @@ describe('purchase checks', () => {
         stock: 10,
         purchaseLimit: { minQuantity: 2, maxQuantityPerOrder: 5, maxQuantityPerUser: 10 },
       },
-      { customerType: 'personal', role: 'customer' },
+      { customerType: 'institution', role: 'customer' },
       6,
     )).toMatchObject({ allowed: false, code: 'purchase_limit' })
   })

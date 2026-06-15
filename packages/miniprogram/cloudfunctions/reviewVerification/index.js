@@ -138,7 +138,7 @@ exports.main = async (event) => {
     updatedAt: now,
   }
   if (target.role === 'customer') {
-    updateData.customerType = event.approved ? 'institution' : (target.customerType || 'personal')
+    updateData.customerType = 'institution'
   }
 
   await db.collection('users').doc(target._id).update({ data: updateData })

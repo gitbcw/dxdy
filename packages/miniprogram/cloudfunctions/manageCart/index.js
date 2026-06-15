@@ -64,7 +64,7 @@ function getUnitPrice(product, user) {
     const end = new Date(product.promotionEnd.replace(/-/g, '/'))
     if (now >= start && now <= end) return Number(product.promotionPrice)
   }
-  if ((user.customerType || 'personal') === 'institution') {
+  if (user.customerType === 'institution' && user.verificationStatus === 'approved') {
     return Number(product.institutionPrice || product.personalPrice || 0)
   }
   return Number(product.personalPrice || product.institutionPrice || 0)
@@ -95,7 +95,7 @@ async function writeCart(user, items, now) {
     }
     await db.collection('carts').doc(id).set({ data: { ...doc, createdAt: now } })
     const saved = await readCart(user)
-    if (!saved) throw new Error('购物车保存失败')
+    if (!saved) throw new Error('购物车保存失�?)
     return { id, ...saved }
   } catch (e) {
     console.error('writeCart failed', { id, userId: user._id, message: e && e.message })
@@ -141,10 +141,10 @@ async function hydrateItems(rawItems, user) {
 exports.main = async (event = {}) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  if (!openid) return error('登录状态无效', 'UNAUTHORIZED')
+  if (!openid) return error('登录状态无�?, 'UNAUTHORIZED')
 
   const user = await getUserByOpenid(openid)
-  if (!user) return error('用户不存在', 'UNAUTHORIZED')
+  if (!user) return error('用户不存�?, 'UNAUTHORIZED')
 
   const action = String(event.action || 'getCart')
   const now = formatDateTime(new Date())
@@ -177,9 +177,9 @@ exports.main = async (event = {}) => {
   if (action === 'addItem') {
     const productId = event.productId || event.item?.productId || event.item?.id || event.item?._id
     const product = await getProduct(productId)
-    if (!product) return error('商品不存在', 'NOT_FOUND')
-    if (product.status !== 'on_sale') return error('商品已下架', 'OFF_SALE')
-    if (!isVisibleToCustomer(product, user)) return error('当前客户类型不可购买该商品', 'VISIBILITY')
+    if (!product) return error('商品不存�?, 'NOT_FOUND')
+    if (product.status !== 'on_sale') return error('商品已下�?, 'OFF_SALE')
+    if (!isVisibleToCustomer(product, user)) return error('当前客户类型不可购买该商�?, 'VISIBILITY')
 
     const quantity = Math.max(1, Number(event.quantity || event.item?.quantity || 1))
     const spec = event.spec || event.item?.spec || getFirstSpec(product)

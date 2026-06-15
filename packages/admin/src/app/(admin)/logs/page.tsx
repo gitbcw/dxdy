@@ -100,14 +100,94 @@ const actionLabels: Record<string, string> = {
   delete_report: '删除检测报告',
   void_card_voucher: '作废卡券',
   gift_card: '赠送卡券',
+  create_card_voucher: '创建卡券',
+  claim_shared_card: '认领分享卡券',
+  admin_gift: '管理员赠送卡券',
   claim_card: '认领卡券',
   regift_card: '转赠卡券',
   redeem_card: '兑换卡券',
   void_card: '作废卡券',
+  adjust_price: '调整订单价格',
+  assign: '指派订单',
+  ship: '录入物流',
+  status: '更新订单状态',
+  已取消: '取消订单',
+  已完成: '完成订单',
+  已确认: '确认订单',
+  加急配送出发: '加急配送出发',
+  completed: '已完成',
+  confirmed: '已确认',
+  pending_payment: '待付款',
+  pending_shipment: '待发货',
+  pending_receipt: '待收货',
+  cancelled: '已取消',
 };
 
+const actionWordLabels: Record<string, string> = {
+  approve: '审核通过',
+  approved: '审核通过',
+  reject: '驳回',
+  rejected: '驳回',
+  create: '创建',
+  update: '更新',
+  delete: '删除',
+  toggle: '切换',
+  save: '保存',
+  list: '查询',
+  get: '查询',
+  assign: '指派',
+  adjust: '调整',
+  process: '处理',
+  claim: '认领',
+  shared: '分享',
+  gift: '赠送',
+  regift: '转赠',
+  redeem: '兑换',
+  void: '作废',
+  paid: '确认打款',
+  issued: '开票',
+  ship: '发货',
+  status: '状态',
+  price: '价格',
+  order: '订单',
+  product: '商品',
+  category: '分类',
+  return: '退换货',
+  withdrawal: '提现',
+  invoice: '发票',
+  role: '角色',
+  permissions: '权限',
+  account: '账号',
+  system: '系统',
+  config: '配置',
+  card: '卡券',
+  voucher: '卡券',
+  coupon: '优惠券',
+  review: '评论',
+  verification: '认证',
+  agent: '代理商',
+};
+
+function splitActionWords(action: string) {
+  return action
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .split(/[_\s-]+/)
+    .filter(Boolean);
+}
+
+function getFallbackActionLabel(action: string) {
+  if (/[\u4e00-\u9fa5]/.test(action)) return action;
+  const labels = splitActionWords(action)
+    .map(word => actionWordLabels[word])
+    .filter(Boolean);
+  if (!labels.length) return '未识别操作';
+  return [...new Set(labels)].join('');
+}
+
 function getActionLabel(action: string) {
-  return actionLabels[action] ?? action;
+  if (!action) return '未知操作';
+  return actionLabels[action] ?? getFallbackActionLabel(action);
 }
 
 const statusLabels: Record<string, string> = {
@@ -117,10 +197,16 @@ const statusLabels: Record<string, string> = {
   approved: '已通过',
   rejected: '已拒绝',
   paid: '已打款',
+  issued: '已开票',
   success: '成功',
   failure: '失败',
   disabled: '已禁用',
   active: '已启用',
+  voided: '已作废',
+  gifted: '已赠送',
+  ungifted: '未赠送',
+  claimed: '已认领',
+  redeemed: '已兑换',
 };
 
 function getStatusLabel(status: string) {
@@ -128,51 +214,19 @@ function getStatusLabel(status: string) {
 }
 
 const roleLabels: Record<string, string> = {
+  customer: '客户',
+  salesperson: '代理商',
   service: '客服',
   product_manager: '商品管理员',
   clerk: '制单员',
   system_admin: '系统管理员',
+  admin: '管理员',
   unknown: '未知角色',
 };
 
-const targetLabels: Record<string, string> = {
-  system: '系统配置',
-  service: '客服',
-  product_manager: '商品管理员',
-  system_admin: '系统管理员',
-  seed_prod_card: '卡券测试商品',
-  seed_prod_supply: '宠物处方药',
-  seed_prod_blood_a: '宠物血液制品 A',
-  seed_prod_blood_b: '宠物血液制品 B',
-};
-
 function getRoleLabel(role: string) {
-  return roleLabels[role] ?? role;
-}
-
-function getTargetLabel(log: OperationLog, targetNameMap: Record<string, string>) {
-  const mapped = targetNameMap[log.target] || targetLabels[log.target];
-  if (mapped) return mapped;
-
-  const detail = log.detail || '';
-  const patterns = [
-    /^创建商品\s+(.+)$/,
-    /^更新商品分类\s+(.+)$/,
-    /^创建商品分类\s+(.+)$/,
-    /^删除商品分类\s+(.+)$/,
-    /^管理员\s+(.+)\s+登录$/,
-    /^管理员\s+(.+)\s+登出$/,
-    /^创建账号\s+(.+)$/,
-    /^更新账号\s+(.+)$/,
-    /^账号\s+(.+)\s+状态变更/,
-    /^创建检测报告\s+(.+)$/,
-    /^更新检测报告\s+(.+)$/,
-  ];
-  for (const pattern of patterns) {
-    const match = detail.match(pattern);
-    if (match?.[1]) return match[1];
-  }
-  return log.target;
+  if (!role) return '未知角色';
+  return roleLabels[role] ?? '未知角色';
 }
 
 function getUserTargetName(user: Record<string, unknown>) {
@@ -218,7 +272,7 @@ function getDetailLabel(log: OperationLog, targetNameMap: Record<string, string>
     return `删除商品 ${targetName}`;
   }
 
-  return detail.replace(/\b(on_sale|off_sale|pending|approved|rejected|paid|success|failure|disabled|active)\b/g, value => getStatusLabel(value));
+  return detail.replace(/\b(on_sale|off_sale|pending|approved|rejected|paid|issued|success|failure|disabled|active|voided|gifted|ungifted|claimed|redeemed)\b/g, value => getStatusLabel(value));
 }
 
 export default function LogsPage() {
@@ -355,14 +409,13 @@ export default function LogsPage() {
                 <TableHead>操作人</TableHead>
                 <TableHead>角色</TableHead>
                 <TableHead>操作</TableHead>
-                <TableHead>目标</TableHead>
                 <TableHead>结果</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">加载日志中...</TableCell>
+                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">加载日志中...</TableCell>
                 </TableRow>
               )}
               {!loading && pagedLogs.map(log => (
@@ -375,7 +428,6 @@ export default function LogsPage() {
                   <TableCell>{log.operatorName}</TableCell>
                   <TableCell><Badge variant="secondary">{getRoleLabel(log.operatorRole)}</Badge></TableCell>
                   <TableCell>{getActionLabel(log.action)}</TableCell>
-                  <TableCell className="max-w-48 truncate">{getTargetLabel(log, targetNameMap)}</TableCell>
                   <TableCell>
                     <Badge variant={log.result === 'success' ? 'default' : 'destructive'}>
                       {log.result === 'success' ? '成功' : '失败'}
@@ -385,7 +437,7 @@ export default function LogsPage() {
               ))}
               {!loading && filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">暂无匹配日志</TableCell>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">暂无匹配日志</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -448,8 +500,6 @@ export default function LogsPage() {
                 <span>{selectedLog.operatorName}（{getRoleLabel(selectedLog.operatorRole)}）</span>
                 <span className="text-muted-foreground">操作</span>
                 <span>{getActionLabel(selectedLog.action)}</span>
-                <span className="text-muted-foreground">目标</span>
-                <span className="break-all">{getTargetLabel(selectedLog, targetNameMap)}</span>
                 <span className="text-muted-foreground">结果</span>
                 <span>{selectedLog.result === 'success' ? '成功' : '失败'}</span>
               </div>

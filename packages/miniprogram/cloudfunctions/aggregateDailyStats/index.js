@@ -64,11 +64,6 @@ exports.main = async (event) => {
       orderCount: orders.institutionCount,
       newCustomers: customers.institutionNew,
     },
-    personal: {
-      revenue: orders.personalRevenue,
-      orderCount: orders.personalCount,
-      newCustomers: customers.personalNew,
-    },
   }
 
   const doc = {
@@ -164,20 +159,14 @@ async function aggregateOrders(dateStr, nextDateStr) {
 
   let totalRevenue = 0
   let institutionRevenue = 0, institutionCount = 0
-  let personalRevenue = 0, personalCount = 0
   const customerSet = new Set()
 
   for (const o of orders) {
     const amt = o.totalAmount || 0
     totalRevenue += amt
     customerSet.add(o.customerId)
-    if (o.customerType === 'institution') {
-      institutionRevenue += amt
-      institutionCount++
-    } else {
-      personalRevenue += amt
-      personalCount++
-    }
+    institutionRevenue += amt
+    institutionCount++
   }
 
   return {
@@ -185,8 +174,6 @@ async function aggregateOrders(dateStr, nextDateStr) {
     totalCount: orders.length,
     institutionRevenue,
     institutionCount,
-    personalRevenue,
-    personalCount,
     activeCustomers: customerSet.size,
   }
 }
@@ -201,13 +188,10 @@ async function aggregateCustomers(dateStr, nextDateStr) {
     createdAt: _.gte(startISO).and(_.lt(endISO)),
   }, { customerType: true })
 
-  let institutionNew = 0, personalNew = 0
-  for (const u of users) {
-    if (u.customerType === 'institution') institutionNew++
-    else personalNew++
-  }
+  let institutionNew = 0
+  for (const u of users) institutionNew++
 
-  return { newCount: users.length, institutionNew, personalNew }
+  return { newCount: users.length, institutionNew }
 }
 
 async function countRepeatCustomers(dateStr, nextDateStr) {

@@ -1,0 +1,78 @@
+<view class="page">
+  <view wx:if="{{!showForm}}" class="address-list">
+    <view
+      wx:for="{{addresses}}"
+      wx:key="id"
+      class="address-card {{item.isDefault ? 'is-default' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onSelectAddress"
+    >
+      <view class="address-top">
+        <view class="address-info">
+          <view wx:if="{{item.isDefault}}" class="default-badge">默认</view>
+          <text wx:if="{{selectMode}}" class="select-badge">选择</text>
+          <text class="address-name">{{item.name}}</text>
+          <text class="address-phone">{{item.phone}}</text>
+        </view>
+      </view>
+      <view class="address-detail">
+        <text wx:if="{{item.label}}" class="line label">{{item.label}}</text>
+        <text class="line">所在地区：{{item.province}}{{item.city}}{{item.district}}</text>
+        <text class="line">详细地址：{{item.detail}}</text>
+      </view>
+      <view class="address-actions">
+        <view
+          wx:if="{{!item.isDefault}}"
+          class="action-text"
+          data-id="{{item.id}}"
+          catchtap="onSetDefault"
+        >设为默认</view>
+        <view class="action-text" data-id="{{item.id}}" catchtap="onEdit">编辑</view>
+        <view class="action-text danger" data-id="{{item.id}}" catchtap="onDelete">删除</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{!showForm && addresses.length === 0}}">
+    <text class="empty-icon">揽收</text>
+    <text class="empty-text">暂无揽收地址</text>
+    <text class="empty-hint">添加后发起顺丰揽收时可直接选择</text>
+  </view>
+
+  <view wx:if="{{!showForm}}" class="bottom-btn dx-orange-btn" bindtap="onAddAddress">
+    <text>+ 新增揽收地址</text>
+  </view>
+
+  <view wx:else class="form-panel">
+    <view class="field-row">
+      <text>联系人</text>
+      <input placeholder="请输入寄件人姓名" value="{{form.name}}" data-field="name" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>手机号</text>
+      <input type="number" maxlength="11" placeholder="请输入寄件人手机号" value="{{form.phone}}" data-field="phone" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>所在地区</text>
+      <picker mode="region" value="{{form.regionArray}}" bindchange="onRegionChange">
+        <view class="picker-value {{form.region ? '' : 'placeholder'}}">{{form.region || '请选择所在地区'}}</view>
+      </picker>
+    </view>
+    <view class="field-row">
+      <text>详细地址</text>
+      <input placeholder="供顺丰工作人员上门" value="{{form.detail}}" data-field="detail" bindinput="onFormInput" />
+    </view>
+    <view class="field-row">
+      <text>地址标签</text>
+      <input placeholder="如 实验室/门店/仓库（选填）" value="{{form.label}}" data-field="label" bindinput="onFormInput" />
+    </view>
+    <view class="field-row switch-row">
+      <text>设为默认地址</text>
+      <switch checked="{{form.isDefault}}" color="#18a44a" bindchange="onDefaultChange" />
+    </view>
+    <view class="form-actions">
+      <view class="outline-btn" bindtap="onCancelForm">取消</view>
+      <view class="save-btn dx-orange-btn" bindtap="onSaveAddress">保存地址</view>
+    </view>
+  </view>
+</view>

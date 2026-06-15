@@ -1,5 +1,7 @@
 const icons = require('../../../services/icons')
-const { getClerkOrderById, clerkShipOrder, markOrderPreparing, getProductVisualImage } = require('../../../services/index')
+const { getClerkOrderById, clerkShipOrder, markOrderPreparing, createWxExpressOrder, getProductVisualImage } = require('../../../services/index')
+
+const SELECTED_PICKUP_ADDRESS_KEY = 'selected_pickup_address_id'
 
 function pad2(value: number) {
   return String(value).padStart(2, '0')
@@ -20,10 +22,21 @@ Page({
     loadError: '',
     showExpressPanel: false,
     showDirectPanel: false,
+    showSfPickupPanel: false,
     selectedCompany: '',
     expressNo: '',
     etaDate: '',
     etaTime: '',
+    pickupDate: '',
+    pickupTime: '',
+    senderName: '',
+    senderMobile: '',
+    senderRegion: [] as string[],
+    senderAddress: '',
+    selectedPickupAddress: null as any,
+    sfWeight: '',
+    sfRemark: '',
+    cargoName: '宠物医疗用品',
     packageType: '冷藏箱',
     coldChainMethod: '冰袋（2-6°C）',
     packageWeight: '',
@@ -67,6 +80,31 @@ Page({
     }
   },
 
+  onShow() {
+    this.loadSelectedPickupAddress()
+  },
+
+  loadSelectedPickupAddress() {
+    const user = getApp().globalData.userInfo || wx.getStorageSync('current_user') || {}
+    const addresses = Array.isArray(user.pickupAddresses) ? user.pickupAddresses : []
+    const selectedId = wx.getStorageSync(SELECTED_PICKUP_ADDRESS_KEY)
+    const selected = addresses.find((item: any) => item.id === selectedId)
+      || addresses.find((item: any) => item.isDefault)
+      || addresses[0]
+      || null
+    if (!selected) {
+      this.setData({ selectedPickupAddress: null })
+      return
+    }
+    this.setData({
+      selectedPickupAddress: selected,
+      senderName: selected.name || '',
+      senderMobile: selected.phone || '',
+      senderRegion: [selected.province || '', selected.city || '', selected.district || ''].filter(Boolean),
+      senderAddress: selected.detail || '',
+    })
+  },
+
   async onStartPreparing() {
     wx.showLoading({ title: '处理中...' })
     try {
@@ -81,6 +119,10 @@ Page({
   },
 
   onInputExpress() {
+    if (this.data.order?.status !== 'preparing') {
+      wx.showToast({ title: '请先开始备货', icon: 'none' })
+      return
+    }
     if (this.data.order?.isUrgentBooking) {
       const eta = new Date(Date.now() + 60 * 60 * 1000)
       this.setData({
@@ -90,7 +132,21 @@ Page({
       })
       return
     }
-    this.setData({ showExpressPanel: true })
+    const pickupAt = new Date(Date.now() + 60 * 60 * 1000)
+    this.loadSelectedPickupAddress()
+    this.setData({
+      showSfPickupPanel: true,
+      pickupDate: this.data.pickupDate || formatDate(pickupAt),
+      pickupTime: this.data.pickupTime || formatTime(pickupAt),
+    })
+  },
+
+  onSelectPickupAddress() {
+    wx.navigateTo({ url: '/pages/clerk/pickup-address/pickup-address?select=1' })
+  },
+
+  onManualExpressTap() {
+    this.setData({ showExpressPanel: true, showSfPickupPanel: false })
   },
 
   onSelectCompany(e: any) {
@@ -120,6 +176,71 @@ Page({
 
   onEtaTimeChange(e: any) {
     this.setData({ etaTime: e.detail.value })
+  },
+
+  onPickupDateChange(e: any) {
+    this.setData({ pickupDate: e.detail.value })
+  },
+
+  onPickupTimeChange(e: any) {
+    this.setData({ pickupTime: e.detail.value })
+  },
+
+  onSenderRegionChange(e: any) {
+    this.setData({ senderRegion: e.detail.value || [] })
+  },
+
+  onSenderFieldInput(e: any) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ [field]: e.detail.value })
+  },
+
+  async onSubmitSfPickup() {
+    const pickupAddress = this.data.selectedPickupAddress
+    if (!pickupAddress) {
+      wx.showToast({ title: '请先选择揽收地址', icon: 'none' })
+      return
+    }
+    if (!pickupAddress.name || !pickupAddress.phone || !pickupAddress.province || !pickupAddress.city || !pickupAddress.district || !pickupAddress.detail) {
+      wx.showToast({ title: '揽收地址信息不完整', icon: 'none' })
+      return
+    }
+    if (!/^1\d{10}$/.test(String(pickupAddress.phone).trim())) {
+      wx.showToast({ title: '揽收手机号无效', icon: 'none' })
+      return
+    }
+    if (!this.data.pickupDate || !this.data.pickupTime) {
+      wx.showToast({ title: '请选择揽收时间', icon: 'none' })
+      return
+    }
+    const weight = Number(this.data.sfWeight)
+    if (!Number.isFinite(weight) || weight <= 0) {
+      wx.showToast({ title: '请填写包裹重量', icon: 'none' })
+      return
+    }
+    wx.showLoading({ title: '预约中...' })
+    try {
+      await createWxExpressOrder({
+        orderId: this.data.order.id,
+        senderName: pickupAddress.name.trim(),
+        senderMobile: String(pickupAddress.phone).trim(),
+        senderProvince: pickupAddress.province,
+        senderCity: pickupAddress.city,
+        senderDistrict: pickupAddress.district,
+        senderAddress: pickupAddress.detail.trim(),
+        expectTime: `${this.data.pickupDate} ${this.data.pickupTime}:00`,
+        weight,
+        cargoName: this.data.cargoName || '宠物医疗用品',
+        remark: this.data.sfRemark || '',
+      })
+      wx.hideLoading()
+      wx.showToast({ title: '已预约顺丰揽收', icon: 'success' })
+      this.setData({ showSfPickupPanel: false })
+      this.loadOrder(this.data.order.id)
+    } catch (e: any) {
+      wx.hideLoading()
+      wx.showToast({ title: e?.message || '预约失败', icon: 'none' })
+    }
   },
 
   async onSubmitDirectDelivery() {
@@ -166,14 +287,9 @@ Page({
       })
       wx.hideLoading()
       const order = this.data.order
-      const shipping = order.shipping || {}
-      const address = shipping.address || order.shippingAddress || {}
       const shipInfo = encodeURIComponent(JSON.stringify({
         orderId: order.id,
         orderNo: order.orderNo || order.id,
-        recipient: address.recipient || order.customerName || '',
-        phone: address.phone || order.customerPhone || '',
-        address: [address.province, address.city, address.district, address.detail].filter(Boolean).join('') || order.address || '',
         expressCompany: this.data.selectedCompany,
         expressNo: this.data.expressNo,
         packageType: this.data.packageType,
@@ -188,22 +304,11 @@ Page({
     }
   },
 
-  async onScanTap() {
-    try {
-      const res = await wx.scanCode({ onlyFromCamera: true })
-      if (res.result) {
-        this.setData({ expressNo: res.result })
-        wx.showToast({ title: '扫码成功', icon: 'success' })
-      }
-    } catch (e) {
-      wx.showToast({ title: '扫码失败，请手动输入', icon: 'none' })
-    }
-  },
-
   onClosePanel() {
     this.setData({
       showExpressPanel: false,
       showDirectPanel: false,
+      showSfPickupPanel: false,
       selectedCompany: '',
       expressNo: '',
       packageType: '冷藏箱',

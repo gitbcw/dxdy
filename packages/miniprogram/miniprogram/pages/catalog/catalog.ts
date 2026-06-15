@@ -133,18 +133,12 @@ Page({
     const filters = [
       { key: 'all', label: '全部', count: products.length },
       { key: 'common', label: '常购', count: products.filter((item: any) => !item.isBloodPack).length },
-      { key: 'low', label: '低库存', count: products.filter((item: any) => item.lowStock).length },
     ]
 
     if (isInstitution) {
-      filters.splice(2, 0, {
-        key: 'blood',
-        label: '预约服务',
-        count: products.filter((item: any) => item.isBloodPack).length,
-      })
       filters.push({
         key: 'institution',
-        label: '机构专区',
+        label: '门店专区',
         count: products.filter((item: any) => item.visibility === 'institution_only').length,
       })
     }
@@ -271,11 +265,10 @@ Page({
 
   onSortTap(e: any) {
     const sortKey = e.currentTarget.dataset.key || 'comprehensive'
-    const nextOrder = sortKey === 'price' && this.data.sortKey === 'price' && this.data.sortOrder === 'asc'
-      ? 'desc'
-      : sortKey === 'price'
-        ? 'asc'
-        : 'desc'
+    const isSameSort = sortKey === this.data.sortKey
+    const nextOrder = isSameSort
+      ? (this.data.sortOrder === 'asc' ? 'desc' : 'asc')
+      : (sortKey === 'price' ? 'asc' : 'desc')
     this.setData({
       sortKey,
       sortOrder: nextOrder,

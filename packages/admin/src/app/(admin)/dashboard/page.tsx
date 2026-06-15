@@ -165,7 +165,6 @@ export default function DashboardPage() {
   const priceAdjustedOrders = state.orders.filter(order => order.pricing.priceLog.length > 0);
 
   const institutionCustomers = customers.filter(customer => customer.customerType === 'institution');
-  const personalCustomers = customers.filter(customer => customer.customerType === 'personal');
   const verifiedInstitutions = institutionCustomers.filter(
     customer => customer.verificationStatus === 'approved',
   );
@@ -223,10 +222,7 @@ export default function DashboardPage() {
   const institutionRevenue = recognizedOrders
     .filter(order => customerMap.get(order.customerId)?.customerType === 'institution')
     .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
-  const personalRevenue = recognizedOrders
-    .filter(order => customerMap.get(order.customerId)?.customerType === 'personal')
-    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
-  const totalRevenue = institutionRevenue + personalRevenue;
+  const totalRevenue = institutionRevenue;
 
   const role: AdminRole | null = currentUser?.role ?? null;
   const roleTitle =
@@ -265,7 +261,7 @@ export default function DashboardPage() {
     {
       title: '本月成交额',
       value: `¥${formatMoney(monthRevenue)}`,
-      desc: `机构 ¥${formatMoney(institutionRevenue)} / 个人 ¥${formatMoney(personalRevenue)}`,
+      desc: `医院客户 ¥${formatMoney(institutionRevenue)}`,
       icon: Activity,
     },
     {
@@ -369,7 +365,7 @@ export default function DashboardPage() {
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">客户结构</p>
               <p className="mt-1.5 text-xl font-semibold">{customers.length}</p>
               <p className="mt-1 text-xs text-slate-600">
-                机构 {institutionCustomers.length} 家 / 个人 {personalCustomers.length} 位
+                医院客户 {institutionCustomers.length} 家
               </p>
             </Link>
             <Link href="/users" className="rounded-2xl border bg-slate-50 p-3 transition hover:border-teal-700/30">
