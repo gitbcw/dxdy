@@ -1,0 +1,22 @@
+.empty {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 48rpx;
+  background: #f7fbf8;
+  box-sizing: border-box;
+}
+
+.empty-title {
+  color: #17231f;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.empty-desc {
+  color: #7d8782;
+  font-size: 24rpx;
+}

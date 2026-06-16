@@ -4,6 +4,7 @@
     "pages/login/forgot-password/forgot-password",
     "pages/register/register",
     "pages/home/home",
+    "pages/articles/webview/webview",
     "pages/blood/booking/booking",
     "pages/blood/invite/invite",
     "pages/blood/commission/commission",

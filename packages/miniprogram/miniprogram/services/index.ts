@@ -529,6 +529,31 @@ export async function getCategories() {
   return normalizeList(data)
 }
 
+const ARTICLE_LIST_FIELDS = {
+  _id: true,
+  title: true,
+  subtitle: true,
+  coverUrl: true,
+  articleUrl: true,
+  tag: true,
+  status: true,
+  sort: true,
+  publishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+}
+
+export async function getOfficialArticles(limit = 4) {
+  const { data } = await db.collection('articles')
+    .where({ status: 'active' })
+    .field(ARTICLE_LIST_FIELDS)
+    .orderBy('sort', 'asc')
+    .orderBy('publishedAt', 'desc')
+    .limit(limit)
+    .get()
+  return normalizeList(data)
+}
+
 // ===== 订单服务 =====
 
 export async function getOrders(options?: { customerId?: string; salespersonId?: string; clerkId?: string; status?: string }) {

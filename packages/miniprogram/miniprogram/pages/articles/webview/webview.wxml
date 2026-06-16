@@ -1,0 +1,5 @@
+<web-view wx:if="{{url}}" src="{{url}}" />
+<view wx:else class="empty">
+  <text class="empty-title">文章链接不可用</text>
+  <text class="empty-desc">请返回后重新打开文章</text>
+</view>

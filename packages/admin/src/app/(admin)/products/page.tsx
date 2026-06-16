@@ -490,8 +490,8 @@ export default function ProductsPage() {
         description: form.urgentDescription,
       } : undefined,
       redeemableCategory: undefined,
-      visibleRegions: form.visibleRegions.length ? form.visibleRegions : undefined,
-      hiddenRegions: form.hiddenRegions.length ? form.hiddenRegions : undefined,
+      visibleRegions: form.visibleRegions,
+      hiddenRegions: form.hiddenRegions,
       validDays: undefined,
       ...(form.promotionEnabled && form.promotionPrice ? {
         promotionPrice: parseFloat(form.promotionPrice) || 0,
@@ -634,7 +634,7 @@ export default function ProductsPage() {
       specs,
       institutionPrice: parseFloat(createForm.institutionPrice) || 0,
       personalPrice: parseFloat(createForm.personalPrice) || 0,
-      visibility: 'all',
+      visibility: createForm.visibility,
       stock: parseInt(createForm.stock, 10) || 0,
       serviceTags: parseServiceTags(createForm.serviceTags),
       status: 'on_sale',
@@ -1488,6 +1488,21 @@ export default function ProductsPage() {
                   placeholder="5mL/支,10mL/支"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prodVis">可见范围</Label>
+              <Select
+                value={createForm.visibility}
+                onValueChange={value => setCreateForm(form => ({ ...form, visibility: value as ProductVisibility }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>{visibilityLabel[createForm.visibility]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部可见</SelectItem>
+                  <SelectItem value="institution_only">仅宠物医院</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="prodServiceTags">商品详情标签</Label>

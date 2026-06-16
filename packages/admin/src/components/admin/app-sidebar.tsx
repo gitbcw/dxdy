@@ -40,6 +40,7 @@ import {
   Boxes,
   CircleDollarSign,
   UserCog,
+  Newspaper,
 } from 'lucide-react';
 import { useAuth, type AdminProfile } from '@/hooks/use-auth';
 
@@ -72,6 +73,7 @@ const navGroups: NavGroup[] = [
     icon: Boxes,
     items: [
       { title: '商品管理', href: '/products', icon: Package, roles: ['product_manager', 'system_admin'] },
+      { title: '内容精选', href: '/articles', icon: Newspaper, roles: ['product_manager', 'system_admin'] },
       { title: '卡券管理', href: '/cards', icon: CreditCard, roles: ['system_admin'] },
       { title: '优惠券', href: '/coupons', icon: Ticket, roles: ['system_admin'] },
       { title: '评论管理', href: '/reviews', icon: MessageSquare, roles: ['system_admin'] },

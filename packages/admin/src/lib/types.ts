@@ -153,6 +153,24 @@ export interface ProductCategory {
   sort: number;
 }
 
+// --- 内容运营 ---
+
+export type OfficialArticleStatus = 'active' | 'inactive';
+
+export interface OfficialArticle {
+  id: string;
+  title: string;
+  subtitle?: string;
+  coverUrl: string;
+  articleUrl: string;
+  tag?: string;
+  status: OfficialArticleStatus;
+  sort: number;
+  publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- 订单 ---
 
 export interface OrderAddress { name: string; phone: string; full: string; }

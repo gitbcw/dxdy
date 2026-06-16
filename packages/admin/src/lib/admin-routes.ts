@@ -3,6 +3,7 @@ import type { AdminRole } from '@/lib/types'
 export const routeAccess: Record<string, AdminRole[]> = {
   dashboard: ['system_admin'],
   products: ['product_manager', 'system_admin'],
+  articles: ['product_manager', 'system_admin'],
   orders: ['service', 'system_admin', 'clerk'],
   returns: ['service', 'system_admin', 'clerk'],
   finance: ['service', 'system_admin'],
@@ -22,4 +23,3 @@ export function getLandingPath(role: AdminRole) {
   if (role === 'product_manager') return '/products'
   return '/orders'
 }
-

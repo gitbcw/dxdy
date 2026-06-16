@@ -2,7 +2,7 @@ import { callFunction, getStoredAdminToken } from '@/lib/cloudbase'
 import type {
   AdminRole, AdminUser, Product, ProductCategory, Order,
   ReturnRecord, OperationLog, SystemConfig, User, Customer, Salesperson, Clerk,
-  CouponTemplate, UserCoupon,
+  CouponTemplate, UserCoupon, OfficialArticle,
 } from '@/lib/types'
 import { defaultSystemConfig } from '@/lib/format'
 import { queryOrders } from '@/lib/services/functions'
@@ -187,6 +187,50 @@ export async function updateProductCategory(id: string, updates: Partial<Product
 
 export async function deleteProductCategory(id: string) {
   await adminRequest('remove', 'categories', { id })
+}
+
+// ===== Articles =====
+
+function normalizeOfficialArticle(doc: CloudDoc & { id: string }): OfficialArticle {
+  return {
+    id: String(doc.id || ''),
+    title: String(doc.title || ''),
+    subtitle: String(doc.subtitle || ''),
+    coverUrl: String(doc.coverUrl || ''),
+    articleUrl: String(doc.articleUrl || ''),
+    tag: String(doc.tag || ''),
+    status: doc.status === 'inactive' ? 'inactive' : 'active',
+    sort: Number(doc.sort || 0),
+    publishedAt: String(doc.publishedAt || ''),
+    createdAt: String(doc.createdAt || ''),
+    updatedAt: String(doc.updatedAt || ''),
+  }
+}
+
+export async function fetchOfficialArticles() {
+  const docs = (await readCollection('articles')).map(normalizeOfficialArticle)
+  return docs.sort((a, b) => {
+    const sortDiff = (Number(a.sort) || 0) - (Number(b.sort) || 0)
+    if (sortDiff !== 0) return sortDiff
+    return String(b.publishedAt || b.createdAt || '').localeCompare(String(a.publishedAt || a.createdAt || ''))
+  })
+}
+
+export async function createOfficialArticle(article: OfficialArticle & { id: string }) {
+  const now = new Date().toISOString()
+  const doc = { ...article, createdAt: article.createdAt || now, updatedAt: now }
+  await adminRequest('set', 'articles', { id: article.id, data: doc })
+  return doc
+}
+
+export async function updateOfficialArticle(id: string, updates: Partial<OfficialArticle>) {
+  const update = { ...updates, updatedAt: new Date().toISOString() }
+  await adminRequest('update', 'articles', { id, data: update })
+  return update as Partial<OfficialArticle> & { updatedAt: string }
+}
+
+export async function deleteOfficialArticle(id: string) {
+  await adminRequest('remove', 'articles', { id })
 }
 
 // ===== Orders =====

@@ -133,6 +133,8 @@ async function hydrateItems(rawItems, user) {
     const productId = raw.productId || raw.id || raw._id
     const product = await getProduct(productId)
     if (!product) continue
+    if (product.status !== 'on_sale') continue
+    if (!isVisibleToCustomer(product, user)) continue
     const quantity = Math.max(1, Number(raw.quantity || 1))
     const spec = raw.spec || getFirstSpec(product)
     const unitPrice = getUnitPrice(product, user)
@@ -177,6 +179,16 @@ exports.main = async (event = {}) => {
 
   if (action === 'getCart') {
     const hydrated = await hydrateItems(items, user)
+    if (hydrated.length !== items.length) {
+      const visibleItems = hydrated.map((item) => ({
+        productId: item.productId,
+        spec: item.spec || '',
+        quantity: Math.max(1, Number(item.quantity || 1)),
+        addedAt: item.addedAt || now,
+        updatedAt: now,
+      }))
+      await writeCart(user, visibleItems, now)
+    }
     return { success: true, cart: { id: cartId(user._id), userId: user._id, items: hydrated, updatedAt: current?.updatedAt || '' } }
   }
 
@@ -195,7 +207,18 @@ exports.main = async (event = {}) => {
       updatedAt: now,
     })).filter((item) => item.productId)
     const cart = await writeCart(user, items, now)
-    return { success: true, cart: { ...cart, items: await hydrateItems(items, user) } }
+    const hydrated = await hydrateItems(items, user)
+    if (hydrated.length !== items.length) {
+      items = hydrated.map((item) => ({
+        productId: item.productId,
+        spec: item.spec || '',
+        quantity: Math.max(1, Number(item.quantity || 1)),
+        addedAt: item.addedAt || now,
+        updatedAt: now,
+      }))
+      await writeCart(user, items, now)
+    }
+    return { success: true, cart: { ...cart, items: hydrated } }
   }
 
   if (action === 'addItem') {

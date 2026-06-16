@@ -8,6 +8,7 @@ const {
   getProductVisualImage,
   addToCart,
   getOrderStatusText,
+  getOfficialArticles,
 } = require('../../services/index')
 const { normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
@@ -59,6 +60,17 @@ function toProductBoardItem(product: any) {
   }
 }
 
+function toArticleItem(article: any) {
+  return {
+    id: article.id || article._id,
+    title: article.title || '',
+    subtitle: article.subtitle || '',
+    coverUrl: article.coverUrl || '',
+    articleUrl: article.articleUrl || '',
+    tag: article.tag || '推荐',
+  }
+}
+
 function getDisplayOrderNo(order: any) {
   return order?.orderNo || order?.id || '未编号订单'
 }
@@ -88,6 +100,7 @@ Page({
     heroClass: 'default',
     boardLayout: 'scroll',
     searchSuggestions: [] as any[],
+    articleItems: [] as any[],
   },
 
   _rawProducts: [] as any[],
@@ -119,12 +132,13 @@ Page({
     const isInstitution = currentRole === 'customer_institution' || user?.customerType === 'institution'
     const visibility = isInstitution ? 'institution' : 'personal'
 
-    const [products, customerOrders, clerkPending, clerkShipped, commission] = await Promise.all([
+    const [products, customerOrders, clerkPending, clerkShipped, commission, articles] = await Promise.all([
       getProducts({ visibility }),
       user?.role === 'customer' ? getOrders({ customerId: user.id }) : Promise.resolve([]),
       getClerkOrders ? getClerkOrders({ status: 'pending' }) : Promise.resolve([]),
       getClerkOrders ? getClerkOrders({ status: 'shipped' }) : Promise.resolve([]),
       getCommissionSummary ? getCommissionSummary() : Promise.resolve(null),
+      currentRole === 'salesperson' || currentRole === 'clerk' ? Promise.resolve([]) : getOfficialArticles(4),
     ])
 
     const pendingOrders = customerOrders.filter((order: any) => !['completed', 'cancelled'].includes(order.status))
@@ -151,7 +165,8 @@ Page({
         heroTitleSecondary: '守护动物健康',
         heroPill: '品质 · 专业 · 安心',
         heroClass: 'default',
-        boardLayout: 'scroll',
+      boardLayout: 'scroll',
+      articleItems: currentRole === 'salesperson' || currentRole === 'clerk' ? [] : (articles || []).map(toArticleItem),
       ...dashboard,
       quickActions: withIcon(dashboard.quickActions || []),
       searchIcon: icons.search,
@@ -539,6 +554,13 @@ Page({
       return
     }
     this.handleAction('catalog')
+  },
+
+  onArticleTap(e: any) {
+    const idx = e.currentTarget.dataset.idx
+    const item = this.data.articleItems[idx]
+    if (!item?.articleUrl) return
+    wx.navigateTo({ url: `/pages/articles/webview/webview?url=${encodeURIComponent(item.articleUrl)}&title=${encodeURIComponent(item.title || '内容精选')}` })
   },
 })
 
