@@ -1,4 +1,4 @@
-const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry, requireBoundPhone } = require('../../../services/index')
+const { getProductById, createOrder, getCartItems, clearCart, formatMoney, getProductVisualImage, getAvailableCoupons, calculateCouponDiscount, getEffectivePrice, checkPointsExpiry, requireBoundPhone, canViewProduct } = require('../../../services/index')
 const tracking = require('../../../services/tracking')
 
 const SELECTED_ADDRESS_KEY = 'selected_order_address_id'
@@ -159,6 +159,15 @@ Page({
       if (!options.productId) return
       const product = await getProductById(options.productId)
       if (!product) return
+      if (!canViewProduct(product)) {
+        wx.showModal({
+          title: '商品不可见',
+          content: '该商品在您所在区域暂不销售',
+          showCancel: false,
+          success: () => wx.navigateBack(),
+        })
+        return
+      }
 
       const unitPrice = getEffectivePrice(product, user)
       const canBooking = !!product.isBloodPack

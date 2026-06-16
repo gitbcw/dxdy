@@ -135,6 +135,7 @@ export async function fetchProductsAndCategories() {
     visibility: 1, stock: 1, salesCount: 1, serviceTags: 1, status: 1, productType: 1, isBloodPack: 1, bookingConfig: 1,
     purchaseLimit: 1, agreementRequired: 1, salesCountEnabled: 1, urgentConfig: 1,
     redeemableCategory: 1, validDays: 1, promotionPrice: 1, promotionStart: 1, promotionEnd: 1,
+    visibleRegions: 1, hiddenRegions: 1,
     isDeleted: 1, deletedAt: 1, createdAt: 1, updatedAt: 1,
   }
   const [products, categories] = await Promise.all([

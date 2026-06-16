@@ -77,6 +77,18 @@ const visibilityLabel: Record<string, string> = {
   institution_only: '仅医院',
 };
 
+function formatRegionLabel(product: Product) {
+  const visible = product.visibleRegions || []
+  const hidden = product.hiddenRegions || []
+  if (hidden.length) {
+    return `禁 ${hidden.slice(0, 2).join('、')}${hidden.length > 2 ? ` 等${hidden.length}城` : ''}`
+  }
+  if (visible.length) {
+    return `限 ${visible.slice(0, 2).join('、')}${visible.length > 2 ? ` 等${visible.length}城` : ''}`
+  }
+  return '全国'
+}
+
 const productStatusLabel: Record<'all' | Product['status'], string> = {
   all: '全部状态',
   on_sale: '在售',
@@ -929,6 +941,7 @@ export default function ProductsPage() {
                 <TableHead>医院价</TableHead>
                 <TableHead>未认证价</TableHead>
                 <TableHead>可见性</TableHead>
+                <TableHead>区域限制</TableHead>
                 <TableHead>库存</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>操作</TableHead>
@@ -937,7 +950,7 @@ export default function ProductsPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                     加载商品数据中...
                   </TableCell>
                 </TableRow>
@@ -977,6 +990,11 @@ export default function ProductsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
+                    <span className="text-xs text-muted-foreground" title={formatRegionLabel(product)}>
+                      {formatRegionLabel(product)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <span>{product.stock}</span>
                       {product.stock === 0 && <Badge variant="destructive">无货</Badge>}
@@ -1009,7 +1027,7 @@ export default function ProductsPage() {
               ))}
               {!loading && pagedProducts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                     没有符合当前筛选条件的商品
                   </TableCell>
                 </TableRow>
@@ -1283,7 +1301,7 @@ export default function ProductsPage() {
                   value={editForm.visibleRegions}
                   onChange={regions => setEditForm(form => ({ ...form, visibleRegions: regions }))}
                 />
-                <p className="text-xs text-muted-foreground">填写后仅限这些城市的用户可见，多个城市用逗号分隔。</p>
+                <p className="text-xs text-muted-foreground">选择后仅限这些城市的用户可见。</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="editHiddenRegions">不可见城市</Label>
@@ -1291,7 +1309,7 @@ export default function ProductsPage() {
                   value={editForm.hiddenRegions}
                   onChange={regions => setEditForm(form => ({ ...form, hiddenRegions: regions }))}
                 />
-                <p className="text-xs text-muted-foreground">填写后这些城市的用户不可见，优先级高于可见城市，多个城市用逗号分隔。</p>
+                <p className="text-xs text-muted-foreground">选择后这些城市的用户不可见，优先级高于可见城市。</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -1488,7 +1506,7 @@ export default function ProductsPage() {
                   value={createForm.visibleRegions}
                   onChange={regions => setCreateForm(form => ({ ...form, visibleRegions: regions }))}
                 />
-                <p className="text-xs text-muted-foreground">填写后仅限这些城市的用户可见，多个城市用逗号分隔。</p>
+                <p className="text-xs text-muted-foreground">选择后仅限这些城市的用户可见。</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="prodHiddenRegions">不可见城市</Label>
@@ -1496,7 +1514,7 @@ export default function ProductsPage() {
                   value={createForm.hiddenRegions}
                   onChange={regions => setCreateForm(form => ({ ...form, hiddenRegions: regions }))}
                 />
-                <p className="text-xs text-muted-foreground">优先级高于可见城市，多个城市用逗号分隔。</p>
+                <p className="text-xs text-muted-foreground">优先级高于可见城市。</p>
               </div>
             </div>
             <div className="space-y-3">

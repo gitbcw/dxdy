@@ -1,9 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { Combobox } from '@base-ui/react/combobox'
 import { areaList } from '@vant/area-data'
-import { CheckIcon, XIcon } from 'lucide-react'
+import { CheckIcon, ChevronDownIcon, XIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 // 国标行政区划数据预处理（模块级只计算一次）
@@ -18,7 +17,7 @@ interface CityOption {
 }
 
 const ALL_CITIES: CityOption[] = Object.entries(areaList.city_list)
-  .filter(([, name]) => Boolean(name) && !name.includes('市辖区'))
+  .filter(([, name]) => Boolean(name) && !name.includes('市辖区') && name !== '省直辖县')
   .map(([code, name]) => ({ value: name, province: provinceByPrefix[code.slice(0, 2)] || '' }))
   .sort(
     (a, b) =>
@@ -32,8 +31,7 @@ export interface CityMultiSelectProps {
 }
 
 /**
- * 城市多选搜索框：基于 Base UI Combobox（多选），
- * 选项来自国标行政区划（与小程序收货地址的微信 region picker 同源）。
+ * 城市多选搜索框：自定义下拉多选，选项来自国标行政区划。
  * 已选城市在输入框下方以 Badge 展示，可单独移除。
  */
 export function CityMultiSelect({
@@ -41,7 +39,9 @@ export function CityMultiSelect({
   onChange,
   placeholder = '搜索城市，如：广州',
 }: CityMultiSelectProps) {
+  const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
+  const containerRef = React.useRef<HTMLDivElement>(null)
 
   const filtered = React.useMemo(() => {
     const keyword = query.trim()
@@ -51,53 +51,80 @@ export function CityMultiSelect({
     )
   }, [query])
 
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
+
+  function toggleCity(city: string) {
+    onChange(value.includes(city) ? value.filter((item) => item !== city) : [...value, city])
+  }
+
   function removeCity(city: string) {
     onChange(value.filter((item) => item !== city))
   }
 
   return (
-    <div className="space-y-2">
-      <Combobox.Root<string, true>
-        multiple
-        value={value}
-        onValueChange={onChange}
-        onInputValueChange={(inputValue) => setQuery(inputValue)}
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <Combobox.Input
-          placeholder={placeholder}
-          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
-        <Combobox.Positioner>
-          <Combobox.Popup className="z-50 max-h-72 w-(--anchor-width) min-w-56 overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10">
-            <Combobox.List>
-              {filtered.length === 0 ? (
-                <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                  未找到匹配城市
-                </div>
-              ) : (
-                filtered.map((city) => (
-                  <Combobox.Item
+        <span className={value.length ? 'text-foreground' : 'text-muted-foreground'}>
+          {value.length ? `已选 ${value.length} 个城市` : placeholder}
+        </span>
+        <ChevronDownIcon className="size-4 text-muted-foreground" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-lg border bg-popover p-2 text-popover-foreground shadow-md ring-1 ring-foreground/10">
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="搜索城市"
+            className="mb-2 h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
+            onClick={(event) => event.stopPropagation()}
+          />
+          <div className="max-h-60 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                未找到匹配城市
+              </div>
+            ) : (
+              filtered.map((city) => {
+                const selected = value.includes(city.value)
+                return (
+                  <div
                     key={city.value}
-                    value={city.value}
-                    className="relative flex w-full cursor-default items-center rounded-md py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => toggleCity(city.value)}
+                    className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
                   >
-                    <span className="flex flex-1 items-center gap-2">
+                    <span className="flex items-center gap-2">
                       <span>{city.value}</span>
                       <span className="text-xs text-muted-foreground">{city.province}</span>
                     </span>
-                    <Combobox.ItemIndicator className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
-                      <CheckIcon className="size-4" />
-                    </Combobox.ItemIndicator>
-                  </Combobox.Item>
-                ))
-              )}
-            </Combobox.List>
-          </Combobox.Popup>
-        </Combobox.Positioner>
-      </Combobox.Root>
+                    {selected && <CheckIcon className="size-4" />}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
 
       {value.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {value.map((city) => (
             <Badge key={city} variant="secondary" className="gap-1 pr-1">
               {city}
