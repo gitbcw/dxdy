@@ -66,7 +66,7 @@ function getDisplayOrderNo(order: any) {
 Page({
   data: {
     displayName: '未登录客户',
-    identityTag: '普通客户',
+    identityTag: '个人客户',
     identityTagClass: 'default',
     showSearchBar: true,
     searchPlaceholder: '搜索商品',
@@ -184,7 +184,7 @@ Page({
 
         return {
           displayName: name,
-          identityTag: '普通客户',
+          identityTag: '个人客户',
           identityTagClass: 'default',
           banner: {
             status: bannerStatus,
@@ -202,7 +202,7 @@ Page({
           }] : [],
           quickActions: [
             { icon: '证', title: '去认证', action: 'verify' },
-            { iconKey: 'transfusionAssistant', icon: '配', title: '配血助手', action: 'transfusionAssistant' },
+            { iconKey: 'transfusionAssistant', icon: '配', title: '配型助手', action: 'transfusionAssistant' },
           ],
           boardTitle: '商品推荐',
           boardMoreText: '查看全部',
@@ -251,12 +251,12 @@ Page({
         identityTagClass: 'verified',
         taskCards,
         quickActions: [
-          { icon: '血', title: '门店预约', action: 'blood' },
-          { icon: '码', title: '预约二维码', action: 'bloodInvite' },
+          { iconKey: 'hospital', icon: '血', title: '医院预约', action: 'blood' },
+          { icon: '码', title: '分享消费者', action: 'bloodInvite' },
           { iconKey: 'transfusionAssistant', icon: '配', title: '门店帮手', action: 'transfusionAssistant' },
-          { icon: '券', title: '我的卡券', action: 'cardWallet' },
+          { icon: '券', title: '医院卡券', action: 'cardWallet' },
         ],
-        boardTitle: '常购商品',
+        boardTitle: '好物推荐',
         boardMoreText: '进入采购',
         boardItems: institutionProducts,
       }
@@ -363,7 +363,7 @@ Page({
     // ── 个人客户 ──────────────────────────
     return {
       displayName: name,
-      identityTag: '普通客户',
+      identityTag: '个人客户',
       identityTagClass: 'default',
       banner: null,
       taskCards: [],

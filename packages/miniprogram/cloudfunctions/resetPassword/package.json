@@ -1,0 +1,9 @@
+{
+  "name": "resetPassword",
+  "version": "1.0.0",
+  "description": "通过手机验证码重置登录密码",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

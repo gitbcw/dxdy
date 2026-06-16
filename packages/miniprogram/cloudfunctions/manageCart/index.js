@@ -48,7 +48,31 @@ function getFirstImage(product) {
   return Array.isArray(product?.images) && product.images[0] ? product.images[0] : product?.image || ''
 }
 
+function getCustomerCity(user) {
+  const addresses = Array.isArray(user?.addresses) ? user.addresses : []
+  if (!addresses.length) return ''
+  const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
+  return String(defaultAddr?.city || '').trim()
+}
+
+function normalizeCity(value) {
+  return String(value || '').replace(/(省|市|特别行政区|自治区|地区|自治州|盟)$/, '').trim()
+}
+
+function isRegionVisible(product, city) {
+  if (!city) return true
+  const normalizedCity = normalizeCity(city)
+  const match = (regions) => regions.some((region) => normalizeCity(region) === normalizedCity)
+  const hidden = Array.isArray(product?.hiddenRegions) ? product.hiddenRegions : []
+  if (hidden.length && match(hidden)) return false
+  const visible = Array.isArray(product?.visibleRegions) ? product.visibleRegions : []
+  if (visible.length && !match(visible)) return false
+  return true
+}
+
 function isVisibleToCustomer(product, user) {
+  const city = getCustomerCity(user)
+  if (!isRegionVisible(product, city)) return false
   const visibility = product.visibility || 'all'
   const customerType = user.customerType || 'personal'
   if (visibility === 'all' || visibility === 'public') return true
@@ -95,7 +119,7 @@ async function writeCart(user, items, now) {
     }
     await db.collection('carts').doc(id).set({ data: { ...doc, createdAt: now } })
     const saved = await readCart(user)
-    if (!saved) throw new Error('购物车保存失�?)
+    if (!saved) throw new Error('购物车保存失败')
     return { id, ...saved }
   } catch (e) {
     console.error('writeCart failed', { id, userId: user._id, message: e && e.message })
@@ -141,10 +165,10 @@ async function hydrateItems(rawItems, user) {
 exports.main = async (event = {}) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
-  if (!openid) return error('登录状态无�?, 'UNAUTHORIZED')
+  if (!openid) return error('登录状态无效', 'UNAUTHORIZED')
 
   const user = await getUserByOpenid(openid)
-  if (!user) return error('用户不存�?, 'UNAUTHORIZED')
+  if (!user) return error('用户不存在', 'UNAUTHORIZED')
 
   const action = String(event.action || 'getCart')
   const now = formatDateTime(new Date())
@@ -177,9 +201,10 @@ exports.main = async (event = {}) => {
   if (action === 'addItem') {
     const productId = event.productId || event.item?.productId || event.item?.id || event.item?._id
     const product = await getProduct(productId)
-    if (!product) return error('商品不存�?, 'NOT_FOUND')
-    if (product.status !== 'on_sale') return error('商品已下�?, 'OFF_SALE')
-    if (!isVisibleToCustomer(product, user)) return error('当前客户类型不可购买该商�?, 'VISIBILITY')
+    if (!product) return error('商品不存在', 'NOT_FOUND')
+    if (product.status !== 'on_sale') return error('商品已下架', 'OFF_SALE')
+    if (!isRegionVisible(product, getCustomerCity(user))) return error('该商品在您所在区域暂不销售', 'VISIBILITY_REGION')
+    if (!isVisibleToCustomer(product, user)) return error('当前客户类型不可购买该商品', 'VISIBILITY')
 
     const quantity = Math.max(1, Number(event.quantity || event.item?.quantity || 1))
     const spec = event.spec || event.item?.spec || getFirstSpec(product)

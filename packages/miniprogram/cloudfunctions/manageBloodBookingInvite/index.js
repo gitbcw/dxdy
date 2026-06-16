@@ -127,7 +127,7 @@ async function getInvite(inviteId) {
 async function listCommissions(openid, userId = '') {
   const user = await resolveInstitutionUser(openid, userId)
   if (!user || user.role !== 'customer' || user.customerType !== 'institution') {
-    return error('仅医院客户可以查看用血提成', 'FORBIDDEN')
+    return error('仅医院客户可以查看医院佣金', 'FORBIDDEN')
   }
 
   const { data } = await db.collection('blood_commission_records').where({

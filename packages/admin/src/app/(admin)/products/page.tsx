@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CityMultiSelect } from '@/components/admin/city-multi-select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -62,6 +63,8 @@ type ProductFormState = {
   urgentFee: string;
   urgentDescription: string;
   redeemableCategory: string;
+  visibleRegions: string[];
+  hiddenRegions: string[];
   validDays: string;
   promotionEnabled: boolean;
   promotionPrice: string;
@@ -180,6 +183,8 @@ const emptyProductForm = (): ProductFormState => ({
   urgentFee: '0',
   urgentDescription: '',
   redeemableCategory: '',
+  visibleRegions: [],
+  hiddenRegions: [],
   validDays: '365',
   promotionEnabled: false,
   promotionPrice: '',
@@ -434,6 +439,8 @@ export default function ProductsPage() {
         urgentFee: String(target.urgentConfig?.extraFee || 0),
         urgentDescription: target.urgentConfig?.description || '',
         redeemableCategory: target.redeemableCategory || '',
+        visibleRegions: target.visibleRegions ?? [],
+        hiddenRegions: target.hiddenRegions ?? [],
         validDays: String(target.validDays || 365),
         promotionEnabled: !!((target.promotionPrice ?? 0) > 0 && target.promotionStart),
         promotionPrice: String(target.promotionPrice || ''),
@@ -471,6 +478,8 @@ export default function ProductsPage() {
         description: form.urgentDescription,
       } : undefined,
       redeemableCategory: undefined,
+      visibleRegions: form.visibleRegions.length ? form.visibleRegions : undefined,
+      hiddenRegions: form.hiddenRegions.length ? form.hiddenRegions : undefined,
       validDays: undefined,
       ...(form.promotionEnabled && form.promotionPrice ? {
         promotionPrice: parseFloat(form.promotionPrice) || 0,
@@ -1268,6 +1277,22 @@ export default function ProductsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="editVisibleRegions">可见城市</Label>
+                <CityMultiSelect
+                  value={editForm.visibleRegions}
+                  onChange={regions => setEditForm(form => ({ ...form, visibleRegions: regions }))}
+                />
+                <p className="text-xs text-muted-foreground">填写后仅限这些城市的用户可见，多个城市用逗号分隔。</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editHiddenRegions">不可见城市</Label>
+                <CityMultiSelect
+                  value={editForm.hiddenRegions}
+                  onChange={regions => setEditForm(form => ({ ...form, hiddenRegions: regions }))}
+                />
+                <p className="text-xs text-muted-foreground">填写后这些城市的用户不可见，优先级高于可见城市，多个城市用逗号分隔。</p>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="editServiceTags">商品详情标签</Label>
@@ -1455,6 +1480,24 @@ export default function ProductsPage() {
                 placeholder="冷链配送,支持预约,质量问题售后"
               />
               <p className="text-xs text-muted-foreground">多个标签用逗号分隔，保存后会显示在小程序商品详情页。</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="prodVisibleRegions">可见城市</Label>
+                <CityMultiSelect
+                  value={createForm.visibleRegions}
+                  onChange={regions => setCreateForm(form => ({ ...form, visibleRegions: regions }))}
+                />
+                <p className="text-xs text-muted-foreground">填写后仅限这些城市的用户可见，多个城市用逗号分隔。</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="prodHiddenRegions">不可见城市</Label>
+                <CityMultiSelect
+                  value={createForm.hiddenRegions}
+                  onChange={regions => setCreateForm(form => ({ ...form, hiddenRegions: regions }))}
+                />
+                <p className="text-xs text-muted-foreground">优先级高于可见城市，多个城市用逗号分隔。</p>
+              </div>
             </div>
             <div className="space-y-3">
               <Label htmlFor="prodImages">商品图片<RequiredMark /></Label>

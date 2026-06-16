@@ -135,6 +135,8 @@ export interface Product {
   agreementRequired?: AgreementRequired;
   salesCountEnabled?: boolean;
   deliveryConfig?: DeliveryConfig;
+  visibleRegions?: string[];
+  hiddenRegions?: string[];
   redeemableCategory?: string;
   validDays?: number;
   promotionPrice?: number;

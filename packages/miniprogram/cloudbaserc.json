@@ -32,9 +32,22 @@
     { "name": "processInvoice", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "queryLogistics", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "queryWxExpressOrder", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
-    { "name": "sendSms", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    {
+      "name": "sendSms",
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "timeout": 15,
+      "envVariables": {
+        "ALIYUN_SMS_APPCODE": "YOUR_APPCODE_HERE",
+        "ALIYUN_SMS_SIGN_ID": "YOUR_SIGN_ID_HERE",
+        "ALIYUN_SMS_TEMPLATE_ID": "YOUR_TEMPLATE_ID_HERE",
+        "ALIYUN_SMS_CODE_SIGN_ID": "YOUR_CODE_SIGN_ID_HERE",
+        "ALIYUN_SMS_CODE_TEMPLATE_ID": "YOUR_CODE_TEMPLATE_ID_HERE"
+      }
+    },
     { "name": "requestWithdrawal", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "registerCustomer", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "resetPassword", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "reviewAgentApplication", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "reviewReturn", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "reviewVerification", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },

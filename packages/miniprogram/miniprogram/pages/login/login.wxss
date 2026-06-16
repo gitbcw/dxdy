@@ -183,7 +183,7 @@
 .form-links {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   height: 82rpx;
   padding: 0 24rpx;
 }

@@ -17,6 +17,10 @@
     "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
+    "@cloudbase/cli": "^3.5.6",
+    "@cloudbase/cloudbase-mcp": "^2.22.0",
+    "@modelcontextprotocol/inspector": "^0.22.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@vitest/coverage-v8": "^4.1.7",
     "vitest": "^4.1.7"
   }

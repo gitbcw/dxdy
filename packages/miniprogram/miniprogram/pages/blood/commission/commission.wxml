@@ -1,6 +1,6 @@
 <view class="page">
   <view class="hero">
-    <text class="title">用血提成</text>
+    <text class="title">医院佣金</text>
     <text class="desc">个人客户通过门店二维码预约并完成订单后，零售价与门店价的差额会结算到这里。</text>
   </view>
 
@@ -20,7 +20,7 @@
   </view>
 
   <view wx:if="{{loading}}" class="empty-card">正在加载...</view>
-  <view wx:elif="{{records.length === 0}}" class="empty-card">暂无用血提成记录</view>
+  <view wx:elif="{{records.length === 0}}" class="empty-card">暂无医院佣金记录</view>
 
   <view wx:else class="list">
     <view wx:for="{{records}}" wx:key="id" class="record-card">

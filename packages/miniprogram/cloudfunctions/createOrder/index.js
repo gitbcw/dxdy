@@ -19,7 +19,31 @@ function error(message, code = 'BAD_REQUEST') {
   return { success: false, code, error: message }
 }
 
+function getCustomerCity(customer) {
+  const addresses = Array.isArray(customer && customer.addresses) ? customer.addresses : []
+  if (!addresses.length) return ''
+  const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
+  return String((defaultAddr && defaultAddr.city) || '').trim()
+}
+
+function normalizeCity(value) {
+  return String(value || '').replace(/(省|市|特别行政区|自治区|地区|自治州|盟)$/, '').trim()
+}
+
+function isRegionVisible(product, city) {
+  if (!city) return true
+  const normalizedCity = normalizeCity(city)
+  const match = (regions) => regions.some((region) => normalizeCity(region) === normalizedCity)
+  const hidden = Array.isArray(product && product.hiddenRegions) ? product.hiddenRegions : []
+  if (hidden.length && match(hidden)) return false
+  const visible = Array.isArray(product && product.visibleRegions) ? product.visibleRegions : []
+  if (visible.length && !match(visible)) return false
+  return true
+}
+
 function isVisibleToCustomer(product, customer) {
+  const city = getCustomerCity(customer)
+  if (!isRegionVisible(product, city)) return false
   const visibility = product.visibility || 'all'
   const customerType = customer.customerType || 'personal'
   if (visibility === 'all') return true
@@ -165,6 +189,8 @@ async function buildOrderItems(rawItems, customer, systemConfig, booking = {}) {
     const product = await getProduct(raw.productId)
     if (!product) return { error: `商品不存在：${raw.productName || raw.productId || ''}` }
     if (product.status !== 'on_sale') return { error: `商品已下架：${product.name}` }
+    const city = getCustomerCity(customer)
+    if (!isRegionVisible(product, city)) return { error: `该商品在您所在区域暂不销售：${product.name}` }
     if (!isVisibleToCustomer(product, customer)) return { error: `当前客户类型不可购买：${product.name}` }
     if (product.isBloodPack && (customer.customerType !== 'institution' || customer.verificationStatus !== 'approved')) {
       return { error: `血包商品仅限已认证医院客户购买：${product.name}` }

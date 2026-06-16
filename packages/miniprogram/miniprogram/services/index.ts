@@ -434,8 +434,34 @@ function normalizeProductVisibility(visibility: any): string {
   return 'all'
 }
 
-function canViewProduct(product: any, visibility?: string): boolean {
+function getUserDefaultCity(): string {
+  const user = getCurrentUser()
+  if (!user?.addresses || !Array.isArray(user.addresses) || user.addresses.length === 0) return ''
+  const defaultAddr = user.addresses.find((a: any) => a.isDefault) || user.addresses[0]
+  return String(defaultAddr?.city || '').trim()
+}
+
+function normalizeCity(value: string): string {
+  return String(value || '').replace(/(省|市|特别行政区|自治区|地区|自治州|盟)$/, '').trim()
+}
+
+function isRegionVisible(product: any, city: string): boolean {
+  if (!city) return true
+  const normalizedCity = normalizeCity(city)
+  const match = (regions: string[]) => regions.some((region) => normalizeCity(region) === normalizedCity)
+  const hidden = Array.isArray(product?.hiddenRegions) ? product.hiddenRegions : []
+  if (hidden.length && match(hidden)) return false
+  const visible = Array.isArray(product?.visibleRegions) ? product.visibleRegions : []
+  if (visible.length && !match(visible)) return false
+  return true
+}
+
+export function canViewProduct(product: any, visibility?: string): boolean {
   const viewer = normalizeProductVisibility(visibility || 'all')
+  const city = getUserDefaultCity()
+  const regionVisible = isRegionVisible(product, city)
+  if (!regionVisible) return false
+
   if (viewer === 'all') return true
 
   const productVisibility = normalizeProductVisibility(product?.visibility)
@@ -468,6 +494,8 @@ const PRODUCT_LIST_FIELDS = {
   agreementRequired: true,
   salesCountEnabled: true,
   deliveryConfig: true,
+  visibleRegions: true,
+  hiddenRegions: true,
   redeemableCategory: true,
   validDays: true,
   promotionPrice: true,
@@ -1475,7 +1503,7 @@ export async function getBloodCommissionRecords() {
     name: 'manageBloodBookingInvite',
     data: { action: 'listCommissions', userId: user?.id || user?._id || '' },
   }) as any
-  if (!result?.success) throw new Error(result?.error || '读取用血提成失败')
+  if (!result?.success) throw new Error(result?.error || '读取医院佣金失败')
   return normalizeList(result.records || [])
 }
 
@@ -1508,7 +1536,7 @@ export function canPurchase(product: any, user: any | null, options?: { quantity
 
   const customerType = user.customerType || 'personal'
   const visibility = product.visibility || 'all'
-  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限普通客户', code: 'visibility' }
+  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限个人客户', code: 'visibility' }
   if (visibility === 'institution_only' && customerType !== 'institution') return { allowed: false, reason: '该商品仅限医院客户', code: 'visibility' }
 
   const isBloodPack = product.productType === 'blood_pack' || product.isBloodPack
@@ -1798,4 +1826,20 @@ export async function manageCardVoucher(params: {
     throw new Error(result?.error || '操作失败')
   }
   return result
+}
+
+export async function sendSmsCode(phone: string, scene: string = 'login') {
+  const { result } = await wx.cloud.callFunction({
+    name: 'sendSms',
+    data: { action: 'sendCode', phone, scene },
+  }) as any
+  return result || { success: false, error: '短信发送失败' }
+}
+
+export async function resetPassword(params: { phone: string; code: string; newPassword: string }) {
+  const { result } = await wx.cloud.callFunction({
+    name: 'resetPassword',
+    data: params,
+  }) as any
+  return result || { success: false, error: '重置失败' }
 }

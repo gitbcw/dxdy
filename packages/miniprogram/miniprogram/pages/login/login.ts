@@ -71,6 +71,10 @@ Page({
     wx.navigateTo({ url: `/pages/register/register${params.length ? `?${params.join('&')}` : ''}` })
   },
 
+  onForgotPasswordTap() {
+    wx.navigateTo({ url: '/pages/login/forgot-password/forgot-password' })
+  },
+
   finishLogin(user: any, title: string, redirectHome = true) {
     const app = getApp()
     app.globalData.userInfo = user

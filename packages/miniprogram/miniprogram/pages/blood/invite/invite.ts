@@ -8,9 +8,15 @@ Page({
     invite: null as any,
     qrcodeUrl: '',
     hospitalIcon: icons.hospital,
+    isHospital: false,
   },
 
   onLoad() {
+    const app = getApp()
+    const user = app.globalData.userInfo
+    const role = app.globalData.userRole || ''
+    const isHospital = role === 'customer_institution' || user?.customerType === 'institution'
+    this.setData({ isHospital })
     this.loadInvite()
   },
 

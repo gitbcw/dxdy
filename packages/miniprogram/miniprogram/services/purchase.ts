@@ -29,7 +29,7 @@ export function canPurchase(product: PurchaseCheckProduct, user: PurchaseCheckUs
 
   const customerType = user.customerType || 'personal'
   const visibility = product.visibility || 'all'
-  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限普通客户', code: 'visibility' }
+  if (visibility === 'personal_only' && customerType !== 'personal') return { allowed: false, reason: '该商品仅限个人客户', code: 'visibility' }
   if (visibility === 'institution_only' && customerType !== 'institution') return { allowed: false, reason: '该商品仅限医院客户', code: 'visibility' }
 
   const isBloodPack = product.productType === 'blood_pack' || product.isBloodPack

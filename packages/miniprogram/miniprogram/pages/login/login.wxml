@@ -32,6 +32,7 @@
 
         <view class="form-links">
           <view class="secondary-action" bindtap="onRegisterTap">注册</view>
+          <view class="secondary-action" bindtap="onForgotPasswordTap">忘记密码</view>
         </view>
       </view>
 

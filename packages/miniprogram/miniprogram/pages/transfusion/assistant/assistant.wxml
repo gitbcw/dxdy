@@ -1,6 +1,6 @@
 <view class="page">
   <view class="hero">
-    <text class="hero-title">配血助手</text>
+    <text class="hero-title">配型助手</text>
     <text class="hero-sub">选择受血动物和关键血型条件，生成供血匹配建议</text>
   </view>
 

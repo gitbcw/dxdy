@@ -113,7 +113,7 @@ const FAQS_BY_ROLE: Record<HelpRole, Array<{
 }
 
 const ROLE_COPY: Record<HelpRole, { title: string; countLabel: string }> = {
-  customer_personal: { title: '普通客户常见问题', countLabel: '普通客户' },
+  customer_personal: { title: '个人客户常见问题', countLabel: '个人客户' },
   customer_institution: { title: '机构客户常见问题', countLabel: '机构客户' },
   salesperson: { title: '代理商常见问题', countLabel: '代理商' },
   clerk: { title: '制单员常见问题', countLabel: '制单员' },
@@ -122,8 +122,8 @@ const ROLE_COPY: Record<HelpRole, { title: string; countLabel: string }> = {
 Page({
   data: {
     currentRole: 'customer_personal' as HelpRole,
-    roleTitle: '普通客户常见问题',
-    roleCountLabel: '普通客户',
+    roleTitle: '个人客户常见问题',
+    roleCountLabel: '个人客户',
     faqs: [] as any[],
     contacts: [
       { type: '客服热线', value: '02022043433', icon: '电', action: 'call' },

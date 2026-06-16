@@ -3,8 +3,8 @@
     <view class="icon-wrap">
       <image class="icon" src="{{hospitalIcon}}" mode="aspectFit" />
     </view>
-    <text class="title">预约用血二维码</text>
-    <text class="desc">个人客户扫码后进入预约用血页面，订单完成后差额会计入门店提成。</text>
+    <text class="title">分享消费者预约</text>
+    <text wx:if="{{isHospital}}" class="desc">个人客户扫码后进入预约用血页面，订单完成后差额会计入门店提成。</text>
   </view>
 
   <view wx:if="{{loading}}" class="card center-card">

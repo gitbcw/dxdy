@@ -54,7 +54,7 @@ export const calendar = iconSvg('<rect x="16" y="18" width="32" height="30" rx="
 export const invoice = iconSvg('<path d="M18 16h28v34l-5-3-5 3-4-3-5 3-5-3-4 3V16z"/><path d="M25 27h14M25 35h10M39 40h1"/>', { color: '#2563EB', fill: '#EEF5FF' })
 export const test = iconSvg('<path d="M28 14h8v18l9 14a5 5 0 0 1-4 8H23a5 5 0 0 1-4-8l9-14V14z"/><path d="M25 42h14"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const testQuery = iconSvg('<path d="M18 16h24l8 8v26H18V16z"/><path d="M42 16v10h8"/><path d="M25 30h14M25 38h8"/><circle cx="40" cy="41" r="6"/><path d="m45 46 5 5"/>', { color: '#2563EB', fill: '#EEF5FF' })
-export const transfusionAssistant = iconSvg('<path d="M32 13c7 9 12 16 12 24a12 12 0 0 1-24 0c0-8 5-15 12-24z"/><path d="m25 38 5 5 10-12"/><path d="M17 20h8M21 16v8M43 46h5M46 43v6"/>', { color: '#DC2626', fill: '#FFF1F2' })
+export const transfusionAssistant = iconSvg('<path d="M32 14c8 8 12 15 12 22a12 12 0 0 1-24 0c0-7 4-14 12-22z"/><path d="M32 26v12M26 32h12"/><path d="M25 40l4 4 10-12"/>', { color: '#0A6E7C', fill: '#EAF5F3' })
 export const returns = iconSvg('<path d="M20 23h22a8 8 0 0 1 0 16H25"/><path d="m25 15-9 8 9 8"/>', { color: '#FF6A00', fill: '#FFF4E8' })
 export const service = iconSvg('<path d="M18 36v-5a14 14 0 0 1 28 0v5"/><path d="M18 36h6v10h-6zM40 36h6v10h-6z"/><path d="M40 46c-2 5-6 6-12 6"/>')
 export const help = iconSvg('<circle cx="32" cy="32" r="19"/><path d="M26 27a6 6 0 0 1 12 2c0 5-6 5-6 10"/><path d="M32 47h.1"/>')
@@ -73,6 +73,7 @@ export const packageBox = iconSvg('<path d="M16 24 32 15l16 9v18l-16 9-16-9V24z"
 export const truck = iconSvg('<path d="M14 24h24v18H14z"/><path d="M38 30h8l5 7v5H38z"/><circle cx="23" cy="45" r="4"/><circle cx="44" cy="45" r="4"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const pickupAddress = iconSvg('<path d="M15 26h24v18H15z"/><path d="M39 32h7l5 7v5H39z"/><circle cx="24" cy="47" r="4"/><circle cx="45" cy="47" r="4"/><path d="M32 14c5 0 9 4 9 9 0 7-9 15-9 15s-9-8-9-15c0-5 4-9 9-9z"/><circle cx="32" cy="23" r="3"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const bell = iconSvg('<path d="M20 39V29a12 12 0 0 1 24 0v10l5 7H15l5-7z"/><path d="M27 50a6 6 0 0 0 10 0"/>', { color: '#16A34A', fill: '#EAF8EE' })
+export const subscribe = iconSvg('<path d="M20 39V29a12 12 0 0 1 24 0v10l5 7H15l5-7z"/><path d="M27 50a6 6 0 0 0 10 0"/>', { color: '#2563EB', fill: '#EEF5FF' })
 export const scan = iconSvg('<path d="M18 26v-8h8M38 18h8v8M46 38v8h-8M26 46h-8v-8"/><path d="M22 32h20"/>')
 export const lock = iconSvg('<rect x="18" y="29" width="28" height="21" rx="5"/><path d="M24 29v-6a8 8 0 0 1 16 0v6"/>', { color: '#6B7280', fill: '#F3F4F6' })
 export const emptyOrder = iconSvg('<rect x="16" y="16" width="32" height="34" rx="6"/><path d="M24 27h16M24 36h10"/><circle cx="46" cy="46" r="7"/><path d="m43 46 2 2 4-5"/>')
@@ -118,6 +119,7 @@ export const iconByKey: Record<string, string> = {
   truck,
   pickupAddress,
   bell,
+  subscribe,
   scan,
   building,
   blood: test,

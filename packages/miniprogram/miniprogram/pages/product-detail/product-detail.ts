@@ -1,4 +1,4 @@
-const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice, requireBoundPhone } = require('../../services/index')
+const { getProductById, formatMoney, addToCart, getProductVisualImage, canPurchase, isOnPromotion, getEffectivePrice, requireBoundPhone, canViewProduct } = require('../../services/index')
 const tracking = require('../../services/tracking')
 
 const DEFAULT_SERVICE_TAGS = ['冷链配送', '支持预约', '质量问题售后']
@@ -39,6 +39,16 @@ Page({
     if (!options.id) return
     const product = await getProductById(options.id)
     if (!product) return
+
+    if (!canViewProduct(product)) {
+      wx.showModal({
+        title: '商品不可见',
+        content: '该商品在您所在区域暂不销售',
+        showCancel: false,
+        success: () => wx.navigateBack(),
+      })
+      return
+    }
 
     this._product = product
 

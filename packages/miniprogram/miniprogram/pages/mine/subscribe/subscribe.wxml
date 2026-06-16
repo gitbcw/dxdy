@@ -1,0 +1,42 @@
+<view class="page">
+  <view class="hero">
+    <view class="icon-wrap">
+      <image class="icon" src="{{bellIcon}}" mode="aspectFit" />
+    </view>
+    <text class="title">消息订阅</text>
+    <text class="desc">关注官方公众号，及时获取订单、物流、预约等消息提醒</text>
+  </view>
+
+  <view class="card qr-card">
+    <image
+      wx:if="{{qrCodeUrl}}"
+      class="qrcode"
+      src="{{qrCodeUrl}}"
+      mode="aspectFit"
+      bindtap="onPreviewQrCode"
+    />
+    <view wx:else class="qrcode placeholder">
+      <text class="placeholder-text">公众号二维码\n待配置</text>
+    </view>
+    <text wx:if="{{qrCodeUrl}}" class="qr-tip">长按二维码识别关注</text>
+    <text wx:else class="qr-tip">请联系管理员配置公众号二维码</text>
+  </view>
+
+  <view class="card account-card">
+    <view class="account-row">
+      <text class="label">公众号</text>
+      <text class="value">{{officialAccountName}}</text>
+      <text class="copy" bindtap="onCopyOfficialAccount">复制</text>
+    </view>
+  </view>
+
+  <view class="card tips-card">
+    <text class="tips-title">温馨提示</text>
+    <view wx:for="{{tips}}" wx:key="index" class="tip-item">
+      <text class="tip-dot">·</text>
+      <text class="tip-text">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="primary-btn" bindtap="onOpenSubscribeSettings">打开订阅消息设置</view>
+</view>
