@@ -38,6 +38,7 @@ type HomeAction =
   | 'cardVoucherProducts'
   | 'cardWallet'
   | 'transfusionAssistant'
+  | 'bloodCalculator'
 
 function withIcon(items: any[]) {
   return items.map((item) => ({
@@ -321,6 +322,7 @@ Page({
         quickActions: [
           { iconKey: 'hospital', icon: '血', title: '医院预约', action: 'blood' },
           { icon: '码', title: '分享消费者', action: 'bloodInvite' },
+          { iconKey: 'bloodCalculator', icon: '算', title: '输血计算', action: 'bloodCalculator' },
           { iconKey: 'transfusionAssistant', icon: '配', title: '门店帮手', action: 'transfusionAssistant' },
           { icon: '券', title: '医院卡券', action: 'cardWallet' },
         ],
@@ -462,6 +464,7 @@ Page({
       cardVoucherProducts: '/pages/agent/card-products/card-products',
       cardWallet: '/pages/card-wallet/card-wallet',
       transfusionAssistant: '/pages/transfusion/assistant/assistant',
+      bloodCalculator: '/pages/transfusion/calculator/calculator',
       orders: '/pages/orders/order-detail/order-detail?list=1',
     }
 

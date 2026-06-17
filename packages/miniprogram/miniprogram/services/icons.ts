@@ -55,6 +55,7 @@ export const invoice = iconSvg('<path d="M18 16h28v34l-5-3-5 3-4-3-5 3-5-3-4 3V1
 export const test = iconSvg('<path d="M28 14h8v18l9 14a5 5 0 0 1-4 8H23a5 5 0 0 1-4-8l9-14V14z"/><path d="M25 42h14"/>', { color: '#16A34A', fill: '#EAF8EE' })
 export const testQuery = iconSvg('<path d="M18 16h24l8 8v26H18V16z"/><path d="M42 16v10h8"/><path d="M25 30h14M25 38h8"/><circle cx="40" cy="41" r="6"/><path d="m45 46 5 5"/>', { color: '#2563EB', fill: '#EEF5FF' })
 export const transfusionAssistant = iconSvg('<path d="M32 14c8 8 12 15 12 22a12 12 0 0 1-24 0c0-7 4-14 12-22z"/><path d="M32 26v12M26 32h12"/><path d="M25 40l4 4 10-12"/>', { color: '#0A6E7C', fill: '#EAF5F3' })
+export const bloodCalculator = iconSvg('<rect x="16" y="14" width="32" height="36" rx="8"/><path d="M23 24h18M23 32h4M31 32h4M39 32h2M23 40h4M31 40h4M39 40h2"/><path d="M43 45v-8M39 41h8"/>', { color: '#7C3AED', fill: '#F3E8FF' })
 export const returns = iconSvg('<path d="M20 23h22a8 8 0 0 1 0 16H25"/><path d="m25 15-9 8 9 8"/>', { color: '#FF6A00', fill: '#FFF4E8' })
 export const service = iconSvg('<path d="M18 36v-5a14 14 0 0 1 28 0v5"/><path d="M18 36h6v10h-6zM40 36h6v10h-6z"/><path d="M40 46c-2 5-6 6-12 6"/>')
 export const help = iconSvg('<circle cx="32" cy="32" r="19"/><path d="M26 27a6 6 0 0 1 12 2c0 5-6 5-6 10"/><path d="M32 47h.1"/>')
@@ -103,6 +104,7 @@ export const iconByKey: Record<string, string> = {
   test,
   testQuery,
   transfusionAssistant,
+  bloodCalculator,
   returns,
   service,
   help,

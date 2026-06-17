@@ -10,6 +10,7 @@
     "pages/blood/invite/invite",
     "pages/blood/commission/commission",
     "pages/transfusion/assistant/assistant",
+    "pages/transfusion/calculator/calculator",
     "pages/catalog/catalog",
     "pages/cart/cart",
     "pages/mine/mine",
