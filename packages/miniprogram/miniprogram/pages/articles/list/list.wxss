@@ -1,0 +1,91 @@
+.page {
+  min-height: 100vh;
+  background: #f6f7f9;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.loading,
+.error,
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 48rpx;
+  color: #6b7280;
+  font-size: 28rpx;
+}
+
+.retry-btn {
+  margin-top: 24rpx;
+  padding: 16rpx 40rpx;
+  background: #0a6e7c;
+  color: #fff;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.article-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+}
+
+.article-card {
+  background: #fff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.article-cover-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.article-cover {
+  width: 100%;
+  height: 100%;
+}
+
+.article-tag {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(10, 110, 124, 0.9);
+  color: #fff;
+  font-size: 22rpx;
+  border-radius: 8rpx;
+}
+
+.article-copy {
+  padding: 20rpx;
+}
+
+.article-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.article-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #6b7280;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

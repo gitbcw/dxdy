@@ -1,3 +1,58 @@
+page {
+  background-color: #ffffff;
+}
+
+.page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.nav-title {
+  max-width: 50%;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #17231f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-back {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx;
+}
+
+.nav-back-icon {
+  font-size: 60rpx;
+  line-height: 1;
+  color: #17231f;
+}
+
+.article-webview {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
 .empty {
   min-height: 100vh;
   display: flex;

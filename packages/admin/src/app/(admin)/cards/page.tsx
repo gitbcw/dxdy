@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { writeAdminLog } from '@/lib/admin-log';
-import { getApp } from '@/lib/cloudbase';
+import { uploadFileToCloudBase } from '@/lib/upload';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import {
   createCardVoucher,
@@ -164,24 +164,14 @@ function buildGiftTargets(customers: Customer[], salespersons: Salesperson[]): G
 }
 
 async function uploadCardCover(file: File): Promise<string> {
-  if (!CARD_COVER_ALLOWED_TYPES.has(file.type)) {
-    throw new Error('仅支持 JPG、PNG、WebP 格式的卡券封面');
-  }
-  if (file.size > CARD_COVER_MAX_SIZE) {
-    throw new Error('卡券封面不能超过 2MB');
-  }
-
-  const app = getApp();
-  if (!app?.uploadFile) throw new Error('CloudBase 未初始化，无法上传卡券封面');
-
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 8);
   const cloudPath = `card-vouchers/${timestamp}-${random}-${getSafeCoverFileName(file)}`;
-  await app.uploadFile({
-    cloudPath,
-    filePath: file,
+  const uploadedPath = await uploadFileToCloudBase(file, cloudPath, {
+    allowedTypes: CARD_COVER_ALLOWED_TYPES,
+    maxSize: CARD_COVER_MAX_SIZE,
   });
-  return `${CARD_COVER_PUBLIC_BASE_URL}/${cloudPath}`;
+  return `${CARD_COVER_PUBLIC_BASE_URL}/${uploadedPath}`;
 }
 
 export default function CardsPage() {

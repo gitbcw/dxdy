@@ -5,6 +5,7 @@
     "pages/register/register",
     "pages/home/home",
     "pages/articles/webview/webview",
+    "pages/articles/list/list",
     "pages/blood/booking/booking",
     "pages/blood/invite/invite",
     "pages/blood/commission/commission",

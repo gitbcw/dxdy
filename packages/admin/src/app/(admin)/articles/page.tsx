@@ -17,7 +17,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
-import getApp from '@/lib/cloudbase';
+import { uploadFileToCloudBase } from '@/lib/upload';
 import { writeAdminLog } from '@/lib/admin-log';
 import {
   createOfficialArticle,
@@ -65,21 +65,14 @@ function getSafeImageFileName(file: File) {
 }
 
 async function uploadArticleCover(file: File): Promise<string> {
-  if (!ARTICLE_IMAGE_ALLOWED_TYPES.has(file.type)) {
-    throw new Error('仅支持 JPG、PNG、WebP 格式的封面图');
-  }
-  if (file.size > MAX_ARTICLE_IMAGE_SIZE) {
-    throw new Error('封面图不能超过 2MB');
-  }
-
-  const app = getApp();
-  if (!app?.uploadFile) throw new Error('CloudBase 未初始化，无法上传图片');
-
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 8);
   const cloudPath = `articles/${timestamp}-${random}-${getSafeImageFileName(file)}`;
-  await app.uploadFile({ cloudPath, filePath: file });
-  return `${ARTICLE_IMAGE_PUBLIC_BASE_URL}/${cloudPath}`;
+  const uploadedPath = await uploadFileToCloudBase(file, cloudPath, {
+    allowedTypes: ARTICLE_IMAGE_ALLOWED_TYPES,
+    maxSize: MAX_ARTICLE_IMAGE_SIZE,
+  });
+  return `${ARTICLE_IMAGE_PUBLIC_BASE_URL}/${uploadedPath}`;
 }
 
 function toForm(article: OfficialArticle): ArticleFormState {

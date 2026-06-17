@@ -95,7 +95,7 @@ Page({
         menuItems: [
           { id: 'agentStatus', title: '代理商状态', tap: 'onAgentStatusTap', accent: agentStatus !== 'approved', desc: agentStatus === 'approved' ? '合作资格已开通' : '查看申请审核进度' },
           { id: 'withdraw', title: '提现与银行卡', tap: 'onWithdrawTap', desc: '管理银行卡和提现记录' },
-          { id: 'subscribe', title: '消息订阅', tap: 'onSubscribeTap', desc: '关注公众号接收消息提醒' },
+          { id: 'subscribe', title: '消息订阅', tap: 'onSubscribeTap', desc: '获取品牌动态与科普内容' },
           { id: 'profile', title: '个人资料', tap: 'onProfileTap', desc: '修改头像、昵称等基本信息' },
           { id: 'help', title: '帮助中心', tap: 'onHelpTap', desc: '常见问题与在线客服' },
         ],
@@ -137,7 +137,7 @@ Page({
         ],
         menuItems: [
           { id: 'allorders', title: '全部订单', tap: 'onAllOrdersTap', desc: '查看所有订单记录' },
-          { id: 'subscribe', title: '消息订阅', tap: 'onSubscribeTap', desc: '关注公众号接收消息提醒' },
+          { id: 'subscribe', title: '消息订阅', tap: 'onSubscribeTap', desc: '获取品牌动态与科普内容' },
           { id: 'profile', title: '个人资料', tap: 'onProfileTap', desc: '修改头像、昵称等基本信息' },
           { id: 'help', title: '帮助中心', tap: 'onHelpTap', desc: '常见问题与在线客服' },
         ],
@@ -149,7 +149,7 @@ Page({
     const customerMenuItems = [
       { id: 'address', icon: '址', title: '收货地址', tap: 'onAddressTap', desc: '管理配送地址与医院名称' },
       { id: 'wallet', icon: '余', title: '钱包与积分', tap: 'onWalletTap', desc: '充值余额，查看积分和优惠' },
-      { id: 'subscribe', icon: '订', title: '消息订阅', tap: 'onSubscribeTap', desc: '关注公众号接收消息提醒' },
+      { id: 'subscribe', icon: '订', title: '消息订阅', tap: 'onSubscribeTap', desc: '获取品牌动态与科普内容' },
       ...(isInstitution ? [
         { id: 'bloodCommission', icon: '佣', title: '医院佣金', tap: 'onBloodCommissionTap', desc: '查看个人扫码预约产生的医院佣金' },
         { id: 'invoice', icon: '票', title: '发票申请', tap: 'onInvoiceTap', desc: '电子发票与纸质发票' },
@@ -331,7 +331,17 @@ Page({
   },
 
   onSubscribeTap() {
-    wx.navigateTo({ url: '/pages/mine/subscribe/subscribe' })
+    wx.openOfficialAccountProfile({
+      username: 'gh_e403f58ec23a',
+      fail: (err) => {
+        console.error('打开公众号资料页失败', err)
+        wx.showModal({
+          title: '跳转失败',
+          content: '请确认公众号已与小程序完成关联，或稍后重试。',
+          showCancel: false,
+        })
+      },
+    })
   },
 })
 

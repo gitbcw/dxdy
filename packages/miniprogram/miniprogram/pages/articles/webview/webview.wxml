@@ -1,5 +1,19 @@
-<web-view wx:if="{{url}}" src="{{url}}" />
-<view wx:else class="empty">
-  <text class="empty-title">文章链接不可用</text>
-  <text class="empty-desc">请返回后重新打开文章</text>
+<view class="page">
+  <view class="custom-nav" style="height: {{navBarHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-back" bindtap="onBackTap">
+      <text class="nav-back-icon">‹</text>
+    </view>
+    <text class="nav-title">{{title}}</text>
+  </view>
+
+  <web-view
+    wx:if="{{url}}"
+    class="article-webview"
+    src="{{url}}"
+    style="top: {{webviewTop}}px;"
+  />
+  <view wx:else class="empty" style="padding-top: {{navBarHeight}}px;">
+    <text class="empty-title">文章链接不可用</text>
+    <text class="empty-desc">请返回后重新打开文章</text>
+  </view>
 </view>

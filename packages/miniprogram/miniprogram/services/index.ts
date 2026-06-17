@@ -154,9 +154,11 @@ export function isOnPromotion(product: any, now?: Date): boolean {
 }
 
 /** 获取商品有效价格（促销价优先） */
-export function getEffectivePrice(product: any, customerType?: string): number {
+export function getEffectivePrice(product: any, customerTypeOrUser?: string | { customerType?: string }): number {
   if (isOnPromotion(product)) return Number(product.promotionPrice)
-  const ct = customerType || 'personal'
+  const ct = typeof customerTypeOrUser === 'string'
+    ? customerTypeOrUser
+    : customerTypeOrUser?.customerType || 'personal'
   if (ct === 'institution') return Number(product.institutionPrice || product.personalPrice || 0)
   return Number(product.personalPrice || product.institutionPrice || 0)
 }

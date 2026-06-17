@@ -101,14 +101,23 @@ Page({
     boardLayout: 'scroll',
     searchSuggestions: [] as any[],
     articleItems: [] as any[],
+    allArticleItems: [] as any[],
+    articleDisplayCount: 4,
+    articleHasMore: false,
   },
 
   _rawProducts: [] as any[],
+  _articleObserver: null as any,
 
   onShow() {
     this.syncTabBar()
     tracking.trackPageView('home')
     this.loadDemoHome()
+  },
+
+  async onPullDownRefresh() {
+    await this.loadDemoHome()
+    wx.stopPullDownRefresh()
   },
 
   syncTabBar() {
@@ -138,11 +147,13 @@ Page({
       getClerkOrders ? getClerkOrders({ status: 'pending' }) : Promise.resolve([]),
       getClerkOrders ? getClerkOrders({ status: 'shipped' }) : Promise.resolve([]),
       getCommissionSummary ? getCommissionSummary() : Promise.resolve(null),
-      currentRole === 'salesperson' || currentRole === 'clerk' ? Promise.resolve([]) : getOfficialArticles(4),
+      currentRole === 'salesperson' || currentRole === 'clerk' ? Promise.resolve([]) : getOfficialArticles(20),
     ])
 
     const pendingOrders = customerOrders.filter((order: any) => !['completed', 'cancelled'].includes(order.status))
     this._rawProducts = products
+    const allArticleItems = currentRole === 'salesperson' || currentRole === 'clerk' ? [] : (articles || []).map(toArticleItem)
+    const articleDisplayCount = 4
     const dashboard = this.getDashboard(currentRole, {
       user,
       products,
@@ -166,12 +177,54 @@ Page({
         heroPill: '品质 · 专业 · 安心',
         heroClass: 'default',
       boardLayout: 'scroll',
-      articleItems: currentRole === 'salesperson' || currentRole === 'clerk' ? [] : (articles || []).map(toArticleItem),
+      allArticleItems,
+      articleItems: allArticleItems.slice(0, articleDisplayCount),
+      articleDisplayCount,
+      articleHasMore: allArticleItems.length > articleDisplayCount,
       ...dashboard,
       quickActions: withIcon(dashboard.quickActions || []),
       searchIcon: icons.search,
       certIcon: icons.hospital,
+    }, () => {
+      this.observeArticleLoadMore()
     })
+  },
+
+  loadMoreArticles() {
+    const { allArticleItems, articleDisplayCount, articleHasMore } = this.data
+    if (!articleHasMore) return
+    const nextCount = Math.min(allArticleItems.length, articleDisplayCount + 4)
+    this.setData({
+      articleItems: allArticleItems.slice(0, nextCount),
+      articleDisplayCount: nextCount,
+      articleHasMore: nextCount < allArticleItems.length,
+    })
+  },
+
+  observeArticleLoadMore() {
+    if (this._articleObserver) {
+      this._articleObserver.disconnect()
+    }
+    if (this.data.allArticleItems.length <= 4) return
+    this._articleObserver = wx.createIntersectionObserver(this)
+    this._articleObserver
+      .relativeToViewport({ bottom: 80 })
+      .observe('.article-load-sentinel', (res) => {
+        if (res.intersectionRatio > 0 && this.data.articleHasMore) {
+          this.loadMoreArticles()
+        }
+      })
+  },
+
+  onReady() {
+    this.observeArticleLoadMore()
+  },
+
+  onUnload() {
+    if (this._articleObserver) {
+      this._articleObserver.disconnect()
+      this._articleObserver = null
+    }
   },
 
   inferRole(user: any): DemoRole {
@@ -558,9 +611,13 @@ Page({
 
   onArticleTap(e: any) {
     const idx = e.currentTarget.dataset.idx
-    const item = this.data.articleItems[idx]
+    const item = this.data.allArticleItems[idx]
     if (!item?.articleUrl) return
     wx.navigateTo({ url: `/pages/articles/webview/webview?url=${encodeURIComponent(item.articleUrl)}&title=${encodeURIComponent(item.title || '内容精选')}` })
+  },
+
+  onArticleMoreTap() {
+    wx.navigateTo({ url: '/pages/articles/list/list' })
   },
 })
 

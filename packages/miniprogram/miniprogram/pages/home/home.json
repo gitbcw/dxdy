@@ -2,5 +2,7 @@
   "usingComponents": {
     "product-action-sheet": "/components/product-action-sheet/product-action-sheet"
   },
-  "navigationBarTitleText": "大熊动医华南医学检验实验室"
+  "navigationBarTitleText": "大熊动医华南医学检验实验室",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

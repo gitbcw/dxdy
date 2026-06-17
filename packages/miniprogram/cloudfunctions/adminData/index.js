@@ -7,6 +7,7 @@ const db = cloud.database()
 
 const READABLE_COLLECTIONS = new Set([
   'analytics_daily',
+  'articles',
   'card_vouchers',
   'categories',
   'commission_records',
@@ -26,6 +27,7 @@ const READABLE_COLLECTIONS = new Set([
 ])
 
 const WRITABLE_COLLECTIONS = new Set([
+  'articles',
   'card_vouchers',
   'categories',
   'config',

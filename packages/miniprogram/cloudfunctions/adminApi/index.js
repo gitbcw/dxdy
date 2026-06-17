@@ -6,6 +6,7 @@ const ALLOWED_FUNCTIONS = new Set([
   'adminLogin',
   'adminDashboard',
   'adminData',
+  'adminUpload',
   'adjustOrderPrice',
   'assignOrderToClerk',
   'clerkShipOrder',

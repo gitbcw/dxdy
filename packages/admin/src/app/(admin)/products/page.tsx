@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
-import getApp from '@/lib/cloudbase';
+import { uploadFileToCloudBase } from '@/lib/upload';
 import {
   fetchProductsAndCategories,
   fetchProductById,
@@ -226,24 +226,14 @@ function getSafeImageFileName(file: File) {
 }
 
 async function uploadFileToStorage(file: File): Promise<string> {
-  if (!PRODUCT_IMAGE_ALLOWED_TYPES.has(file.type)) {
-    throw new Error('仅支持 JPG、PNG、WebP 格式的商品图片');
-  }
-  if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
-    throw new Error('单张商品图片不能超过 2MB');
-  }
-
-  const app = getApp();
-  if (!app?.uploadFile) throw new Error('CloudBase 未初始化，无法上传图片');
-
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 8);
   const cloudPath = `products/${timestamp}-${random}-${getSafeImageFileName(file)}`;
-  await app.uploadFile({
-    cloudPath,
-    filePath: file,
+  const uploadedPath = await uploadFileToCloudBase(file, cloudPath, {
+    allowedTypes: PRODUCT_IMAGE_ALLOWED_TYPES,
+    maxSize: MAX_PRODUCT_IMAGE_SIZE,
   });
-  return `${PRODUCT_IMAGE_PUBLIC_BASE_URL}/${cloudPath}`;
+  return `${PRODUCT_IMAGE_PUBLIC_BASE_URL}/${uploadedPath}`;
 }
 
 async function processImageFiles(files: FileList | null): Promise<string[]> {
@@ -339,6 +329,16 @@ export default function ProductsPage() {
       setErrorMsg(error instanceof Error ? error.message : '读取商品数据失败');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function refreshProducts() {
+    try {
+      const data = await fetchProductsAndCategories();
+      setProducts(data.products);
+      setCategories(data.categories);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '读取商品数据失败');
     }
   }
 
@@ -526,6 +526,7 @@ export default function ProductsPage() {
         setProducts(prev => prev.map(product => (product.id === updated.id ? { ...product, ...updated } as Product : product)));
       }
       setEditProduct(null);
+      void refreshProducts();
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '保存商品失败');
     }

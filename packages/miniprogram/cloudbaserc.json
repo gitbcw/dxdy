@@ -5,6 +5,7 @@
   "functions": [
     { "name": "adminApi", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "adminData", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
+    { "name": "adminUpload", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 20, "memorySize": 256 },
     { "name": "adminDashboard", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "adminLogin", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },
     { "name": "adjustOrderPrice", "runtime": "Nodejs18.15", "handler": "index.main", "timeout": 15 },

@@ -169,10 +169,10 @@ export async function createProduct(product: Product & { id: string }) {
   return doc
 }
 
-export async function updateProduct(id: string, updates: Partial<Product>): Promise<Partial<Product> & { updatedAt: string }> {
+export async function updateProduct(id: string, updates: Partial<Product>): Promise<Partial<Product> & { id: string; updatedAt: string }> {
   const update = { ...updates, updatedAt: new Date().toISOString() }
   await adminRequest('update', 'products', { id, data: update })
-  return update as any
+  return { id, ...update }
 }
 
 export async function createProductCategory(category: ProductCategory) {

@@ -1,0 +1,33 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="error">
+    <text>{{error}}</text>
+    <view class="retry-btn" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <view wx:else class="article-grid">
+    <view
+      wx:for="{{articles}}"
+      wx:key="id"
+      class="article-card"
+      data-idx="{{index}}"
+      bindtap="onArticleTap"
+    >
+      <view class="article-cover-wrap">
+        <image class="article-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+        <text wx:if="{{item.tag}}" class="article-tag">{{item.tag}}</text>
+      </view>
+      <view class="article-copy">
+        <text class="article-title">{{item.title}}</text>
+        <text wx:if="{{item.subtitle}}" class="article-subtitle">{{item.subtitle}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && !error && articles.length === 0}}" class="empty">
+    <text>暂无文章</text>
+  </view>
+</view>

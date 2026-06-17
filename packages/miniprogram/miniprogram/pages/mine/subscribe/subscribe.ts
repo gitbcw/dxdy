@@ -3,41 +3,31 @@ const icons = require('../../../services/icons')
 Page({
   data: {
     bellIcon: icons.subscribe,
-    qrCodeUrl: '',
+    officialAccountId: 'gh_e403f58ec23a',
     officialAccountName: '大熊动医',
     tips: [
-      '关注公众号后，可接收订单状态、物流发货、预约提醒等消息通知。',
-      '如已关注，请返回小程序并在「设置」中开启订阅消息。',
+      '关注官方公众号，获取品牌动态、服务资讯与宠物医疗科普内容。',
+      '公众号将不定期推送养护知识、活动信息与官方公告。',
     ],
   },
 
-  onLoad() {
-    // 可在此调用接口获取公众号二维码 URL，当前使用占位图
-  },
-
-  onPreviewQrCode() {
-    const qrUrl = this.data.qrCodeUrl
-    if (!qrUrl) return
-    wx.previewImage({
-      urls: [qrUrl],
-      current: qrUrl,
-    })
-  },
-
-  onCopyOfficialAccount() {
-    wx.setClipboardData({
-      data: this.data.officialAccountName,
+  onOpenOfficialAccount() {
+    wx.openOfficialAccountProfile({
+      username: this.data.officialAccountId,
       success: () => {
-        wx.showToast({ title: '已复制公众号名称', icon: 'none' })
+        console.log('打开公众号资料页成功')
+      },
+      fail: (err) => {
+        console.error('打开公众号资料页失败', err)
+        wx.showModal({
+          title: '跳转失败',
+          content: '请确认公众号已与小程序完成关联，或稍后重试。',
+          showCancel: false,
+        })
       },
     })
   },
 
-  onOpenSubscribeSettings() {
-    wx.openSetting({
-      withSubscriptions: true,
-    })
-  },
 })
 
 export {}

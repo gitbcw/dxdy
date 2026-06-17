@@ -131,16 +131,17 @@
     </view>
   </view>
 
-  <view wx:if="{{articleItems.length > 0}}" class="article-section">
+  <view wx:if="{{allArticleItems.length > 0}}" class="article-section">
     <view class="section-head">
       <text class="section-title">内容精选</text>
-      <text class="section-more">更多 ></text>
+      <text class="section-more" bindtap="onArticleMoreTap">更多 ></text>
     </view>
     <view class="article-grid">
       <view
-        wx:for="{{articleItems}}"
+        wx:for="{{allArticleItems}}"
         wx:key="id"
-        class="article-card"
+        wx:if="{{index < articleDisplayCount}}"
+        class="article-card article-fade-in"
         data-idx="{{index}}"
         bindtap="onArticleTap"
       >
@@ -153,6 +154,14 @@
           <text wx:if="{{item.subtitle}}" class="article-subtitle">{{item.subtitle}}</text>
         </view>
       </view>
+    </view>
+    <view wx:if="{{articleHasMore}}" class="article-load-sentinel">
+      <view class="article-loading">
+        <view class="article-loading-dot"></view>
+        <view class="article-loading-dot"></view>
+        <view class="article-loading-dot"></view>
+      </view>
+      <text class="article-loading-text">继续滑动加载更多</text>
     </view>
   </view>
 
