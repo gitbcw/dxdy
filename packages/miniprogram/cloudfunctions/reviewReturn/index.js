@@ -3,6 +3,9 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const _ = db.command
+
+const PAY_HTTP_FUNCTION = process.env.WECHAT_PAY_HTTP_FUNCTION || 'daxiongdongyi-nrignywh-demo-scfweb'
 
 function formatBeijingLogTime(date = new Date()) {
   const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
@@ -156,6 +159,301 @@ function getOperatorName(user, fallback) {
   return fallback || user.realName || user.nickname || user.name || user.username || '客服'
 }
 
+function roundMoney(value) {
+  return Math.round(Number(value || 0) * 100) / 100
+}
+
+function cents(amount) {
+  return Math.round(Number(amount || 0) * 100)
+}
+
+function buildOutRefundNo(record) {
+  const source = String(record.afterNo || record._id || Date.now()).replace(/[^A-Za-z0-9]/g, '').slice(0, 20)
+  const suffix = String(Date.now()).slice(-8)
+  return `RF${source}${suffix}`.slice(0, 32)
+}
+
+function getPaidAmount(order) {
+  const paymentAmount = Number(order?.payment?.amount || 0)
+  if (paymentAmount > 0) return roundMoney(paymentAmount)
+  return roundMoney(order?.pricing?.actualAmount || 0)
+}
+
+function getRefundAmount(record, order) {
+  const requested = roundMoney(record?.refundAmount || record?.amount || 0)
+  const paidAmount = getPaidAmount(order)
+  if (requested > 0 && paidAmount > 0) return Math.min(requested, paidAmount)
+  return requested > 0 ? requested : paidAmount
+}
+
+async function restoreCoupon(order, now) {
+  const coupon = order?.pricing?.coupon
+  if (!coupon || !coupon.userCouponId || coupon.refundedAt) return
+  await db.collection('user_coupons').doc(coupon.userCouponId).update({
+    data: { status: 'available', usedAt: '', usedOrderId: '', updatedAt: now },
+  })
+  await db.collection('orders').doc(order._id).update({
+    data: { 'pricing.coupon.refundedAt': now, updatedAt: now },
+  })
+}
+
+async function restorePoints(order, now) {
+  const pricing = order?.pricing || {}
+  if (pricing.pointsRefundedAt) return
+  const points = pricing.pointsDeductedAt
+    ? Number(pricing.pointsConsumed || 0) || Number(pricing.pointsDeduction || 0) * 100
+    : 0
+  if (!points || points <= 0 || !order.customerId) return
+  await db.collection('users').doc(order.customerId).update({
+    data: {
+      'points.balance': _.inc(points),
+      'points.history': _.push({
+        id: `pts_return_${Date.now()}`,
+        change: points,
+        reason: `售后退款退回积分：${order.orderNo || order._id}`,
+        relatedOrderId: order._id,
+        createdAt: now,
+      }),
+      updatedAt: now,
+    },
+  })
+  await db.collection('orders').doc(order._id).update({
+    data: { 'pricing.pointsRefundedAt': now, updatedAt: now },
+  })
+}
+
+async function restoreCardVoucher(order, now) {
+  const cardUsage = order?.pricing?.cardVoucher || order?.payment?.cardVoucher
+  if (!cardUsage || !cardUsage.id || cardUsage.refundedAt) return
+  await db.collection('card_vouchers').doc(cardUsage.id).update({
+    data: {
+      status: 'claimed',
+      redeemedOrderId: '',
+      redeemedAt: '',
+      updatedAt: now,
+    },
+  })
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      'pricing.cardVoucher.refundedAt': now,
+      'payment.cardVoucher.refundedAt': now,
+      updatedAt: now,
+    },
+  })
+}
+
+async function refundWallet(order, refundAmount, now) {
+  if (order?.payment?.method !== 'wallet' || order?.payment?.walletRefundedAt) return
+  if (!order.customerId || refundAmount <= 0) return
+  await db.collection('users').doc(order.customerId).update({
+    data: {
+      'wallet.balance': _.inc(refundAmount),
+      'wallet.refundHistory': _.push({
+        id: `wref_${Date.now()}`,
+        amount: refundAmount,
+        reason: `售后退款：${order.orderNo || order._id}`,
+        relatedOrderId: order._id,
+        createdAt: now,
+      }),
+      updatedAt: now,
+    },
+  })
+  await db.collection('orders').doc(order._id).update({
+    data: { 'payment.walletRefundedAt': now, updatedAt: now },
+  })
+}
+
+async function deductCommissionAfterRefund(order, record, now) {
+  if (!order?._id || record?.commissionAdjust?.refundedAt) return
+  const refundAmount = Number(record?.refundAmount || record?.amount || 0)
+  const orderAmount = getPaidAmount(order)
+  const commissionAmount = order.commission && order.commission.amount || 0
+  const deductTarget = orderAmount > 0
+    ? Math.min(commissionAmount, Math.round(commissionAmount * Math.min(refundAmount, orderAmount) / orderAmount * 100) / 100)
+    : commissionAmount
+  if (!deductTarget || deductTarget <= 0) return
+
+  const { data: commissionRecords } = await db.collection('commission_records').where({
+    orderId: order._id,
+    ...(order.salespersonId ? { salespersonId: order.salespersonId } : {}),
+  }).get()
+  let deductedAmount = 0
+  let balanceDeductedAmount = 0
+  for (const cr of (commissionRecords || [])) {
+    const amountToDeduct = Math.max(0, Math.min((cr.amount || 0), Math.round((deductTarget - deductedAmount) * 100) / 100))
+    if (amountToDeduct <= 0) break
+    if (['pending', 'locked', 'settled'].includes(cr.status)) {
+      await db.collection('commission_records').doc(cr._id).update({
+        data: {
+          status: 'deducted',
+          deductedAt: now,
+          deductedAmount: amountToDeduct,
+          deductReason: `售后退款扣回：${record.afterNo || record._id}`,
+          updatedAt: now,
+        },
+      })
+      deductedAmount += amountToDeduct
+      if (cr.status === 'settled') balanceDeductedAmount += amountToDeduct
+    } else if (cr.status === 'withdrawn') {
+      deductedAmount += amountToDeduct
+      balanceDeductedAmount += amountToDeduct
+    }
+  }
+
+  if (order.salespersonId && balanceDeductedAmount > 0) {
+    const { data: salesperson } = await db.collection('users').doc(order.salespersonId).get()
+    const available = (salesperson && salesperson.commission && salesperson.commission.available) || 0
+    if (available >= balanceDeductedAmount) {
+      await db.collection('users').doc(order.salespersonId).update({
+        data: {
+          'commission.available': _.inc(-balanceDeductedAmount),
+          'commission.total': _.inc(-balanceDeductedAmount),
+          updatedAt: now,
+        },
+      })
+    } else {
+      const remaining = balanceDeductedAmount - available
+      await db.collection('users').doc(order.salespersonId).update({
+        data: {
+          'commission.available': 0,
+          'commission.total': _.inc(-balanceDeductedAmount),
+          'commission.pendingDeduction': _.inc(remaining),
+          updatedAt: now,
+        },
+      })
+    }
+  }
+
+  await db.collection('returns').doc(record._id).update({
+    data: {
+      'commissionAdjust.amount': deductedAmount,
+      'commissionAdjust.reason': deductedAmount > 0 ? `扣回提成 ¥${deductedAmount}` : '无提成需扣回',
+      'commissionAdjust.refundedAt': now,
+      updatedAt: now,
+    },
+  })
+}
+
+async function markReturnCompleted(record, order, now, refundMeta = {}) {
+  const latestRecord = await getReturnRecord(record._id)
+  if (canonicalStatus(latestRecord?.status) === 'return_completed') return latestRecord
+
+  await db.collection('returns').doc(record._id).update({
+    data: {
+      status: 'return_completed',
+      refundStatus: 'success',
+      refundCompletedAt: now,
+      refund: {
+        ...(latestRecord?.refund || {}),
+        ...refundMeta,
+        status: 'success',
+        completedAt: now,
+      },
+      timeline: _.push({
+        status: 'return_completed',
+        title: getStatusText('return_completed'),
+        time: now,
+        desc: '退款已完成，售后单自动完成',
+      }),
+      updatedAt: now,
+    },
+  })
+
+  if (order?._id) {
+    await db.collection('orders').doc(order._id).update({
+      data: {
+        'payment.refundStatus': 'success',
+        'payment.refundedAt': now,
+        'pricing.refundedAmount': _.inc(getRefundAmount(record, order)),
+        updatedAt: now,
+      },
+    })
+  }
+
+  return getReturnRecord(record._id)
+}
+
+async function completeNonWechatRefund(record, order, now, refundAmount) {
+  await refundWallet(order, refundAmount, now)
+  await restoreCoupon(order, now)
+  await restorePoints(order, now)
+  await restoreCardVoucher(order, now)
+  await deductCommissionAfterRefund(order, record, now)
+  return markReturnCompleted(record, order, now, {
+    method: order?.payment?.method || 'unknown',
+    amount: refundAmount,
+  })
+}
+
+async function requestRefund(record, order, now, refundAmount) {
+  if (record?.refund?.status === 'processing' || record?.refund?.status === 'success') return record
+  if (order?.payment?.method !== 'wechat') {
+    return completeNonWechatRefund(record, order, now, refundAmount)
+  }
+
+  const outTradeNo = order?.payment?.outTradeNo || ''
+  const transactionId = order?.payment?.transactionId || ''
+  if (!outTradeNo && !transactionId) return error('缺少微信支付交易单号，无法原路退款', 'PAYMENT_REFUND_MISSING')
+
+  const outRefundNo = buildOutRefundNo(record)
+  const total = cents(getPaidAmount(order))
+  const refund = cents(refundAmount)
+  if (refund <= 0 || total <= 0) return error('退款金额异常', 'REFUND_AMOUNT_INVALID')
+
+  const payload = {
+    _action: 'wxpay_refund',
+    out_refund_no: outRefundNo,
+    reason: `售后退款 ${record.afterNo || record._id}`.slice(0, 80),
+    amount: { refund, total, currency: 'CNY' },
+    ...(transactionId && transactionId !== outTradeNo ? { transaction_id: transactionId } : { out_trade_no: outTradeNo }),
+  }
+  const { result } = await cloud.callFunction({
+    name: PAY_HTTP_FUNCTION,
+    data: payload,
+  })
+  const refundResponse = result?.data?.data || result?.data
+  const accepted = result?.code === 0 && (
+    (result?.data?.status === 200 && refundResponse) ||
+    refundResponse?.out_refund_no ||
+    refundResponse?.refund_id
+  )
+  if (!accepted) {
+    return error(result?.msg || refundResponse?.message || '微信退款申请失败', 'WECHAT_REFUND_FAILED')
+  }
+
+  await db.collection('returns').doc(record._id).update({
+    data: {
+      status: 'refunding',
+      refundStatus: 'processing',
+      refund: {
+        method: 'wechat',
+        status: 'processing',
+        amount: refundAmount,
+        outRefundNo,
+        outTradeNo,
+        transactionId,
+        requestedAt: now,
+        requestResult: refundResponse,
+      },
+      timeline: _.push({
+        status: 'refunding',
+        title: getStatusText('refunding'),
+        time: now,
+        desc: '微信原路退款已提交，等待微信退款成功回调',
+      }),
+      updatedAt: now,
+    },
+  })
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      'payment.refundStatus': 'processing',
+      'payment.outRefundNo': outRefundNo,
+      updatedAt: now,
+    },
+  })
+  return getReturnRecord(record._id)
+}
+
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID || ''
@@ -222,16 +520,15 @@ exports.main = async (event) => {
 
   // 退款审批通过时，累计订单的已退款金额
   if (targetStatus === 'refunding' && record.orderId) {
-    const refundAmount = record.refundAmount || record.amount || 0
-    if (refundAmount > 0) {
-      try {
-        await db.collection('orders').doc(record.orderId).update({
-          data: {
-            'pricing.refundedAmount': db.command.inc(refundAmount),
-            updatedAt: now,
-          },
-        })
-      } catch (_e) { /* non-critical: log but don't block */ }
+    try {
+      const { data: order } = await db.collection('orders').doc(record.orderId).get()
+      if (!order) return error('关联订单不存在', 'ORDER_NOT_FOUND')
+      const refundAmount = getRefundAmount(record, order)
+      const refundResult = await requestRefund(record, order, now, refundAmount)
+      if (refundResult && refundResult.success === false) return refundResult
+      if (refundResult) return { success: true, record: normalize(refundResult) }
+    } catch (e) {
+      return error(e.message || '退款处理失败', 'REFUND_REQUEST_FAILED')
     }
   }
 
