@@ -1,0 +1,86 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-kicker">犬猫临床输血标准操作程序</text>
+    <text class="hero-title">输血量计算与操作指导</text>
+    <text class="hero-sub">依据体重、红细胞压积和制剂类型快速估算输注量，并查看交叉配血流程。</text>
+  </view>
+
+  <view class="notice">仅供临床参考，实际输注需结合患病动物状态、实验室结果、血型核对和交叉配血结果，由兽医综合判断。</view>
+
+  <view class="panel">
+    <text class="panel-title">输血量计算</text>
+
+    <view class="field">
+      <text class="field-title">动物类型</text>
+      <view class="segmented two">
+        <view wx:for="{{speciesOptions}}" wx:key="value" class="segment {{species === item.value ? 'active' : ''}}" data-field="species" data-value="{{item.value}}" bindtap="selectOption">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="field">
+      <text class="field-title">制剂类型</text>
+      <view class="segmented three">
+        <view wx:for="{{productOptions}}" wx:key="value" class="segment {{productType === item.value ? 'active' : ''}}" data-field="productType" data-value="{{item.value}}" bindtap="selectOption">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{productType !== 'plasma'}}" class="field">
+      <text class="field-title">计算方式</text>
+      <view class="segmented two">
+        <view wx:for="{{formulaOptions}}" wx:key="value" class="segment {{formulaMode === item.value ? 'active' : ''}}" data-field="formulaMode" data-value="{{item.value}}" bindtap="selectOption">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="form-grid">
+      <view class="form-item">
+        <text class="form-label">体重 kg</text>
+        <input class="form-input" type="digit" value="{{weight}}" placeholder="如 12.5" data-field="weight" bindinput="onInput" />
+      </view>
+      <view wx:if="{{productType !== 'plasma'}}" class="form-item">
+        <text class="form-label">当前HCT/PCV</text>
+        <input class="form-input" type="digit" value="{{currentPcv}}" placeholder="如 0.18" data-field="currentPcv" bindinput="onInput" />
+      </view>
+      <view wx:if="{{productType !== 'plasma'}}" class="form-item">
+        <text class="form-label">目标HCT/PCV</text>
+        <input class="form-input" type="digit" value="{{targetPcv}}" placeholder="如 0.30" data-field="targetPcv" bindinput="onInput" />
+      </view>
+      <view wx:if="{{productType !== 'plasma' && formulaMode === 'precise'}}" class="form-item">
+        <text class="form-label">制剂HCT/PCV</text>
+        <input class="form-input" type="digit" value="{{productPcv}}" placeholder="如 0.60" data-field="productPcv" bindinput="onInput" />
+      </view>
+    </view>
+
+    <view class="primary-btn" bindtap="calculate">计算输注量</view>
+
+    <view wx:if="{{results.length > 0}}" class="result-box">
+      <view wx:for="{{results}}" wx:key="label" class="result-row">
+        <view>
+          <text class="result-label">{{item.label}}</text>
+          <text class="result-desc">{{item.desc}}</text>
+        </view>
+        <text class="result-value">{{item.value}}</text>
+      </view>
+      <text class="formula-tip">{{resultTip}}</text>
+    </view>
+  </view>
+
+  <view class="panel">
+    <text class="panel-title">适应症与注意事项</text>
+    <view wx:for="{{indications}}" wx:key="name" class="info-card">
+      <text class="info-title">{{item.name}}</text>
+      <text class="info-desc">{{item.desc}}</text>
+      <text class="info-note">{{item.note}}</text>
+    </view>
+  </view>
+
+  <view class="panel">
+    <text class="panel-title">交叉配血试验操作</text>
+    <view wx:for="{{crossMatchSteps}}" wx:key="no" class="step-card">
+      <view class="step-no">{{item.no}}</view>
+      <view class="step-copy">
+        <text class="step-title">{{item.title}}</text>
+        <text wx:for="{{item.lines}}" wx:key="*this" class="step-line">{{item}}</text>
+      </view>
+    </view>
+  </view>
+</view>
