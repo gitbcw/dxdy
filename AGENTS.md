@@ -29,6 +29,8 @@ npm run prepare:mini:devtools
 
 **Admin 静态托管部署**：后台部署在 CloudBase 静态托管 `/cloud-admin` 路径。必须使用 `npm run build -w packages/admin`，该脚本会执行 Next.js 16 App Router RSC 静态导出兼容补丁；不要直接上传未补丁的 `next build` 产物。详见 `docs/ADMIN_STATIC_HOSTING.md`。
 
+**云函数部署**：使用微信开发者工具 CLI 部署 `packages/miniprogram/cloudfunctions/` 下的云函数。若完整部署遇到 `41002 system error`，可改用增量部署。详见 `docs/DEPLOYMENT.md`。
+
 ## Monorepo 结构
 
 ```

@@ -122,9 +122,20 @@ function cents(amount) {
 }
 
 function buildOutTradeNo(order) {
-  const base = String(order.orderNo || order._id || Date.now()).replace(/[^A-Za-z0-9]/g, '').slice(0, 20)
-  const suffix = Date.now().toString(36).slice(-8).toUpperCase()
-  return `${base}${suffix}`.slice(0, 32)
+  // 微信订单中心跳转时会把 out_trade_no 作为商品订单号回传，
+  // 订单详情页使用 id（即 _id）查询，所以 out_trade_no 直接用 _id，
+  // 保证订单中心能闭环跳转回小程序订单详情页。
+  return String(order._id || order.orderNo || Date.now()).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32)
+}
+
+function buildPaymentDescription(order) {
+  if (order.type === 'recharge') return '大熊动医-钱包充值'
+  const items = order.items || []
+  if (!items.length) return '大熊动医-订单支付'
+  const firstName = String(items[0].productName || '').trim()
+  if (!firstName) return '大熊动医-订单支付'
+  if (items.length === 1) return `大熊动医-${firstName}`.slice(0, 127)
+  return `大熊动医-${firstName}等${items.length}件商品`.slice(0, 127)
 }
 
 function normalizeUser(user) {
@@ -434,7 +445,7 @@ async function createWechatPayment(order, actualAmount, openid, cardUsage = null
   if (!PAY_MCH_ID) return error('微信支付商户号未配置', 'PAY_CONFIG_MISSING')
 
   const outTradeNo = buildOutTradeNo(order)
-  const body = `大熊动医-${order.type === 'recharge' ? '钱包充值' : '订单支付'}`
+  const body = buildPaymentDescription(order)
   const totalFee = cents(actualAmount)
 
   await db.collection('orders').doc(order._id).update({
