@@ -245,6 +245,7 @@ export default function ArticlesPage() {
                   <TableHead>文章</TableHead>
                   <TableHead>标签</TableHead>
                   <TableHead>排序</TableHead>
+                  <TableHead>点击量</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>发布日期</TableHead>
                   <TableHead className="text-right">操作</TableHead>
@@ -253,7 +254,7 @@ export default function ArticlesPage() {
               <TableBody>
                 {filteredArticles.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">暂无文章</TableCell>
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">暂无文章</TableCell>
                   </TableRow>
                 )}
                 {filteredArticles.map(article => (
@@ -269,6 +270,7 @@ export default function ArticlesPage() {
                     </TableCell>
                     <TableCell>{article.tag || '-'}</TableCell>
                     <TableCell>{article.sort}</TableCell>
+                    <TableCell>{article.clickCount ?? 0}</TableCell>
                     <TableCell>
                       <Badge variant={article.status === 'active' ? 'default' : 'secondary'}>{statusLabel[article.status]}</Badge>
                     </TableCell>

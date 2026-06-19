@@ -114,6 +114,14 @@ export function trackSearch(keyword: string, resultCount: number) {
   track('search', { searchKeyword: keyword, searchResultCount: resultCount, _pagePath: 'catalog' })
 }
 
+export function trackArticleClick(articleId: string, title: string, source: 'home' | 'list') {
+  track('article_click', { articleId, title, source, _pagePath: source === 'home' ? 'home' : 'articles/list' })
+}
+
+export function trackArticleView(articleId: string, title: string) {
+  track('article_view', { articleId, title, _pagePath: 'articles/webview' })
+}
+
 export async function flush() {
   if (disabled || flushing || buffer.length === 0) return
   flushing = true

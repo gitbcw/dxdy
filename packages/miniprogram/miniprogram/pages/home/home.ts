@@ -9,6 +9,7 @@ const {
   addToCart,
   getOrderStatusText,
   getOfficialArticles,
+  recordArticleClick,
 } = require('../../services/index')
 const { normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
@@ -616,7 +617,8 @@ Page({
     const idx = e.currentTarget.dataset.idx
     const item = this.data.allArticleItems[idx]
     if (!item?.articleUrl) return
-    wx.navigateTo({ url: `/pages/articles/webview/webview?url=${encodeURIComponent(item.articleUrl)}&title=${encodeURIComponent(item.title || '内容精选')}` })
+    recordArticleClick(item.id, item.title, 'home')
+    wx.navigateTo({ url: `/pages/articles/webview/webview?id=${item.id}&url=${encodeURIComponent(item.articleUrl)}&title=${encodeURIComponent(item.title || '内容精选')}` })
   },
 
   onArticleMoreTap() {

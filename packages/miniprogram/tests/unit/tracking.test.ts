@@ -92,4 +92,27 @@ describe('tracking helpers', () => {
     tracking.resume()
     expect(storage.tracking_session).toContain('"sid"')
   })
+
+  it('tracks article click and view events', async () => {
+    const tracking = await import('../../miniprogram/services/tracking')
+    tracking.init({ userId: 'u1' })
+    tracking.trackArticleClick('article_1', '标题一', 'home')
+    tracking.trackArticleView('article_1', '标题一')
+    await tracking.flush()
+
+    const payload = addMock.mock.calls.at(-1)?.[0]?.data
+    expect(payload.events).toHaveLength(2)
+    expect(payload.events[0]).toMatchObject({
+      eventType: 'article_click',
+      userId: 'u1',
+      pagePath: 'home',
+      properties: { articleId: 'article_1', title: '标题一', source: 'home' },
+    })
+    expect(payload.events[1]).toMatchObject({
+      eventType: 'article_view',
+      userId: 'u1',
+      pagePath: 'articles/webview',
+      properties: { articleId: 'article_1', title: '标题一' },
+    })
+  })
 })

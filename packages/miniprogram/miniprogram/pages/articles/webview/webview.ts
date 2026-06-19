@@ -1,3 +1,5 @@
+const tracking = require('../../../services/tracking')
+
 Page({
   data: {
     url: '',
@@ -11,6 +13,7 @@ Page({
   onLoad(options: any) {
     const url = options.url ? decodeURIComponent(options.url) : ''
     const title = options.title ? decodeURIComponent(options.title) : '内容精选'
+    const articleId = options.id || ''
     const { statusBarHeight = 20, windowWidth = 375 } = wx.getSystemInfoSync()
     const capsule = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null
 
@@ -28,6 +31,7 @@ Page({
       capsuleRight,
     })
     if (title) wx.setNavigationBarTitle({ title })
+    if (articleId) tracking.trackArticleView(articleId, title)
   },
 
   onBackTap() {

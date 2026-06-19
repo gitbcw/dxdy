@@ -166,6 +166,8 @@ export interface OfficialArticle {
   tag?: string;
   status: OfficialArticleStatus;
   sort: number;
+  clickCount?: number;
+  viewCount?: number;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;

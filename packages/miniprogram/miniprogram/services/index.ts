@@ -540,6 +540,8 @@ const ARTICLE_LIST_FIELDS = {
   tag: true,
   status: true,
   sort: true,
+  clickCount: true,
+  viewCount: true,
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -549,11 +551,28 @@ export async function getOfficialArticles(limit = 4) {
   const { data } = await db.collection('articles')
     .where({ status: 'active' })
     .field(ARTICLE_LIST_FIELDS)
+    .orderBy('clickCount', 'desc')
     .orderBy('sort', 'asc')
     .orderBy('publishedAt', 'desc')
     .limit(limit)
     .get()
   return normalizeList(data)
+}
+
+export async function recordArticleClick(articleId: string, title: string, source: 'home' | 'list') {
+  const tracking = require('./tracking')
+  tracking.trackArticleClick(articleId, title, source)
+  try {
+    await db.collection('articles').doc(articleId).update({
+      data: {
+        clickCount: _.inc(1),
+        updatedAt: new Date().toISOString(),
+      },
+    })
+  } catch (e) {
+    // 点击计数失败不应阻塞用户跳转，静默忽略
+    console.error('recordArticleClick failed', e)
+  }
 }
 
 // ===== 订单服务 =====

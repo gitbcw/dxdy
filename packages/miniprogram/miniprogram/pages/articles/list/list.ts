@@ -1,4 +1,4 @@
-const { getOfficialArticles } = require('../../../services/index')
+const { getOfficialArticles, recordArticleClick } = require('../../../services/index')
 
 type ArticleItem = {
   id: string
@@ -53,8 +53,9 @@ Page({
     const idx = e.currentTarget.dataset.idx
     const item = this.data.articles[idx]
     if (!item?.articleUrl) return
+    recordArticleClick(item.id, item.title, 'list')
     wx.navigateTo({
-      url: `/pages/articles/webview/webview?url=${encodeURIComponent(item.articleUrl)}&title=${encodeURIComponent(item.title || '内容精选')}`,
+      url: `/pages/articles/webview/webview?id=${item.id}&url=${encodeURIComponent(item.articleUrl)}&title=${encodeURIComponent(item.title || '内容精选')}`,
     })
   },
 

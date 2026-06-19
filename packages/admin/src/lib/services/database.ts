@@ -201,6 +201,8 @@ function normalizeOfficialArticle(doc: CloudDoc & { id: string }): OfficialArtic
     tag: String(doc.tag || ''),
     status: doc.status === 'inactive' ? 'inactive' : 'active',
     sort: Number(doc.sort || 0),
+    clickCount: Number(doc.clickCount || 0),
+    viewCount: Number(doc.viewCount || 0),
     publishedAt: String(doc.publishedAt || ''),
     createdAt: String(doc.createdAt || ''),
     updatedAt: String(doc.updatedAt || ''),
@@ -218,7 +220,13 @@ export async function fetchOfficialArticles() {
 
 export async function createOfficialArticle(article: OfficialArticle & { id: string }) {
   const now = new Date().toISOString()
-  const doc = { ...article, createdAt: article.createdAt || now, updatedAt: now }
+  const doc = {
+    ...article,
+    clickCount: article.clickCount ?? 0,
+    viewCount: article.viewCount ?? 0,
+    createdAt: article.createdAt || now,
+    updatedAt: now,
+  }
   await adminRequest('set', 'articles', { id: article.id, data: doc })
   return doc
 }
