@@ -9,7 +9,6 @@
     <view class="row"><text>订单编号</text><text>{{orderNo}}</text></view>
     <view class="row"><text>支付金额</text><text class="price">¥{{amount}}</text></view>
     <view class="row"><text>订单类型</text><text>{{orderType}}</text></view>
-    <view class="row"><text>预约时间</text><text>{{bookingTime}}</text></view>
     <view class="row"><text>支付时间</text><text>{{payTime}}</text></view>
     <view class="row"><text>支付方式</text><text>{{payMethod}}</text></view>
   </view>

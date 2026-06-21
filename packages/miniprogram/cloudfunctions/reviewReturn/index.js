@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk')
+const https = require('https')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
@@ -6,6 +7,8 @@ const db = cloud.database()
 const _ = db.command
 
 const PAY_HTTP_FUNCTION = process.env.WECHAT_PAY_HTTP_FUNCTION || 'daxiongdongyi-nrignywh-demo-scfweb'
+const PAY_HTTP_ENDPOINT = process.env.WECHAT_PAY_HTTP_ENDPOINT || ''
+const DEFAULT_ENV_ID = 'cloud1-d7g7ctn4m86bada89'
 
 function formatBeijingLogTime(date = new Date()) {
   const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
@@ -117,11 +120,10 @@ function getAllowedStatuses(record) {
   const current = canonicalStatus(record.status)
   const base = {
     pending_review: ['approved', 'rejected'],
-    approved: record.type === 'refund_only' ? ['refunding'] : ['customer_shipping', 'refunding'],
+    approved: ['customer_shipping', 'refunding'],
     customer_shipping: ['received'],
     received: record.type === 'exchange' ? ['exchange_shipping', 'rejected'] : ['refunding', 'rejected'],
     refunding: ['return_completed'],
-    exchange_shipping: ['exchange_completed'],
   }
   return base[current] || []
 }
@@ -163,6 +165,53 @@ function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100
 }
 
+function getFirstImage(product) {
+  return Array.isArray(product?.images) && product.images[0] ? product.images[0] : product?.image || ''
+}
+
+async function getProductImage(productId) {
+  if (!productId) return ''
+  try {
+    const { data: product } = await db.collection('products').doc(productId).get()
+    return getFirstImage(product)
+  } catch (_e) {
+    return ''
+  }
+}
+
+async function buildExchangeItems(record, origOrder) {
+  const sourceItems = Array.isArray(record.items) && record.items.length ? record.items : (origOrder.items || [])
+  const originalItems = Array.isArray(origOrder.items) ? origOrder.items : []
+  const result = []
+  for (const item of sourceItems) {
+    const matched = originalItems.find((orderItem) => (
+      String(orderItem.productId || '') === String(item.productId || '') ||
+      String(orderItem.productName || '') === String(item.productName || '')
+    )) || {}
+    const quantity = Math.max(1, Number(item.quantity || matched.quantity || 1))
+    const unitPrice = Number(item.unitPrice || matched.unitPrice || 0)
+    const productImage = item.productImage ||
+      item.imageUrl ||
+      matched.productImage ||
+      matched.imageUrl ||
+      await getProductImage(item.productId || matched.productId)
+    result.push({
+      ...matched,
+      ...item,
+      productImage,
+      quantity,
+      unitPrice,
+      totalPrice: Number(item.totalPrice || matched.totalPrice || roundMoney(unitPrice * quantity)),
+      spec: item.spec || matched.spec || '',
+    })
+  }
+  return result
+}
+
+function hasMissingProductImage(items) {
+  return !Array.isArray(items) || items.some(item => !item?.productImage)
+}
+
 function cents(amount) {
   return Math.round(Number(amount || 0) * 100)
 }
@@ -171,6 +220,55 @@ function buildOutRefundNo(record) {
   const source = String(record.afterNo || record._id || Date.now()).replace(/[^A-Za-z0-9]/g, '').slice(0, 20)
   const suffix = String(Date.now()).slice(-8)
   return `RF${source}${suffix}`.slice(0, 32)
+}
+
+function getEnvId() {
+  return process.env.TCB_ENV || process.env.SCF_NAMESPACE || process.env.CLOUDBASE_ENV || DEFAULT_ENV_ID
+}
+
+function getPayHttpUrl() {
+  if (PAY_HTTP_ENDPOINT) return PAY_HTTP_ENDPOINT
+  const envId = getEnvId()
+  return `https://${envId}.service.tcloudbase.com/wx-pay`
+}
+
+function postJson(url, payload, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(payload || {})
+    const req = https.request(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        ...headers,
+      },
+      timeout: 25000,
+    }, (res) => {
+      const chunks = []
+      res.on('data', chunk => chunks.push(chunk))
+      res.on('end', () => {
+        const raw = Buffer.concat(chunks).toString('utf8')
+        let data = raw
+        try {
+          data = raw ? JSON.parse(raw) : {}
+        } catch (_e) {}
+        resolve({ statusCode: res.statusCode, headers: res.headers, data, raw })
+      })
+    })
+    req.on('timeout', () => req.destroy(new Error('HTTP refund request timeout')))
+    req.on('error', reject)
+    req.write(body)
+    req.end()
+  })
+}
+
+async function callPayHttpFunction(payload) {
+  const response = await postJson(getPayHttpUrl(), payload, {
+    'X-WX-FUNCTION-NAME': PAY_HTTP_FUNCTION,
+    'X-WX-SOURCE': 'wx_server',
+    'X-Authmethod': 'WX_SERVER_AUTH',
+  })
+  return response
 }
 
 function getPaidAmount(order) {
@@ -348,6 +446,8 @@ async function markReturnCompleted(record, order, now, refundMeta = {}) {
         ...refundMeta,
         status: 'success',
         completedAt: now,
+        requestError: '',
+        requestFailedAt: '',
       },
       timeline: _.push({
         status: 'return_completed',
@@ -407,18 +507,36 @@ async function requestRefund(record, order, now, refundAmount) {
     amount: { refund, total, currency: 'CNY' },
     ...(transactionId && transactionId !== outTradeNo ? { transaction_id: transactionId } : { out_trade_no: outTradeNo }),
   }
-  const { result } = await cloud.callFunction({
-    name: PAY_HTTP_FUNCTION,
-    data: payload,
-  })
+  let response
+  try {
+    response = await callPayHttpFunction(payload)
+  } catch (e) {
+    await db.collection('returns').doc(record._id).update({
+      data: {
+        'refund.requestError': e.message || String(e),
+        'refund.requestFailedAt': now,
+        updatedAt: now,
+      },
+    })
+    return error(e.message || 'Wechat refund request failed', 'WECHAT_REFUND_FAILED')
+  }
+  const result = response?.data || {}
   const refundResponse = result?.data?.data || result?.data
-  const accepted = result?.code === 0 && (
+  const accepted = response?.statusCode >= 200 && response?.statusCode < 300 && result?.code === 0 && (
     (result?.data?.status === 200 && refundResponse) ||
     refundResponse?.out_refund_no ||
     refundResponse?.refund_id
   )
   if (!accepted) {
-    return error(result?.msg || refundResponse?.message || '微信退款申请失败', 'WECHAT_REFUND_FAILED')
+    await db.collection('returns').doc(record._id).update({
+      data: {
+        'refund.requestError': result?.msg || refundResponse?.message || response?.raw || 'Wechat refund request failed',
+        'refund.requestResult': result,
+        'refund.requestFailedAt': now,
+        updatedAt: now,
+      },
+    })
+    return error(result?.msg || refundResponse?.message || 'Wechat refund request failed', 'WECHAT_REFUND_FAILED')
   }
 
   await db.collection('returns').doc(record._id).update({
@@ -434,6 +552,8 @@ async function requestRefund(record, order, now, refundAmount) {
         transactionId,
         requestedAt: now,
         requestResult: refundResponse,
+        requestError: '',
+        requestFailedAt: '',
       },
       timeline: _.push({
         status: 'refunding',
@@ -495,11 +615,11 @@ exports.main = async (event) => {
 
   // 客户寄回物流信息
   if (targetStatus === 'customer_shipping' && event.sendLogistics && event.sendLogistics.trackingNo) {
-    updateData.sendLogistics = {
+    updateData.sendLogistics = _.set({
       company: String(event.sendLogistics.company || '').trim(),
       trackingNo: String(event.sendLogistics.trackingNo || '').trim(),
       sentAt: now,
-    }
+    })
     timelineEntry.desc = `客户已寄回：${event.sendLogistics.company} ${event.sendLogistics.trackingNo}`
   }
 
@@ -516,155 +636,141 @@ exports.main = async (event) => {
     updateData.verificationResult = 'unqualified'
   }
 
+  // 确认退款需要特殊处理：微信支付只发起原路退款，等微信退款回调后再标记售后完成。
+  if (targetStatus === 'return_completed' && record.orderId) {
+    try {
+      const { data: origOrder } = await db.collection('orders').doc(record.orderId).get()
+      if (!origOrder) return error('关联订单不存在', 'ORDER_NOT_FOUND')
+      const refundAmount = getRefundAmount(record, origOrder)
+      const refundRecord = await requestRefund(record, origOrder, now, refundAmount)
+      if (refundRecord?.success === false) return refundRecord
+      await db.collection('logs').add({
+        data: {
+          operatorId: user._id,
+          operatorName,
+          operatorRole: user.role,
+          action: origOrder?.payment?.method === 'wechat' ? '发起微信退款' : getStatusText(targetStatus),
+          target: record._id,
+          detail: origOrder?.payment?.method === 'wechat'
+            ? `售后单 ${record.afterNo || record._id} 已发起微信原路退款，金额 ¥${refundAmount}`
+            : `售后单 ${record.afterNo || record._id} 退款完成，金额 ¥${refundAmount}`,
+          result: 'success',
+          createdAt: formatBeijingLogTime(),
+        },
+      })
+      return { success: true, record: normalize(refundRecord) }
+    } catch (e) {
+      return error(e.message || '退款确认失败', 'REFUND_CONFIRM_FAILED')
+    }
+  }
+
   await db.collection('returns').doc(record._id).update({ data: updateData })
 
-  // 退款审批通过时，累计订单的已退款金额
+  // 验货合格后先进入退款处理中，后续由管理员点击确认退款发起实际退款。
   if (targetStatus === 'refunding' && record.orderId) {
     try {
       const { data: order } = await db.collection('orders').doc(record.orderId).get()
       if (!order) return error('关联订单不存在', 'ORDER_NOT_FOUND')
       const refundAmount = getRefundAmount(record, order)
-      const refundResult = await requestRefund(record, order, now, refundAmount)
-      if (refundResult && refundResult.success === false) return refundResult
-      if (refundResult) return { success: true, record: normalize(refundResult) }
+      await db.collection('returns').doc(record._id).update({
+        data: {
+          refundStatus: 'pending_confirm',
+          refund: {
+            ...(record.refund || {}),
+            method: order?.payment?.method || 'unknown',
+            status: 'pending_confirm',
+            amount: refundAmount,
+            requestedAt: now,
+          },
+          updatedAt: now,
+        },
+      })
+      await db.collection('orders').doc(order._id).update({
+        data: {
+          'payment.refundStatus': 'pending_confirm',
+          updatedAt: now,
+        },
+      })
     } catch (e) {
       return error(e.message || '退款处理失败', 'REFUND_REQUEST_FAILED')
     }
   }
 
-  // 退款完成时扣回提成
-  if (targetStatus === 'return_completed' && record.orderId) {
-    try {
-      const { data: origOrder } = await db.collection('orders').doc(record.orderId).get()
-      if (origOrder && origOrder.salespersonId) {
-        const commissionAmount = origOrder.commission && origOrder.commission.amount || 0
-        if (commissionAmount > 0) {
-          const orderAmount = origOrder.pricing && typeof origOrder.pricing.actualAmount === 'number'
-            ? origOrder.pricing.actualAmount
-            : 0
-          const refundAmount = record.refundAmount || record.amount || 0
-          const deductTarget = orderAmount > 0
-            ? Math.min(commissionAmount, Math.round(commissionAmount * Math.min(refundAmount, orderAmount) / orderAmount * 100) / 100)
-            : commissionAmount
-          // 查找该订单的提成记录
-          const { data: commissionRecords } = await db.collection('commission_records').where({
-            orderId: record.orderId,
-            salespersonId: origOrder.salespersonId,
-          }).get()
-          let deductedAmount = 0
-          let balanceDeductedAmount = 0
-          for (const cr of (commissionRecords || [])) {
-            const amountToDeduct = Math.max(0, Math.min((cr.amount || 0), Math.round((deductTarget - deductedAmount) * 100) / 100))
-            if (amountToDeduct <= 0) break
-            if (cr.status === 'pending' || cr.status === 'locked' || cr.status === 'settled') {
-              // 未结算的直接标记扣回
-              await db.collection('commission_records').doc(cr._id).update({
-                data: { status: 'deducted', deductedAt: now, deductedAmount: amountToDeduct, deductReason: `售后退款扣回：${record.afterNo || record._id}` },
-              })
-              deductedAmount += amountToDeduct
-              if (cr.status === 'settled') balanceDeductedAmount += amountToDeduct
-            } else if (cr.status === 'withdrawn') {
-              // 已提现的，在代理商余额中扣回（标记为待扣回）
-              deductedAmount += amountToDeduct
-              balanceDeductedAmount += amountToDeduct
-            }
-          }
-          // 更新售后记录的提成调整信息
-          await db.collection('returns').doc(record._id).update({
-            data: {
-              'commissionAdjust.amount': deductedAmount,
-              'commissionAdjust.reason': deductedAmount > 0 ? `扣回提成 ¥${deductedAmount}` : '无提成需扣回',
-            },
-          })
-          // 同步扣减代理商余额
-          if (balanceDeductedAmount > 0) {
-            try {
-              const { data: salesperson } = await db.collection('users').doc(origOrder.salespersonId).get()
-              const available = (salesperson && salesperson.commission && salesperson.commission.available) || 0
-              if (available >= balanceDeductedAmount) {
-                // 余额充足，直接扣减
-                await db.collection('users').doc(origOrder.salespersonId).update({
-                  data: {
-                    'commission.available': db.command.inc(-balanceDeductedAmount),
-                    'commission.total': db.command.inc(-balanceDeductedAmount),
-                    updatedAt: now,
-                  },
-                })
-              } else {
-                // 余额不足，扣完 available，剩余记入 pendingDeduction
-                const remaining = balanceDeductedAmount - available
-                await db.collection('users').doc(origOrder.salespersonId).update({
-                  data: {
-                    'commission.available': 0,
-                    'commission.total': db.command.inc(-balanceDeductedAmount),
-                    'commission.pendingDeduction': db.command.inc(remaining),
-                    updatedAt: now,
-                  },
-                })
-              }
-            } catch (_e2) { /* non-critical */ }
-          }
-          await db.collection('logs').add({
-            data: {
-              operatorId: user._id, operatorName, operatorRole: user.role,
-              action: '提成扣回',
-              target: record.orderId,
-              detail: `售后退款完成，扣回代理商 ${origOrder.salespersonId} 提成 ¥${deductedAmount}`,
-              result: 'success',
-              createdAt: formatBeijingLogTime(),
-            },
-          })
-        }
-      }
-    } catch (_e) { /* non-critical */ }
-  }
-
-  // 换货发货：验货通过后创建换货发货订单进入制单员待办
+  // Exchange shipment only creates or reuses a zero-amount shipment order.
   if (targetStatus === 'exchange_shipping' && record.orderId) {
     try {
       const { data: origOrder } = await db.collection('orders').doc(record.orderId).get()
       if (origOrder) {
-        const exchangeOrder = {
-          orderNo: `EX${Date.now()}`,
-          type: 'exchange',
-          status: 'pending_shipment',
-          returnId: record._id,
-          originalOrderId: record.orderId,
-          customerId: origOrder.customerId || '',
-          customerName: origOrder.customerName || '',
-          customerOpenid: origOrder.customerOpenid || '',
-          salespersonId: origOrder.salespersonId || '',
-          clerkId: origOrder.clerkId || null,
-          items: record.items || origOrder.items || [],
-          pricing: { originalAmount: 0, actualAmount: 0, shippingFee: 0, urgentFee: 0, pointsDeduction: 0, refundedAmount: 0 },
-          payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
-          shipping: {
-            address: origOrder.shipping?.address || origOrder.shippingAddress || {},
-            trackingNo: null,
-            company: null,
-            logistics: [],
-          },
-          commission: { status: 'none', amount: 0, settledAt: null },
-          remark: `换货发货，售后单 ${record.afterNo || record._id}`,
-          createdAt: now,
-          updatedAt: now,
+        const exchangeItems = await buildExchangeItems(record, origOrder)
+        let exchangeOrderId = record.exchangeOrderId || ''
+        let existingExchangeOrder = null
+        if (!exchangeOrderId) {
+          const { data: existingOrders } = await db.collection('orders').where({
+            type: 'exchange',
+            returnId: record._id,
+          }).limit(1).get()
+          existingExchangeOrder = existingOrders?.[0] || null
+          exchangeOrderId = existingExchangeOrder?._id || ''
+        } else {
+          try {
+            const { data: existingOrder } = await db.collection('orders').doc(exchangeOrderId).get()
+            existingExchangeOrder = existingOrder || null
+          } catch (_e) {
+            existingExchangeOrder = null
+          }
         }
-        const { _id: exchangeOrderId } = await db.collection('orders').add({ data: exchangeOrder })
-        // 在 returns 记录中关联换货订单
+
+        if (!exchangeOrderId) {
+          const exchangeOrder = {
+            orderNo: `EX${Date.now()}`,
+            type: 'exchange',
+            status: 'pending_shipment',
+            returnId: record._id,
+            originalOrderId: record.orderId,
+            customerId: origOrder.customerId || '',
+            customerName: origOrder.customerName || '',
+            customerOpenid: origOrder.customerOpenid || '',
+            salespersonId: origOrder.salespersonId || '',
+            clerkId: null,
+            items: exchangeItems,
+            pricing: { originalAmount: 0, actualAmount: 0, shippingFee: 0, urgentFee: 0, pointsDeduction: 0, refundedAmount: 0 },
+            payment: { status: 'unpaid', method: '', paidAt: '', transactionId: '' },
+            shipping: {
+              address: origOrder.shipping?.address || origOrder.shippingAddress || {},
+              trackingNo: null,
+              company: null,
+              logistics: [],
+            },
+            commission: { status: 'none', amount: 0, settledAt: null },
+            remark: `Exchange shipment for return ${record.afterNo || record._id}`,
+            createdAt: now,
+            updatedAt: now,
+          }
+          const { _id } = await db.collection('orders').add({ data: exchangeOrder })
+          exchangeOrderId = _id
+          await db.collection('logs').add({
+            data: {
+              operatorId: user._id,
+              operatorName,
+              operatorRole: user.role,
+              action: 'create_exchange_order',
+              target: exchangeOrderId,
+              detail: `Return ${record.afterNo || record._id} created exchange shipment order ${exchangeOrderId}; clerk ${origOrder.clerkId || 'pending'}`,
+              result: 'success',
+              createdAt: formatBeijingLogTime(),
+            },
+          })
+        } else if (existingExchangeOrder && hasMissingProductImage(existingExchangeOrder.items)) {
+          await db.collection('orders').doc(exchangeOrderId).update({
+            data: {
+              items: exchangeItems,
+              updatedAt: now,
+            },
+          })
+        }
+
         await db.collection('returns').doc(record._id).update({
           data: { exchangeOrderId, updatedAt: now },
-        })
-        await db.collection('logs').add({
-          data: {
-            operatorId: user._id,
-            operatorName,
-            operatorRole: user.role,
-            action: '创建换货发货订单',
-            target: exchangeOrderId,
-            detail: `售后单 ${record.afterNo || record._id} 验货通过，创建换货发货订单 ${exchangeOrderId}，指派制单员 ${origOrder.clerkId || '待指派'}`,
-            result: 'success',
-            createdAt: formatBeijingLogTime(),
-          },
         })
       }
     } catch (_e) { /* non-critical */ }

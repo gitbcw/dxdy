@@ -24,11 +24,10 @@ function getAllowedStatuses(record) {
   const current = canonicalStatus(record.status)
   const base = {
     pending_review: ['approved', 'rejected'],
-    approved: record.type === 'refund_only' ? ['refunding'] : ['customer_shipping', 'refunding'],
+    approved: ['customer_shipping', 'refunding'],
     customer_shipping: ['received'],
     received: record.type === 'exchange' ? ['exchange_shipping', 'rejected'] : ['refunding', 'rejected'],
     refunding: ['return_completed'],
-    exchange_shipping: ['exchange_completed'],
   }
   return base[current] || []
 }

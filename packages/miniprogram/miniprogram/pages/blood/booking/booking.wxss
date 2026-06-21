@@ -50,6 +50,58 @@
   margin-top: 20rpx;
 }
 
+.share-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-top: 20rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #fffdfc 0%, #fff1ee 100%);
+  box-shadow: 0 16rpx 42rpx rgba(76, 34, 32, 0.08);
+}
+
+.share-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 22rpx;
+  color: #a6343d;
+  font-size: 28rpx;
+  font-weight: 900;
+  background: #ffe4dc;
+}
+
+.share-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.share-title {
+  display: block;
+  color: #251819;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.share-desc {
+  display: block;
+  margin-top: 8rpx;
+  color: #7d6764;
+  font-size: 22rpx;
+  line-height: 1.35;
+}
+
+.share-action {
+  flex-shrink: 0;
+  color: #a6343d;
+  font-size: 23rpx;
+  font-weight: 900;
+}
+
 .form-card,
 .tips-card,
 .empty-card {

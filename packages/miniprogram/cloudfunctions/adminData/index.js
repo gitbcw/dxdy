@@ -104,7 +104,7 @@ exports.main = async (event = {}) => {
   const collection = String(event.collection || '')
   if (!READABLE_COLLECTIONS.has(collection)) return error('不允许访问该集合', 'FORBIDDEN')
 
-  if (['list', 'get', 'count'].includes(action)) {
+  if (['list', 'get', 'count', 'getTempFileUrls'].includes(action)) {
     if (!canRead(payload.role, collection)) return error('无权读取该数据', 'FORBIDDEN')
   } else if (['add', 'set', 'update', 'remove', 'updateWhere'].includes(action)) {
     if (!WRITABLE_COLLECTIONS.has(collection) || !canWrite(payload.role, collection)) {
@@ -141,6 +141,16 @@ exports.main = async (event = {}) => {
     if (where) query = query.where(where)
     const { total } = await query.count()
     return { success: true, data: total || 0 }
+  }
+
+  if (action === 'getTempFileUrls') {
+    if (!canRead(payload.role, collection)) return error('无权读取该数据', 'FORBIDDEN')
+    const fileList = Array.isArray(event.fileList)
+      ? event.fileList.filter((file) => typeof file === 'string' && file.trim()).slice(0, 50)
+      : []
+    if (!fileList.length) return { success: true, data: [] }
+    const result = await cloud.getTempFileURL({ fileList })
+    return { success: true, data: result.fileList || [] }
   }
 
   const data = assertPlainObject(event.data)

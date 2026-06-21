@@ -144,8 +144,11 @@ Page({
   },
 
   async mapOrder(order: any) {
-    const returns = await getReturns({ orderId: order.id })
-    const returnRecord = returns[0] || null
+    let returnRecord = order.returnRecord || null
+    if (!returnRecord && order.returnRecordId) {
+      const returns = await getReturns({ orderId: order.id })
+      returnRecord = returns[0] || null
+    }
     const firstItem = order.items?.[0] || {}
     const priceChanged = order.pricing.priceLog?.length > 0
     const paymentTimeout = this.getPaymentTimeoutInfo(order)
@@ -228,6 +231,10 @@ Page({
       exchange_completed: '换货完成',
     }
     return map[status] || status
+  },
+
+  canReapplyReturn(returnRecord: any) {
+    return returnRecord?.status === 'rejected'
   },
 
   async ensureSystemConfig() {
@@ -431,11 +438,11 @@ Page({
         actions.push({ key: 'logistics', label: '查看物流' })
       }
     }
-    if (order.status === 'completed' && !order.returnRecord) {
+    if (order.status === 'completed' && (!order.returnRecord || this.canReapplyReturn(order.returnRecord))) {
       actions.push({ key: 'return', label: '发起退换货', primary: true })
       actions.push({ key: 'review', label: '评价订单', primary: false })
     }
-    if (order.returnRecord) {
+    if (order.returnRecord && !this.canReapplyReturn(order.returnRecord)) {
       actions.push({ key: 'returnProgress', label: '查看售后进度', primary: true })
     }
     if (order.status === 'completed' || order.status === 'cancelled') {
@@ -509,7 +516,7 @@ Page({
   onReturnEntryTap() {
     const order = this.data.selectedOrder
     if (!order) return
-    if (order.returnRecord) {
+    if (order.returnRecord && !this.canReapplyReturn(order.returnRecord)) {
       wx.navigateTo({ url: `/pages/returns/detail/detail?orderId=${order.id}` })
       return
     }
@@ -519,6 +526,11 @@ Page({
   onReturnFromList(e: any) {
     const orderId = e.currentTarget.dataset.id
     if (!orderId) return
+    const order = (this.data.orders || []).find((item: any) => item.id === orderId)
+    if (order && order.returnRecord && !this.canReapplyReturn(order.returnRecord)) {
+      wx.navigateTo({ url: `/pages/returns/detail/detail?orderId=${orderId}` })
+      return
+    }
     wx.navigateTo({ url: `/pages/returns/apply/apply?orderId=${orderId}` })
   },
 

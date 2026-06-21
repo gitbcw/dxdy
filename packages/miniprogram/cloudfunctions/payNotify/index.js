@@ -165,6 +165,38 @@ async function lockBloodCommission(order, paidAt) {
   })
 }
 
+async function syncProductSales(order, paidAt) {
+  if (!order || order.salesCountedAt) return
+  if (order.type === 'recharge' || order.type === 'card_order' || order.type === 'booking') return
+
+  const totals = {}
+  for (const item of (order.items || [])) {
+    const productId = String(item.productId || '').trim()
+    const quantity = Math.max(0, Number(item.quantity || 0))
+    if (!productId || quantity <= 0) continue
+    totals[productId] = (totals[productId] || 0) + quantity
+  }
+
+  const productIds = Object.keys(totals)
+  if (!productIds.length) return
+
+  for (const productId of productIds) {
+    await db.collection('products').doc(productId).update({
+      data: {
+        salesCount: _.inc(totals[productId]),
+        updatedAt: paidAt,
+      },
+    })
+  }
+
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      salesCountedAt: paidAt,
+      updatedAt: paidAt,
+    },
+  })
+}
+
 async function creditRecharge(order, actualAmount, paidAt) {
   if (order.type !== 'recharge') return
   const tier = order.rechargeTier || {}
@@ -268,6 +300,7 @@ exports.main = async (event) => {
       return { errcode: 1, errmsg: cardPurchaseResult.error || 'card purchase failed' }
     }
     await lockBloodCommission(order, paidAt)
+    await syncProductSales(order, paidAt)
     return { errcode: 0, errmsg: 'ok' }
   }
 
@@ -309,6 +342,7 @@ exports.main = async (event) => {
   await creditRecharge(order, actualAmount, paidAt)
   await settleCommission(order, nextStatus, paidAt)
   await lockBloodCommission(order, paidAt)
+  await syncProductSales(order, paidAt)
 
   return { errcode: 0, errmsg: 'ok' }
 }

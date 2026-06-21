@@ -14,7 +14,6 @@
   <view class="card">
     <view class="type-row">
       <view class="type {{serviceType === 'refund_return' ? 'active' : ''}}" data-type="refund_return" bindtap="onTypeTap">退货退款</view>
-      <view class="type {{serviceType === 'refund_only' ? 'active' : ''}}" data-type="refund_only" bindtap="onTypeTap">仅退款</view>
       <view wx:if="{{!isBloodOrder}}" class="type {{serviceType === 'exchange' ? 'active' : ''}}" data-type="exchange" bindtap="onTypeTap">换货</view>
     </view>
     <view class="reason-type-row">

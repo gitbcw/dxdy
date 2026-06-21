@@ -40,6 +40,58 @@ type HomeAction =
   | 'cardWallet'
   | 'transfusionAssistant'
   | 'bloodCalculator'
+  | 'scanBloodInvite'
+
+function extractBloodInviteId(rawValue: string) {
+  const raw = String(rawValue || '').trim()
+  if (!raw) return ''
+
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(raw)
+    } catch (_e) {
+      return raw
+    }
+  })()
+
+  const candidates = [decoded, raw]
+  for (const text of candidates) {
+    const sceneMatch = text.match(/(?:^|[?&])scene=invite=([^&#]+)/)
+    if (sceneMatch?.[1]) return sceneMatch[1]
+
+    const pathSceneMatch = text.match(/pages\/blood\/booking\/booking\?scene=([^&#]+)/)
+    if (pathSceneMatch?.[1]) return pathSceneMatch[1].replace(/^invite=/, '')
+
+    const pathInviteMatch = text.match(/pages\/blood\/booking\/booking\?invite=([^&#]+)/)
+    if (pathInviteMatch?.[1]) return pathInviteMatch[1]
+
+    const queryMatch = text.match(/[?&](?:invite|bloodInvite|scene)=([^&#]+)/)
+    if (queryMatch?.[1]) {
+      try {
+        return decodeURIComponent(queryMatch[1]).replace(/^invite=/, '')
+      } catch (_e) {
+        return queryMatch[1].replace(/^invite=/, '')
+      }
+    }
+  }
+
+  return /^[a-zA-Z0-9_-]{8,}$/.test(decoded) ? decoded : ''
+}
+
+function extractBloodInviteIdFromScanResult(res: any) {
+  const values = [
+    res?.path,
+    res?.result,
+    res?.rawData,
+  ].filter(Boolean)
+
+  for (const value of values) {
+    const inviteId = extractBloodInviteId(String(value))
+    if (inviteId) return inviteId
+  }
+
+  return ''
+}
 
 function withIcon(items: any[]) {
   return items.map((item) => ({
@@ -106,6 +158,7 @@ Page({
     allArticleItems: [] as any[],
     articleDisplayCount: 4,
     articleHasMore: false,
+    showBloodInviteScanner: false,
   },
 
   _rawProducts: [] as any[],
@@ -169,6 +222,7 @@ Page({
     this.setData({
       currentRole,
       isInstitution,
+      showBloodInviteScanner: currentRole === 'customer_personal',
       showSearchBar: currentRole !== 'salesperson' && currentRole !== 'clerk',
       searchKeyword: currentRole === 'salesperson' || currentRole === 'clerk' ? '' : this.data.searchKeyword,
       searchSuggestions: currentRole === 'salesperson' || currentRole === 'clerk' ? [] : this.data.searchSuggestions,
@@ -211,7 +265,7 @@ Page({
     this._articleObserver = wx.createIntersectionObserver(this)
     this._articleObserver
       .relativeToViewport({ bottom: 80 })
-      .observe('.article-load-sentinel', (res) => {
+      .observe('.article-load-sentinel', (res: any) => {
         if (res.intersectionRatio > 0 && this.data.articleHasMore) {
           this.loadMoreArticles()
         }
@@ -322,7 +376,6 @@ Page({
         taskCards,
         quickActions: [
           { iconKey: 'hospital', icon: '血', title: '医院预约', action: 'blood' },
-          { icon: '码', title: '分享消费者', action: 'bloodInvite' },
           { iconKey: 'bloodCalculator', icon: '算', title: '输血计算', action: 'bloodCalculator' },
           { iconKey: 'transfusionAssistant', icon: '配', title: '门店帮手', action: 'transfusionAssistant' },
           { icon: '券', title: '医院卡券', action: 'cardWallet' },
@@ -469,6 +522,11 @@ Page({
       orders: '/pages/orders/order-detail/order-detail?list=1',
     }
 
+    if (action === 'scanBloodInvite') {
+      this.onScanBloodInvite()
+      return
+    }
+
     if (action === 'catalog') {
       wx.switchTab({ url: '/pages/catalog/catalog' })
       return
@@ -480,6 +538,29 @@ Page({
     }
 
     wx.navigateTo({ url: routes[action] || '/pages/orders/order-detail/order-detail?list=1' })
+  },
+
+  onScanBloodInvite() {
+    if (this.data.currentRole !== 'customer_personal') {
+      wx.showToast({ title: '仅个人客户可扫码预约', icon: 'none' })
+      return
+    }
+
+    wx.scanCode({
+      onlyFromCamera: true,
+      success: (res) => {
+        const inviteId = extractBloodInviteIdFromScanResult(res)
+        if (!inviteId) {
+          wx.showToast({ title: '未识别到有效预约二维码', icon: 'none' })
+          return
+        }
+        wx.navigateTo({ url: `/pages/blood/booking/booking?invite=${encodeURIComponent(inviteId)}` })
+      },
+      fail: (err) => {
+        if (String(err?.errMsg || '').includes('cancel')) return
+        wx.showToast({ title: '扫码失败，请重试', icon: 'none' })
+      },
+    })
   },
 
   onSearchTap() {

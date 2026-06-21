@@ -15,7 +15,7 @@ function normalizeReasonType(reasonType) {
 }
 
 function resolveReturnType(type) {
-  return ['refund_return', 'refund_only', 'exchange'].includes(type) ? type : 'refund_return'
+  return ['refund_return', 'exchange'].includes(type) ? type : 'refund_return'
 }
 
 function validateBloodReturn({ isBloodOrder, reasonType, type }) {

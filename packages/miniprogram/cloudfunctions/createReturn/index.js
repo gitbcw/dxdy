@@ -54,7 +54,20 @@ async function hasBloodProduct(items) {
 
 function normalizeItems(order, eventItems) {
   const source = Array.isArray(eventItems) && eventItems.length ? eventItems : order.items || []
+  const orderItems = Array.isArray(order.items) ? order.items : []
   return source.map((item) => ({
+    ...(() => {
+      const matched = orderItems.find((orderItem) => (
+        String(orderItem.productId || '') === String(item.productId || '') ||
+        String(orderItem.productName || '') === String(item.productName || '')
+      )) || {}
+      const quantity = Math.max(1, Number(item.quantity || matched.quantity || 1))
+      const unitPrice = Number(item.unitPrice || matched.unitPrice || 0)
+      return {
+        productImage: item.productImage || item.imageUrl || matched.productImage || matched.imageUrl || '',
+        totalPrice: Number(item.totalPrice || matched.totalPrice || (unitPrice * quantity)),
+      }
+    })(),
     productId: item.productId || '',
     productName: item.productName || '',
     quantity: Math.max(1, Number(item.quantity || 1)),
@@ -77,9 +90,15 @@ exports.main = async (event) => {
   if (!order.customerOpenid && order._openid !== openid) return error('只能申请自己的订单售后', 'FORBIDDEN')
   if (order.status === 'pending_payment' || order.status === 'cancelled') return error('当前订单状态不可申请售后')
 
-  const existing = await db.collection('returns').where({ orderId: order._id }).limit(1).get()
-  if (existing.data && existing.data.length > 0) {
-    return { success: false, code: 'DUPLICATED', error: '该订单已提交过售后申请', record: { ...existing.data[0], id: existing.data[0]._id } }
+  const existing = await db.collection('returns')
+    .where({ orderId: order._id })
+    .orderBy('createdAt', 'desc')
+    .limit(20)
+    .get()
+  const blockingStatuses = ['pending_review', 'approved', 'customer_shipping', 'received', 'refunding', 'exchange_shipping', 'return_completed', 'exchange_completed']
+  const blockingRecord = (existing.data || []).find((item) => blockingStatuses.includes(item.status))
+  if (blockingRecord) {
+    return { success: false, code: 'DUPLICATED', error: '该订单已有售后申请，请先查看售后进度', record: { ...blockingRecord, id: blockingRecord._id } }
   }
 
   // 售后期限校验：订单完成时间 + returnDeadlineDays
@@ -107,6 +126,10 @@ exports.main = async (event) => {
     return error('血包商品不支持换货，请选择退货退款')
   }
 
+  if (event.type === 'refund_only') {
+    return error('当前不支持仅退款，请选择退货退款或换货', 'UNSUPPORTED_RETURN_TYPE')
+  }
+
   const now = formatDateTime(new Date())
   const maxRefund = order.pricing && typeof order.pricing.actualAmount === 'number'
     ? order.pricing.actualAmount
@@ -118,7 +141,7 @@ exports.main = async (event) => {
     orderId: order._id,
     customerId: order.customerId,
     customerOpenid: order.customerOpenid || openid,
-    type: ['refund_return', 'refund_only', 'exchange'].includes(event.type) ? event.type : 'refund_return',
+    type: ['refund_return', 'exchange'].includes(event.type) ? event.type : 'refund_return',
     status: 'pending_review',
     reasonType,
     bloodPackCode: isBloodOrder ? String(event.bloodPackCode || '').trim() : '',

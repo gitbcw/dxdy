@@ -14,6 +14,7 @@
 
   <view wx:else>
     <view class="profile-card {{compactProfile ? 'compact' : ''}}">
+      <image class="profile-bg" src="/assets/generated/optimized/mine-profile-card-bg.png" mode="aspectFill" />
       <view class="profile-top">
         <view class="avatar">{{avatarText}}</view>
         <view class="info">
@@ -121,5 +122,27 @@
     <view class="bottom-actions">
       <view class="action-btn logout" bindtap="onLogout">退出当前账号</view>
     </view>
-  </view>
+
+    <view wx:if="{{showClerkNoticeModal}}" class="notice-mask" catchtouchmove="noop">
+      <view class="notice-dialog">
+        <view class="notice-close" bindtap="onCloseClerkNoticeModal">×</view>
+        <view class="notice-hero">
+          <view class="notice-phone">
+            <view class="notice-phone-dot"></view>
+            <view class="notice-card-line wide"></view>
+            <view class="notice-card-line"></view>
+            <view class="notice-card-line short"></view>
+          </view>
+          <view class="notice-bubble left">{{noticeLeftBubble}}</view>
+          <view class="notice-bubble right">{{noticeRightBubble}}</view>
+        </view>
+        <view class="notice-body">
+          <text class="notice-title">{{noticeTitle}}</text>
+          <text class="notice-desc">{{noticeDesc}}</text>
+          <text class="notice-tip">{{noticeTip}}</text>
+          <view class="notice-primary" bindtap="onEnableClerkNotice">{{noticePrimaryText}}</view>
+          <view class="notice-secondary" bindtap="onHideClerkNoticeAgain">不再提醒</view>
+        </view>
+      </view>
+    </view>  </view>
 </view>

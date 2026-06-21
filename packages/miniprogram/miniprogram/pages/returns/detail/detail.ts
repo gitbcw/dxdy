@@ -10,15 +10,38 @@ const stepDefs = [
   { key: 'return_completed', title: '已完成' },
 ]
 
+const exchangeStepDefs = [
+  { key: 'submitted', title: '提交申请' },
+  { key: 'pending_review', title: '商家审核中' },
+  { key: 'approved', title: '审核通过' },
+  { key: 'customer_shipping', title: '等待寄回' },
+  { key: 'received', title: '商品质检' },
+  { key: 'exchange_shipping', title: '换货发货' },
+  { key: 'exchange_completed', title: '换货完成' },
+]
+
+function getStepDefs(record?: any) {
+  return record?.type === 'exchange' ? exchangeStepDefs : stepDefs
+}
+
+function buildSubmittedSteps(record?: any) {
+  return getStepDefs(record).map((step, index) => ({
+    title: step.title,
+    time: index === 0 ? '--' : '',
+    active: index === 0,
+  }))
+}
+
 Page({
   data: {
     afterNo: '',
-    statusText: '商家审核中',
-    statusDesc: '我们将在 24 小时内完成审核，请耐心等待',
+    statusText: '已提交申请',
+    statusDesc: '售后申请已提交，请等待商家审核',
     record: null as any,
     order: null as any,
     refundAmount: '0.00',
-    steps: [] as any[],
+    steps: buildSubmittedSteps(),
+    isExchangeReturn: false,
     note: '已收到您的凭证，正在核实，请保持电话畅通。',
     showLogisticsForm: false,
     sendCompany: '',
@@ -36,25 +59,39 @@ Page({
   },
 
   async loadByOrder(orderId: string) {
-    const records = await getReturns({ orderId })
-    if (records[0]) {
-      this.applyRecord(records[0])
+    const order = await getOrderById(orderId)
+    if (order?.returnRecord) {
+      this.applyRecord(order.returnRecord, order)
       return
     }
-    wx.showToast({ title: '暂无售后记录', icon: 'none' })
+    const records = await getReturns({ orderId })
+    if (records[0]) {
+      this.applyRecord(records[0], order)
+      return
+    }
+    this.setData({
+      order,
+      statusText: '已提交申请',
+      statusDesc: '售后申请已提交，请等待商家审核',
+      steps: buildSubmittedSteps(),
+    })
   },
 
   async loadReturn(id: string) {
     const record = await getReturnById(id)
     if (!record) {
-      wx.showToast({ title: '售后记录不存在', icon: 'none' })
+      this.setData({
+        statusText: '已提交申请',
+        statusDesc: '售后申请已提交，请等待商家审核',
+        steps: buildSubmittedSteps(),
+      })
       return
     }
     this.applyRecord(record)
   },
 
-  async applyRecord(record: any) {
-    const order = record.orderId ? await getOrderById(record.orderId) : null
+  async applyRecord(record: any, knownOrder?: any) {
+    const order = knownOrder || (record.orderId ? await getOrderById(record.orderId) : null)
     this.setData({
       record,
       order,
@@ -63,15 +100,18 @@ Page({
       statusDesc: this.getStatusDesc(record.status),
       refundAmount: formatMoney(record.refundAmount || 0),
       steps: this.buildSteps(record),
+      isExchangeReturn: record.type === 'exchange',
       note: record.reviewNote || this.data.note,
-      showLogisticsForm: record.status === 'customer_shipping' && !record.sendLogistics,
+      showLogisticsForm: ['approved', 'customer_shipping'].includes(record.status) && !record.sendLogistics,
     })
   },
 
   buildSteps(record: any) {
     const timeline = record.timeline || []
-    const activeIndex = Math.max(1, stepDefs.findIndex((step) => step.key === record.status))
-    return stepDefs.map((step, index) => {
+    const defs = getStepDefs(record)
+    const statusIndex = defs.findIndex((step) => step.key === record.status)
+    const activeIndex = statusIndex >= 0 ? statusIndex : 0
+    return defs.map((step, index) => {
       const item = timeline.find((entry: any) => entry.status === step.key)
       return {
         title: step.title,
@@ -90,6 +130,8 @@ Page({
       received: '商品质检中',
       refunding: '退款处理中',
       return_completed: '售后已完成',
+      exchange_shipping: '换货发货中',
+      exchange_completed: '换货已完成',
     }
     return map[status] || '售后处理中'
   },
@@ -101,12 +143,23 @@ Page({
       rejected: '可联系客服了解原因或重新提交材料',
       refunding: '退款将原路退回，请留意到账信息',
       return_completed: '本次售后服务已完成',
+      exchange_shipping: '换货商品已进入发货流程，请留意物流状态',
+      exchange_completed: '本次换货服务已完成',
     }
     return map[status] || '售后流程正在推进'
   },
 
   onCopy() {
     wx.setClipboardData({ data: this.data.afterNo })
+  },
+
+  onViewExchangeLogistics() {
+    const exchangeOrderId = this.data.record?.exchangeOrderId
+    if (!exchangeOrderId) {
+      wx.showToast({ title: '暂无换货物流', icon: 'none' })
+      return
+    }
+    wx.navigateTo({ url: `/pages/logistics/detail/detail?orderId=${exchangeOrderId}` })
   },
 
   onSendCompanyInput(e: any) {
@@ -132,9 +185,9 @@ Page({
       })
       wx.hideLoading()
       wx.showToast({ title: '提交成功' })
-      // 重新加载记录
-      if (record.id) this.loadReturn(record.id)
-      else if (record.orderId) this.loadByOrder(record.orderId)
+      setTimeout(() => {
+        wx.redirectTo({ url: '/pages/orders/order-detail/order-detail' })
+      }, 800)
     } catch (err: any) {
       wx.hideLoading()
       wx.showToast({ title: err?.message || '提交失败', icon: 'none' })

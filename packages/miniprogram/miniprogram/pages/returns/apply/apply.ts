@@ -97,8 +97,10 @@ Page({
         items: order.items.map((item: any) => ({
           productId: item.productId,
           productName: item.productName,
+          productImage: item.productImage || item.imageUrl || '',
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
           spec: item.spec,
         })),
       })

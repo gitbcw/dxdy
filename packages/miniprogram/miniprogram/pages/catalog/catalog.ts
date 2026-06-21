@@ -1,4 +1,4 @@
-const { getCategories, getProducts, formatMoney, addToCart, getProductVisualImage, isOnPromotion, getEffectivePrice } = require('../../services/index')
+const { getCategories, getProducts, getSystemConfig, formatMoney, addToCart, getProductVisualImage, isOnPromotion, getEffectivePrice } = require('../../services/index')
 const { isStaffRole, normalizePath } = require('../../utils/tab-bar')
 const icons = require('../../services/icons')
 const tracking = require('../../services/tracking')
@@ -24,10 +24,30 @@ Page({
     filterIcon: icons.filter,
     cartIcon: icons.cart,
     lockIcon: icons.lock,
+    catalogBanners: [] as any[],
   },
 
   onLoad() {
+    this.loadCatalogBanners()
     this.loadCategories()
+  },
+
+  async loadCatalogBanners() {
+    try {
+      const config = await getSystemConfig()
+      const banners = Array.isArray(config?.catalogBanners) ? config.catalogBanners : []
+      this.setData({
+        catalogBanners: banners
+          .filter((item: any) => item && item.enabled !== false && item.imageUrl && item.productId)
+          .sort((a: any, b: any) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
+          .map((item: any, index: number) => ({
+            ...item,
+            id: item.id || `${item.productId}-${index}`,
+          })),
+      })
+    } catch {
+      this.setData({ catalogBanners: [] })
+    }
   },
 
   onShow() {
@@ -296,6 +316,12 @@ Page({
 
   onProductTap(e: any) {
     wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${e.currentTarget.dataset.id}` })
+  },
+
+  onBannerTap(e: any) {
+    const productId = e.currentTarget.dataset.productId
+    if (!productId) return
+    wx.navigateTo({ url: `/pages/product-detail/product-detail?id=${productId}` })
   },
 
   getSearchSuggestions(keyword: string) {

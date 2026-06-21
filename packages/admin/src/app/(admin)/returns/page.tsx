@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { CalendarDays } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,16 +18,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
-import { fetchReturns } from '@/lib/services/database';
-import { reviewReturn } from '@/lib/services/functions';
+import { fetchClerks, fetchReturns } from '@/lib/services/database';
+import { assignOrderToClerk, clerkShipOrder, queryLogistics, reviewReturn } from '@/lib/services/functions';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney, formatDateTime } from '@/lib/format';
-import type { ReturnRecord } from '@/lib/types';
+import type { Clerk, LogisticsInfo, ReturnRecord } from '@/lib/types';
+
+type ReturnLogisticsTrack = LogisticsInfo & {
+  title?: string;
+  desc?: string;
+};
 
 const typeLabel: Record<string, string> = {
   return: '退货退款',
   refund_return: '退货退款',
-  refund_only: '仅退款',
   exchange: '换货',
 };
 
@@ -53,7 +58,6 @@ const actionLabel: Record<string, string> = {
   reject: '不合格',
   confirm_refund: '确认退款',
   exchange_shipping: '换货发货',
-  confirm_receipt: '确认收货',
   none: '无可用操作',
 };
 
@@ -97,7 +101,6 @@ function getAvailableActions(record: ReturnRecord) {
   }
   if (record.status === 'refunding') actions.push('confirm_refund');
   if (record.type === 'exchange' && ['received', 'verifying'].includes(record.status)) actions.push('exchange_shipping');
-  if (record.type === 'exchange' && record.status === 'exchange_shipping') actions.push('confirm_receipt');
   return actions.length > 0 ? actions : ['none'];
 }
 
@@ -105,6 +108,15 @@ export default function ReturnsPage() {
   const { user } = useAuth();
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
   const [reviewTarget, setReviewTarget] = useState<ReturnRecord | null>(null);
+  const [logisticsTarget, setLogisticsTarget] = useState<ReturnRecord | null>(null);
+  const [logisticsTracks, setLogisticsTracks] = useState<ReturnLogisticsTrack[]>([]);
+  const [logisticsLoading, setLogisticsLoading] = useState(false);
+  const [logisticsError, setLogisticsError] = useState('');
+  const [exchangeShipTarget, setExchangeShipTarget] = useState<ReturnRecord | null>(null);
+  const [exchangeAssignTarget, setExchangeAssignTarget] = useState<ReturnRecord | null>(null);
+  const [exchangeShipCompany, setExchangeShipCompany] = useState('');
+  const [exchangeTrackingNo, setExchangeTrackingNo] = useState('');
+  const [clerks, setClerks] = useState<Clerk[]>([]);
   const [reviewNote, setReviewNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -130,8 +142,12 @@ export default function ReturnsPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchReturns();
+      const [data, clerkData] = await Promise.all([
+        fetchReturns(),
+        fetchClerks(user?.id).catch(() => []),
+      ]);
       setReturns(data);
+      setClerks(clerkData);
     } catch (err) {
       setError(err instanceof Error ? err.message : '读取售后数据失败');
     } finally {
@@ -183,6 +199,98 @@ export default function ReturnsPage() {
     }
   }
 
+  async function ensureExchangeOrder(record: ReturnRecord) {
+    if (record.exchangeOrderId) return record.exchangeOrderId;
+    const result = await reviewReturn({
+      id: record.id,
+      status: 'exchange_shipping',
+      ...getOperator(),
+    });
+    if (!result.success) throw new Error(result.error || '换货发货订单创建失败');
+    const updatedRecord = result.record as ReturnRecord | undefined;
+    if (!updatedRecord?.exchangeOrderId) throw new Error('换货发货订单创建失败');
+    await writeAdminLog({
+      operator: user,
+      action: 'create_exchange_order',
+      target: record.id,
+      detail: `售后单 ${record.id} 创建换货发货订单 ${updatedRecord.exchangeOrderId}`,
+    });
+    return updatedRecord.exchangeOrderId;
+  }
+
+  function openExchangeShipDialog(record: ReturnRecord) {
+    setExchangeShipTarget(record);
+    setExchangeShipCompany('');
+    setExchangeTrackingNo('');
+    setError('');
+  }
+
+  function openExchangeAssignDialog(record: ReturnRecord) {
+    setExchangeAssignTarget(record);
+    setError('');
+  }
+
+  async function handleExchangeShip() {
+    if (!exchangeShipTarget) return;
+    if (!exchangeShipCompany.trim() || !exchangeTrackingNo.trim()) {
+      setError('请填写物流公司和物流单号');
+      return;
+    }
+    setSubmittingId(exchangeShipTarget.id);
+    setError('');
+    try {
+      const exchangeOrderId = await ensureExchangeOrder(exchangeShipTarget);
+      const result = await clerkShipOrder({
+        orderId: exchangeOrderId,
+        company: exchangeShipCompany.trim(),
+        trackingNo: exchangeTrackingNo.trim(),
+        ...getOperator(),
+      });
+      if (!result.success) throw new Error(result.error || '换货发货失败');
+      await writeAdminLog({
+        operator: user,
+        action: 'ship_exchange_order',
+        target: exchangeOrderId,
+        detail: `换货订单 ${exchangeOrderId} 手动发货：${exchangeShipCompany.trim()} ${exchangeTrackingNo.trim()}`,
+      });
+      await loadReturns();
+      setExchangeShipTarget(null);
+      setExchangeShipCompany('');
+      setExchangeTrackingNo('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '换货发货失败');
+    } finally {
+      setSubmittingId('');
+    }
+  }
+
+  async function handleExchangeAssign(clerkId: string) {
+    if (!exchangeAssignTarget) return;
+    setSubmittingId(exchangeAssignTarget.id);
+    setError('');
+    try {
+      const exchangeOrderId = await ensureExchangeOrder(exchangeAssignTarget);
+      const result = await assignOrderToClerk({
+        orderId: exchangeOrderId,
+        clerkId,
+        ...getOperator(),
+      });
+      if (!result.success) throw new Error(result.error || '换货订单指派失败');
+      await writeAdminLog({
+        operator: user,
+        action: 'assign_exchange_order',
+        target: exchangeOrderId,
+        detail: `换货订单 ${exchangeOrderId} 指派给制单员 ${clerkId}`,
+      });
+      await loadReturns();
+      setExchangeAssignTarget(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '换货订单指派失败');
+    } finally {
+      setSubmittingId('');
+    }
+  }
+
   const availableStatuses = useMemo(
     () => [...new Set(returns.map(record => record.status))],
     [returns],
@@ -212,6 +320,42 @@ export default function ReturnsPage() {
     setDateTo('');
   }
 
+  function getReturnLogisticsTracks(record: ReturnRecord | null): ReturnLogisticsTrack[] {
+    if (!record) return [];
+    const sendLogistics = record.sendLogistics as (ReturnRecord['sendLogistics'] & { logistics?: LogisticsInfo[]; tracks?: LogisticsInfo[] }) | null;
+    if (!sendLogistics) return [];
+    if (Array.isArray(sendLogistics.logistics)) return sendLogistics.logistics as ReturnLogisticsTrack[];
+    if (Array.isArray(sendLogistics.tracks)) return sendLogistics.tracks as ReturnLogisticsTrack[];
+    return [];
+  }
+
+  async function openLogisticsDialog(record: ReturnRecord) {
+    setLogisticsTarget(record);
+    setLogisticsTracks(getReturnLogisticsTracks(record));
+    setLogisticsError('');
+    if (!record.sendLogistics?.trackingNo) return;
+    setLogisticsLoading(true);
+    try {
+      const result = await queryLogistics({
+        orderId: record.orderId,
+        trackingNo: record.sendLogistics.trackingNo,
+        userId: user?.id,
+      });
+      if (!result.success) throw new Error(result.error || '物流查询失败');
+      const tracks = Array.isArray(result.provider?.tracks)
+        ? result.provider.tracks as ReturnLogisticsTrack[]
+        : [];
+      setLogisticsTracks(tracks);
+      if (!tracks.length) {
+        setLogisticsError(result.provider?.providerMessage || '暂未查询到实时物流轨迹');
+      }
+    } catch (err) {
+      setLogisticsError(err instanceof Error ? err.message : '物流查询失败');
+    } finally {
+      setLogisticsLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">退换货管理</h1>
@@ -232,7 +376,6 @@ export default function ReturnsPage() {
                 <SelectItem value="all">全部类型</SelectItem>
                 <SelectItem value="return">退货退款</SelectItem>
                 <SelectItem value="refund_return">退货退款</SelectItem>
-                <SelectItem value="refund_only">仅退款</SelectItem>
                 <SelectItem value="exchange">换货</SelectItem>
               </SelectContent>
             </Select>
@@ -276,6 +419,7 @@ export default function ReturnsPage() {
                 <TableHead>类型</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>原因</TableHead>
+                <TableHead>寄回物流</TableHead>
                 <TableHead>金额</TableHead>
                 <TableHead>申请时间</TableHead>
                 <TableHead>操作</TableHead>
@@ -284,21 +428,21 @@ export default function ReturnsPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                     加载售后数据中...
                   </TableCell>
                 </TableRow>
               )}
               {!loading && returns.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                     暂无售后记录
                   </TableCell>
                 </TableRow>
               )}
               {!loading && returns.length > 0 && filteredReturns.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                     没有符合当前筛选条件的售后记录
                   </TableCell>
                 </TableRow>
@@ -313,10 +457,24 @@ export default function ReturnsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-48 truncate">{record.reason}</TableCell>
+                  <TableCell className="text-sm">
+                    {record.sendLogistics?.trackingNo ? (
+                      <Button variant="outline" size="sm" onClick={() => openLogisticsDialog(record)}>
+                        查看物流
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>{record.refundAmount ? `¥${formatMoney(record.refundAmount)}` : '-'}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDateTime(record.createdAt)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      {record.status !== 'pending_review' && (
+                        <Button variant="outline" size="sm" onClick={() => { setReviewTarget(record); setReviewNote(''); }}>
+                          详情
+                        </Button>
+                      )}
                       {record.status === 'pending_review' && (
                         <Button variant="outline" size="sm" onClick={() => { setReviewTarget(record); setReviewNote(''); }} disabled={submittingId === record.id}>
                           审核
@@ -348,14 +506,14 @@ export default function ReturnsPage() {
                         </Button>
                       )}
                       {record.type === 'exchange' && ['received', 'verifying'].includes(record.status) && (
-                        <Button variant="default" size="sm" onClick={() => handleAdvance(record.id, 'exchange_shipping')} disabled={submittingId === record.id}>
-                          换货发货
-                        </Button>
-                      )}
-                      {record.type === 'exchange' && record.status === 'exchange_shipping' && (
-                        <Button variant="default" size="sm" onClick={() => handleAdvance(record.id, 'exchange_completed')} disabled={submittingId === record.id}>
-                          确认收货
-                        </Button>
+                        <>
+                          <Button variant="default" size="sm" onClick={() => openExchangeShipDialog(record)} disabled={submittingId === record.id}>
+                            手动发货
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => openExchangeAssignDialog(record)} disabled={submittingId === record.id}>
+                            指派制单员
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -369,7 +527,7 @@ export default function ReturnsPage() {
       <Dialog open={!!reviewTarget} onOpenChange={() => setReviewTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>审核退换货</DialogTitle>
+            <DialogTitle>{reviewTarget?.status === 'pending_review' ? '审核退换货' : '退换货详情'}</DialogTitle>
           </DialogHeader>
           {reviewTarget && (
             <div className="space-y-3 py-4">
@@ -382,10 +540,28 @@ export default function ReturnsPage() {
                 <p>{reviewTarget.reason}</p>
               </div>
               <div>
+                <p className="text-sm text-muted-foreground">问题描述</p>
+                <p className="whitespace-pre-wrap break-words text-sm">{reviewTarget.description || '未填写'}</p>
+              </div>
+              <div>
                 <p className="text-sm text-muted-foreground">商品</p>
                 {reviewTarget.items.map((item, i) => (
                   <p key={i}>{item.productName} x{item.quantity} ¥{formatMoney(item.unitPrice)}</p>
                 ))}
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">上传凭证</p>
+                {reviewTarget.voucherUrls && reviewTarget.voucherUrls.length > 0 ? (
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {reviewTarget.voucherUrls.map((url, i) => (
+                      <a key={`${url}-${i}`} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-md border bg-muted">
+                        <img src={url} alt={`售后凭证 ${i + 1}`} className="aspect-square w-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm">未上传</p>
+                )}
               </div>
               {reviewTarget.refundAmount && (
                 <div>
@@ -399,15 +575,191 @@ export default function ReturnsPage() {
                   <p>{reviewTarget.sendLogistics.company} {reviewTarget.sendLogistics.trackingNo}</p>
                 </div>
               )}
+              {reviewTarget.type === 'exchange' && (
+                <div>
+                  <p className="text-sm text-muted-foreground">换货发货订单</p>
+                  {reviewTarget.exchangeOrderId ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <p className="font-mono text-sm">{reviewTarget.exchangeOrderId}</p>
+                      <Link href={`/orders/detail/?id=${encodeURIComponent(reviewTarget.exchangeOrderId)}`}>
+                        <Button variant="outline" size="sm">查看订单</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">验货合格后会自动创建换货发货订单</p>
+                  )}
+                </div>
+              )}
+              {reviewTarget.status === 'pending_review' && (
+                <div className="space-y-2">
+                  <Label htmlFor="reviewNote">审核备注</Label>
+                  <Input id="reviewNote" value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="输入审核意见" />
+                </div>
+              )}
+            </div>
+          )}
+          {reviewTarget?.status === 'pending_review' ? (
+            <DialogFooter>
+              <Button variant="destructive" onClick={() => handleReview(false)}>拒绝</Button>
+              <Button onClick={() => handleReview(true)}>通过</Button>
+            </DialogFooter>
+          ) : (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setReviewTarget(null)}>关闭</Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!exchangeShipTarget} onOpenChange={open => {
+        if (!open) setExchangeShipTarget(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>换货手动发货</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>原订单号</Label>
+              <p className="font-mono text-sm">{exchangeShipTarget?.orderId}</p>
+            </div>
+            {exchangeShipTarget?.exchangeOrderId && (
               <div className="space-y-2">
-                <Label htmlFor="reviewNote">审核备注</Label>
-                <Input id="reviewNote" value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="输入审核意见" />
+                <Label>换货发货订单</Label>
+                <p className="font-mono text-sm">{exchangeShipTarget.exchangeOrderId}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="exchangeShipCompany">物流公司</Label>
+              <Input
+                id="exchangeShipCompany"
+                value={exchangeShipCompany}
+                onChange={event => setExchangeShipCompany(event.target.value)}
+                placeholder="如 顺丰速运"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exchangeTrackingNo">物流单号</Label>
+              <Input
+                id="exchangeTrackingNo"
+                value={exchangeTrackingNo}
+                onChange={event => setExchangeTrackingNo(event.target.value)}
+                placeholder="请输入物流单号"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExchangeShipTarget(null)}>取消</Button>
+            <Button onClick={handleExchangeShip} disabled={!!exchangeShipTarget && submittingId === exchangeShipTarget.id}>
+              确认发货
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!exchangeAssignTarget} onOpenChange={open => {
+        if (!open) setExchangeAssignTarget(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>指派换货发货订单</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>原订单号</Label>
+              <p className="font-mono text-sm">{exchangeAssignTarget?.orderId}</p>
+            </div>
+            {exchangeAssignTarget?.exchangeOrderId && (
+              <div className="space-y-2">
+                <Label>换货发货订单</Label>
+                <p className="font-mono text-sm">{exchangeAssignTarget.exchangeOrderId}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>选择制单员</Label>
+              <div className="space-y-2">
+                {clerks.length === 0 && (
+                  <p className="rounded-lg border p-3 text-sm text-muted-foreground">暂无可用制单员</p>
+                )}
+                {clerks.map(clerk => (
+                  <button
+                    key={clerk.id}
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-accent disabled:opacity-60"
+                    disabled={!!exchangeAssignTarget && submittingId === exchangeAssignTarget.id}
+                    onClick={() => handleExchangeAssign(clerk.id)}
+                  >
+                    <div>
+                      <p className="font-medium">{clerk.realName || clerk.nickname}</p>
+                      <p className="text-sm text-muted-foreground">{clerk.phone}</p>
+                    </div>
+                    <Badge variant="secondary">指派</Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExchangeAssignTarget(null)}>取消</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!logisticsTarget}
+        onOpenChange={open => {
+          if (!open) {
+            setLogisticsTarget(null);
+            setLogisticsTracks([]);
+            setLogisticsError('');
+          }
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>寄回物流详情</DialogTitle>
+          </DialogHeader>
+          {logisticsTarget?.sendLogistics && (
+            <div className="max-h-[calc(85vh-8rem)] space-y-4 overflow-y-auto py-4 pr-2">
+              <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-2">
+                <div>
+                  <p className="text-muted-foreground">快递公司</p>
+                  <p className="mt-1 font-medium">{logisticsTarget.sendLogistics.company || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">物流单号</p>
+                  <p className="mt-1 font-mono font-medium">{logisticsTarget.sendLogistics.trackingNo || '-'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="mb-3 text-sm font-medium">物流轨迹</p>
+                {logisticsLoading ? (
+                  <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
+                    正在查询物流轨迹...
+                  </div>
+                ) : logisticsTracks.length > 0 ? (
+                  <div className="max-h-[48vh] space-y-3 overflow-y-auto pr-2">
+                    {logisticsTracks.map((track, index) => (
+                      <div key={`${track.time}-${index}`} className="relative border-l border-border pl-4">
+                        <span className="absolute -left-1.5 top-1.5 size-3 rounded-full bg-primary" />
+                        <p className="text-sm font-medium">{track.title || track.description || track.desc || '物流更新'}</p>
+                        {(track.description || track.desc) && (
+                          <p className="mt-1 text-sm text-muted-foreground">{track.description || track.desc}</p>
+                        )}
+                        {track.time && <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(track.time)}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
+                    {logisticsError || '暂无物流轨迹'}
+                  </div>
+                )}
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="destructive" onClick={() => handleReview(false)}>拒绝</Button>
-            <Button onClick={() => handleReview(true)}>通过</Button>
+            <Button variant="outline" onClick={() => setLogisticsTarget(null)}>关闭</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

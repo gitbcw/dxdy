@@ -28,11 +28,13 @@ import {
   createProductCategory,
   updateProductCategory,
   deleteProductCategory,
+  fetchSystemConfig,
+  saveSystemConfig,
 } from '@/lib/services/database';
 import { manageProduct } from '@/lib/services/functions';
 import { writeAdminLog } from '@/lib/admin-log';
 import { formatMoney } from '@/lib/format';
-import type { Product, ProductCategory, ProductVisibility, ProductType } from '@/lib/types';
+import type { CatalogBanner, Product, ProductCategory, ProductVisibility, ProductType, SystemConfig } from '@/lib/types';
 
 type ProductFormState = {
   name: string;
@@ -106,6 +108,7 @@ const stockFilterLabel: Record<StockFilter, string> = {
 
 const STOCK_WARNING_THRESHOLD = 10;
 const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_CATALOG_BANNER_IMAGE_SIZE = 700 * 1024;
 const PRODUCT_IMAGE_PUBLIC_BASE_URL = 'https://636c-cloud1-d7g7ctn4m86bada89-1433980811.tcb.qcloud.la';
 const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const DEFAULT_SERVICE_TAGS = ['冷链配送', '支持预约', '质量问题售后'];
@@ -232,6 +235,25 @@ async function uploadFileToStorage(file: File): Promise<string> {
   const uploadedPath = await uploadFileToCloudBase(file, cloudPath, {
     allowedTypes: PRODUCT_IMAGE_ALLOWED_TYPES,
     maxSize: MAX_PRODUCT_IMAGE_SIZE,
+    maxWidth: 1000,
+    maxHeight: 1000,
+    quality: 0.72,
+    outputType: 'image/jpeg',
+  });
+  return `${PRODUCT_IMAGE_PUBLIC_BASE_URL}/${uploadedPath}`;
+}
+
+async function uploadCatalogBannerToStorage(file: File): Promise<string> {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  const cloudPath = `products/catalog-banners/${timestamp}-${random}-${getSafeImageFileName(file)}`;
+  const uploadedPath = await uploadFileToCloudBase(file, cloudPath, {
+    allowedTypes: PRODUCT_IMAGE_ALLOWED_TYPES,
+    maxSize: MAX_CATALOG_BANNER_IMAGE_SIZE,
+    maxWidth: 900,
+    maxHeight: 360,
+    quality: 0.68,
+    outputType: 'image/jpeg',
   });
   return `${PRODUCT_IMAGE_PUBLIC_BASE_URL}/${uploadedPath}`;
 }
@@ -313,6 +335,10 @@ export default function ProductsPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [categoryForm, setCategoryForm] = useState({ id: '', name: '', sort: '' });
   const [categoryConfigOpen, setCategoryConfigOpen] = useState(false);
+  const [catalogBannerConfigOpen, setCatalogBannerConfigOpen] = useState(false);
+  const [systemConfig, setSystemConfig] = useState<SystemConfig | null>(null);
+  const [savingCatalogBanners, setSavingCatalogBanners] = useState(false);
+  const [catalogBannerProductSearch, setCatalogBannerProductSearch] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadProducts();
@@ -323,8 +349,10 @@ export default function ProductsPage() {
     setErrorMsg('');
     try {
       const data = await fetchProductsAndCategories();
+      const config = await fetchSystemConfig();
       setProducts(data.products);
       setCategories(data.categories);
+      setSystemConfig(config);
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : '读取商品数据失败');
     } finally {
@@ -352,6 +380,77 @@ export default function ProductsPage() {
     const created = await createProduct(product);
     await writeAdminLog({ operator: user, action: 'create_product', target: product.id, detail: `创建商品 ${product.name}` });
     return created;
+  }
+
+  function updateCatalogBanner(index: number, patch: Partial<CatalogBanner>) {
+    if (!systemConfig) return;
+    const catalogBanners = [...(systemConfig.catalogBanners || [])];
+    catalogBanners[index] = { ...catalogBanners[index], ...patch };
+    setSystemConfig({ ...systemConfig, catalogBanners });
+  }
+
+  async function handleCatalogBannerImageUpload(index: number, files: FileList | null) {
+    try {
+      const file = files?.[0];
+      if (!file) return;
+      const imageUrl = await uploadCatalogBannerToStorage(file);
+      if (!imageUrl) return;
+      updateCatalogBanner(index, { imageUrl });
+      setErrorMsg('');
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '上传轮播图失败');
+    }
+  }
+
+  function addCatalogBanner() {
+    if (!systemConfig) return;
+    const now = Date.now();
+    setSystemConfig({
+      ...systemConfig,
+      catalogBanners: [
+        ...(systemConfig.catalogBanners || []),
+        {
+          id: `catalog-banner-${now}`,
+          title: '',
+          imageUrl: '',
+          productId: '',
+          enabled: true,
+          sortOrder: (systemConfig.catalogBanners || []).length + 1,
+        },
+      ],
+    });
+  }
+
+  function removeCatalogBanner(index: number) {
+    if (!systemConfig) return;
+    setSystemConfig({
+      ...systemConfig,
+      catalogBanners: (systemConfig.catalogBanners || []).filter((_, itemIndex) => itemIndex !== index),
+    });
+  }
+
+  async function handleSaveCatalogBanners() {
+    if (!systemConfig) return;
+    setSavingCatalogBanners(true);
+    setErrorMsg('');
+    try {
+      const saved = await saveSystemConfig(systemConfig);
+      setSystemConfig(saved);
+      await writeAdminLog({ operator: user, action: 'save_catalog_banners', target: 'system', detail: '保存分类页轮播配置' });
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : '保存分类页轮播配置失败');
+    } finally {
+      setSavingCatalogBanners(false);
+    }
+  }
+
+  function getCatalogBannerProductOptions(index: number) {
+    const keyword = (catalogBannerProductSearch[String(index)] || '').trim().toLowerCase();
+    if (!keyword) return products;
+    return products.filter(product => {
+      const text = `${product.name || ''} ${product.id || ''}`.toLowerCase();
+      return text.includes(keyword);
+    });
   }
 
   const catMap = Object.fromEntries(categories.map(category => [category.id, category.name]));
@@ -838,6 +937,117 @@ export default function ProductsPage() {
                 ))}
               </div>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className={catalogBannerConfigOpen ? 'space-y-4 p-4' : 'p-3'}>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 text-left"
+            onClick={() => setCatalogBannerConfigOpen(open => !open)}
+            aria-expanded={catalogBannerConfigOpen}
+          >
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-semibold">分类页轮播配置</h2>
+              <p className="text-sm text-muted-foreground">用于小程序商品分类页顶部轮播，点击图片会进入对应商品详情。</p>
+            </div>
+            <span className="shrink-0 text-sm text-muted-foreground">
+              {catalogBannerConfigOpen ? '收起' : '展开'}
+            </span>
+          </button>
+          {catalogBannerConfigOpen && (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                {(systemConfig?.catalogBanners || []).map((banner, index) => (
+                  <div key={banner.id || index} className="grid gap-3 rounded-md border p-3 lg:grid-cols-[220px_1fr_120px_96px_auto]">
+                    <div className="space-y-2">
+                      <Label>轮播图片</Label>
+                      {banner.imageUrl ? (
+                        <div className="space-y-2">
+                          <img src={banner.imageUrl} alt="分类页轮播图" className="h-24 w-full rounded-md border object-cover" />
+                          <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => updateCatalogBanner(index, { imageUrl: '' })}>
+                            清除图片
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex h-24 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
+                          暂未上传
+                        </div>
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={async event => {
+                          await handleCatalogBannerImageUpload(index, event.target.files);
+                          event.target.value = '';
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>跳转商品</Label>
+                      <Input
+                        value={catalogBannerProductSearch[String(index)] || ''}
+                        placeholder="搜索商品名 / ID"
+                        onChange={event => setCatalogBannerProductSearch(prev => ({
+                          ...prev,
+                          [String(index)]: event.target.value,
+                        }))}
+                      />
+                      <select
+                        className="h-10 w-full rounded-md border px-3 text-sm"
+                        value={banner.productId || ''}
+                        onChange={event => updateCatalogBanner(index, { productId: event.target.value })}
+                      >
+                        <option value="">请选择商品</option>
+                        {getCatalogBannerProductOptions(index).map(product => (
+                          <option key={product.id} value={product.id}>{product.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>标题</Label>
+                      <Input
+                        value={banner.title || ''}
+                        placeholder="可选"
+                        onChange={event => updateCatalogBanner(index, { title: event.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>排序</Label>
+                      <Input
+                        type="number"
+                        value={banner.sortOrder ?? index + 1}
+                        onChange={event => updateCatalogBanner(index, { sortOrder: parseInt(event.target.value, 10) || 0 })}
+                      />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <select
+                        className="h-10 rounded-md border px-3 text-sm"
+                        value={banner.enabled === false ? '0' : '1'}
+                        onChange={event => updateCatalogBanner(index, { enabled: event.target.value === '1' })}
+                      >
+                        <option value="1">启用</option>
+                        <option value="0">停用</option>
+                      </select>
+                      <Button variant="outline" size="sm" onClick={() => removeCatalogBanner(index)}>删除</Button>
+                    </div>
+                  </div>
+                ))}
+                {(systemConfig?.catalogBanners || []).length === 0 && (
+                  <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                    暂未配置轮播图，添加后保存即可在小程序分类页展示。
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={addCatalogBanner} disabled={!systemConfig}>添加轮播图</Button>
+                <Button onClick={handleSaveCatalogBanners} disabled={!systemConfig || savingCatalogBanners}>
+                  {savingCatalogBanners ? '保存中...' : '保存轮播配置'}
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

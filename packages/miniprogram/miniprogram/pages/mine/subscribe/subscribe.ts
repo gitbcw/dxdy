@@ -1,5 +1,13 @@
 const icons = require('../../../services/icons')
 
+type WxWithOfficialAccount = WechatMiniprogram.Wx & {
+  openOfficialAccountProfile?: (options: {
+    username: string
+    success?: () => void
+    fail?: (err: any) => void
+  }) => void
+}
+
 Page({
   data: {
     bellIcon: icons.subscribe,
@@ -12,12 +20,12 @@ Page({
   },
 
   onOpenOfficialAccount() {
-    wx.openOfficialAccountProfile({
+    ;(wx as WxWithOfficialAccount).openOfficialAccountProfile?.({
       username: this.data.officialAccountId,
       success: () => {
         console.log('打开公众号资料页成功')
       },
-      fail: (err) => {
+      fail: (err: any) => {
         console.error('打开公众号资料页失败', err)
         wx.showModal({
           title: '跳转失败',

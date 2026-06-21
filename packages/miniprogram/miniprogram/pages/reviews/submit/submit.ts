@@ -68,7 +68,11 @@ Page({
       wx.showToast({ title: '评价成功', icon: 'success' })
       setTimeout(() => wx.navigateBack(), 700)
     } catch (err: any) {
-      wx.showToast({ title: err?.message || '评价失败', icon: 'none' })
+      const message = String(err?.message || '')
+      wx.showToast({
+        title: message.includes('-504002') || message.includes('functions') ? '评价服务暂不可用，请稍后重试' : (message || '评价失败'),
+        icon: 'none',
+      })
     } finally {
       this.setData({ submitting: false })
     }

@@ -71,8 +71,14 @@ function canShip(user, order) {
   return order.clerkId === user._id || assignedIds.includes(order._id)
 }
 
-function hasBloodItem(order) {
-  return (order.items || []).some((item) => String(item.productName || item.name || '').includes('血'))
+function requiresColdChainShipping(order) {
+  if (!order || order.type === 'booking') return false
+  return (order.items || []).some((item) => {
+    if (item.productType === 'blood_booking') return false
+    return item.productType === 'blood_pack' ||
+      item.isBloodPack === true ||
+      /血|红细胞|血包/.test(String(item.productName || item.name || ''))
+  })
 }
 
 exports.main = async (event) => {
@@ -153,11 +159,14 @@ exports.main = async (event) => {
   if (isModify && !modifyReason) return error('请填写修改原因')
   if (!expressCompany) return error('请选择快递公司')
   if (!expressNo) return error('请填写快递单号')
-  if (hasBloodItem(order)) {
+
+  const needsColdChain = requiresColdChainShipping(order)
+  if (needsColdChain) {
     if (!packageType) return error('请选择包装类型')
     if (!coldChainMethod) return error('请选择冷链方式')
     if (!boxTemperature) return error('请填写箱内温度')
   }
+
   if (abnormalFlag && (!abnormalType || !abnormalReason)) {
     return error('请填写异常类型和原因')
   }
@@ -172,11 +181,13 @@ exports.main = async (event) => {
     'shipping.company': expressCompany,
     'shipping.shippedAt': shippedAt,
     'shipping.eta': order.type === 'booking' ? '按预约时间送达' : '',
-    'shipping.temperature': hasBloodItem(order) ? `${boxTemperature || '2-8'}°C 冷链` : '',
-    'shipping.coldChain.packageType': packageType,
-    'shipping.coldChain.method': coldChainMethod,
-    'shipping.coldChain.weight': packageWeight,
-    'shipping.coldChain.boxTemperature': boxTemperature,
+    'shipping.temperature': needsColdChain ? `${boxTemperature || '2-8'}°C 冷链` : '',
+    ...(needsColdChain ? {
+      'shipping.coldChain.packageType': packageType,
+      'shipping.coldChain.method': coldChainMethod,
+      'shipping.coldChain.weight': packageWeight,
+      'shipping.coldChain.boxTemperature': boxTemperature,
+    } : {}),
     'shipping.lastModifyReason': modifyReason,
     ...(abnormalFlag ? {
       'shipping.abnormal': {

@@ -262,6 +262,10 @@ Page({
     wx.navigateTo({ url: '/pages/verify/verify' })
   },
 
+  onShareConsumerTap() {
+    wx.navigateTo({ url: '/pages/blood/invite/invite' })
+  },
+
   onAddressTap() {
     wx.navigateTo({ url: '/pages/mine/address/address?select=1' })
   },

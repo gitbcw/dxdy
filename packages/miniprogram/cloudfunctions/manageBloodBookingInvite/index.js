@@ -8,13 +8,33 @@ function pad(value) {
   return String(value).padStart(2, '0')
 }
 
-function formatDateTime(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+function getBeijingParts(date = new Date()) {
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  return {
+    year: beijing.getUTCFullYear(),
+    month: beijing.getUTCMonth() + 1,
+    day: beijing.getUTCDate(),
+    hours: beijing.getUTCHours(),
+    minutes: beijing.getUTCMinutes(),
+  }
+}
+
+function formatDateTime(date = new Date()) {
+  const parts = getBeijingParts(date)
+  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)} ${pad(parts.hours)}:${pad(parts.minutes)}`
 }
 
 function getTodayEnd() {
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+  const { year, month, day } = getBeijingParts()
+  return new Date(Date.UTC(year, month - 1, day, 15, 59, 59))
+}
+
+function parseBeijingDateTime(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/)
+  if (!match) return null
+  const [, year, month, day, hours, minutes] = match
+  const time = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hours) - 8, Number(minutes), 0)
+  return Number.isFinite(time) ? new Date(time) : null
 }
 
 function error(message, code = 'BAD_REQUEST') {
@@ -103,8 +123,8 @@ async function getInvite(inviteId) {
   try {
     const { data } = await db.collection('blood_booking_invites').doc(inviteId).get()
     if (!data || data.status !== 'active') return error('预约二维码无效或已失效', 'NOT_FOUND')
-    const expiresAt = new Date(String(data.expiresAt || '').replace(/-/g, '/'))
-    if (Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+    const expiresAt = parseBeijingDateTime(data.expiresAt)
+    if (expiresAt && expiresAt.getTime() < Date.now()) {
       return error('预约二维码已过期，请联系医院重新生成', 'EXPIRED')
     }
     return {

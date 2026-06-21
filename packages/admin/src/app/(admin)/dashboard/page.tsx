@@ -79,6 +79,22 @@ function ratio(value: number, total: number): number {
   return Math.round((value / total) * 100);
 }
 
+function getOrderAmount(order: Order): number {
+  return Number(order.pricing?.actualAmount ?? order.payment?.amount ?? 0);
+}
+
+function getOrderPriceLog(order: Order): unknown[] {
+  return Array.isArray(order.pricing?.priceLog) ? order.pricing.priceLog : [];
+}
+
+function getOrderCommissionStatus(order: Order): string {
+  return String(order.commission?.status || '');
+}
+
+function getOrderCommissionAmount(order: Order): number {
+  return Number(order.commission?.amount || 0);
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user: currentUser } = useAuth();
@@ -162,7 +178,7 @@ export default function DashboardPage() {
   const pendingConfirmationOrders = state.orders.filter(
     order => order.type === 'booking' && order.status === 'pending_confirmation',
   );
-  const priceAdjustedOrders = state.orders.filter(order => order.pricing.priceLog.length > 0);
+  const priceAdjustedOrders = state.orders.filter(order => getOrderPriceLog(order).length > 0);
 
   const institutionCustomers = customers.filter(customer => customer.customerType === 'institution');
   const verifiedInstitutions = institutionCustomers.filter(
@@ -194,19 +210,19 @@ export default function DashboardPage() {
 
   const todayRevenue = recognizedOrders
     .filter(order => isSameDay(order.createdAt, now))
-    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
+    .reduce((sum, order) => sum + getOrderAmount(order), 0);
   const monthRevenue = recognizedOrders
     .filter(order => isSameMonth(order.createdAt, now))
-    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
+    .reduce((sum, order) => sum + getOrderAmount(order), 0);
   const pendingPaymentAmount = pendingPaymentOrders.reduce(
-    (sum, order) => sum + order.pricing.actualAmount,
+    (sum, order) => sum + getOrderAmount(order),
     0,
   );
   const pendingCommissionOrders = state.orders.filter(order =>
-    ['pending', 'locked'].includes(order.commission.status),
+    ['pending', 'locked'].includes(getOrderCommissionStatus(order)),
   );
   const pendingCommissionAmount = pendingCommissionOrders.reduce(
-    (sum, order) => sum + order.commission.amount,
+    (sum, order) => sum + getOrderCommissionAmount(order),
     0,
   );
   const overduePendingPaymentOrders = pendingPaymentOrders.filter(
@@ -221,7 +237,7 @@ export default function DashboardPage() {
 
   const institutionRevenue = recognizedOrders
     .filter(order => customerMap.get(order.customerId)?.customerType === 'institution')
-    .reduce((sum, order) => sum + order.pricing.actualAmount, 0);
+    .reduce((sum, order) => sum + getOrderAmount(order), 0);
   const totalRevenue = institutionRevenue;
 
   const role: AdminRole | null = currentUser?.role ?? null;

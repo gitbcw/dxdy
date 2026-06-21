@@ -57,9 +57,11 @@ try {
   }
 
   cpSync(compiledApp, join(miniRoot, 'app.js'))
-  copyJsFiles(join(tempDir, 'pages'), join(miniRoot, 'pages'))
+  for (const dir of ['components', 'custom-tab-bar', 'pages', 'services', 'shared']) {
+    copyJsFiles(join(tempDir, dir), join(miniRoot, dir))
+  }
 
-  console.log('WeChat DevTools bundles prepared in miniprogram/app.js and miniprogram/pages/**/*.js')
+  console.log('WeChat DevTools bundles prepared in miniprogram/app.js and miniprogram/**/*.js')
 } finally {
   rmSync(tempDir, { recursive: true, force: true })
 }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { callFunction } from '@/lib/cloudbase';
+import { callFunction, getStoredAdminToken } from '@/lib/cloudbase';
 import { fetchProductReviews } from '@/lib/services/database';
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected';
@@ -53,7 +53,7 @@ export default function ReviewsPage() {
 
   async function handleAction(reviewId: string, action: 'approveReview' | 'rejectReview') {
     try {
-      const result = await callFunction<{ success?: boolean }>('manageReview', { action, reviewId });
+      const result = await callFunction<{ success?: boolean }>('manageReview', { action, reviewId, token: getStoredAdminToken() });
       if (result?.success) {
         loadReviews();
       }
@@ -69,6 +69,7 @@ export default function ReviewsPage() {
         action: 'replyReview',
         reviewId: replyReview.id,
         reply: replyText,
+        token: getStoredAdminToken(),
       });
       if (result?.success) {
         setReplyReview(null);

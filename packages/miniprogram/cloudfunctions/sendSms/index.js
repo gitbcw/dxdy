@@ -100,7 +100,10 @@ function normalizeTemplateParams(params) {
 }
 
 function toSmsParam(params) {
-  return JSON.stringify(normalizeTemplateParams(params))
+  const normalized = normalizeTemplateParams(params)
+  return Object.keys(normalized)
+    .map((key) => `**${key}**:${normalized[key]}`)
+    .join(',')
 }
 
 function providerSuccess(payload) {
@@ -239,7 +242,11 @@ async function sendCode(event, wxContext) {
   if (!smsSignId || !templateId) return error('短信签名或模板未配置', 'CONFIG_MISSING')
 
   const code = generateCode(event.codeLength)
-  const params = normalizeTemplateParams({ code, ...(event.params || {}) })
+  const params = normalizeTemplateParams({
+    code,
+    minute: Math.ceil(SMS_CODE_TTL_SECONDS / 60),
+    ...(event.params || {}),
+  })
   const payload = await requestAliyunSms({ mobile: phone, smsSignId, templateId, params })
   if (!providerSuccess(payload)) {
     return error(providerMessage(payload) || '短信发送失败', 'PROVIDER_ERROR', { provider: payload })

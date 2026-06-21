@@ -305,6 +305,8 @@ async function completeRefundBusiness(returnRecord, refundResult) {
         refundId: refundResult.refund_id || refundResult.refundId || '',
         successTime: refundResult.success_time || refundResult.successTime || '',
         completedAt: now,
+        requestError: '',
+        requestFailedAt: '',
         callback: refundResult,
       },
       timeline: _.push({

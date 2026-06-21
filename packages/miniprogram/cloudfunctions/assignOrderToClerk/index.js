@@ -3,6 +3,8 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const CLERK_ORDER_NOTICE_TEMPLATE_ID = 'GMGexaXG4P9-8zxbeizBeunw5ax6AJb-B4fsDvuc8qQ'
+const CLERK_PENDING_PAGE = 'pages/clerk/pending/pending'
 
 function formatBeijingLogTime(date = new Date()) {
   const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
@@ -102,6 +104,43 @@ function getOperatorName(user, fallback) {
   return fallback || user.realName || user.nickname || user.name || user.username || '客服'
 }
 
+function getClerkOpenid(clerk) {
+  return clerk && (clerk._openid || clerk.boundOpenid || clerk.openid || '')
+}
+
+function truncateTemplateValue(value, maxLength) {
+  const text = String(value || '')
+  return text.length > maxLength ? text.slice(0, maxLength) : text
+}
+
+async function sendClerkOrderNotice(order, clerk) {
+  const touser = getClerkOpenid(clerk)
+  if (!touser) return { success: false, error: '制单员未绑定微信 openid' }
+  if (!cloud.openapi || !cloud.openapi.subscribeMessage || !cloud.openapi.subscribeMessage.send) {
+    return { success: false, error: '当前云函数 SDK 不支持订阅消息发送' }
+  }
+
+  try {
+    const orderNo = order.orderNo || order._id
+    const orderType = order.type === 'booking' ? '预约订单' : order.type === 'exchange' ? '换货订单' : '商品订单'
+    await cloud.openapi.subscribeMessage.send({
+      touser,
+      templateId: CLERK_ORDER_NOTICE_TEMPLATE_ID,
+      page: CLERK_PENDING_PAGE,
+      miniprogramState: 'formal',
+      lang: 'zh_CN',
+      data: {
+        thing1: { value: truncateTemplateValue(orderType, 20) },
+        character_string2: { value: truncateTemplateValue(orderNo, 32) },
+        time3: { value: order.assignedAt || formatDateTime(new Date()) },
+        thing4: { value: truncateTemplateValue('新订单已指派，请及时处理', 20) },
+      },
+    })
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message || '订阅消息发送失败' }
+  }
+}
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID || ''
@@ -156,5 +195,6 @@ exports.main = async (event) => {
   })
 
   const updated = await getOrder(order._id)
-  return { success: true, order: normalize(updated) }
+  const noticeResult = await sendClerkOrderNotice(updated || { ...order, assignedAt: now }, clerk)
+  return { success: true, order: normalize(updated), noticeResult }
 }

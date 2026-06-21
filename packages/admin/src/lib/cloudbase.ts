@@ -85,10 +85,16 @@ export async function callFunction<T = unknown>(name: string, data: Record<strin
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, data }),
     })
-    const payload = await response.json().catch(() => ({}))
+    const text = await response.text().catch(() => '')
+    let payload: Record<string, unknown> = {}
+    try {
+      payload = text ? JSON.parse(text) as Record<string, unknown> : {}
+    } catch {
+      payload = {}
+    }
     const result = unwrapCloudFunctionResult(payload)
     if (!response.ok) {
-      throw new Error(String(result.error || '后台接口调用失败'))
+      throw new Error(String(result.error || text || `后台接口调用失败 (${response.status})`))
     }
     return result as T
   }

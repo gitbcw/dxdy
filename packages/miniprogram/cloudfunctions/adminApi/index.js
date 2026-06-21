@@ -12,6 +12,7 @@ const ALLOWED_FUNCTIONS = new Set([
   'clerkShipOrder',
   'updateOrderStatus',
   'queryOrders',
+  'queryLogistics',
   'reviewReturn',
   'reviewWithdrawal',
   'processInvoice',

@@ -1,6 +1,21 @@
 <view class="page">
-  <view class="page-title">分类</view>
-
+  <swiper
+    wx:if="{{catalogBanners.length > 0}}"
+    class="catalog-swiper"
+    indicator-dots
+    autoplay
+    circular
+  >
+    <swiper-item wx:for="{{catalogBanners}}" wx:key="id">
+      <image
+        class="catalog-banner-img"
+        src="{{item.imageUrl}}"
+        mode="aspectFill"
+        data-product-id="{{item.productId}}"
+        bindtap="onBannerTap"
+      />
+    </swiper-item>
+  </swiper>
   <view class="search-bar">
     <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
     <input

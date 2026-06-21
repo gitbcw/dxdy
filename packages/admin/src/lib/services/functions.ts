@@ -46,12 +46,30 @@ export async function queryOrders(params: {
   return callFunction<CloudFunctionResult & { orders?: unknown[]; order?: unknown; clerks?: unknown[] }>('queryOrders', params)
 }
 
+export async function queryLogistics(params: {
+  orderId: string
+  trackingNo?: string
+  mobile?: string
+  userId?: string
+}) {
+  return callFunction<CloudFunctionResult & {
+    realtime?: boolean
+    provider?: {
+      providerMessage?: string
+      company?: string
+      trackingNo?: string
+      tracks?: unknown[]
+    }
+    order?: unknown
+  }>('queryLogistics', params)
+}
+
 // ===== Returns =====
 
 export async function reviewReturn(params: {
   id: string; status?: string; approved?: boolean; note?: string; operatorId: string; operatorName: string
 }) {
-  return callFunction<CloudFunctionResult>('reviewReturn', params)
+  return callFunction<CloudFunctionResult & { record?: unknown }>('reviewReturn', params)
 }
 
 // ===== Finance =====

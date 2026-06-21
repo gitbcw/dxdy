@@ -18,6 +18,7 @@ const defaultConfig = {
   pointsRate: 1,
   pointsExpiryDays: 365,
   rechargeTiers: [],
+  catalogBanners: [],
   bloodBookingConfig: {
     dogBloodTypes: [
       'DEA1.1阳性',
@@ -72,6 +73,7 @@ exports.main = async () => {
     const config = {
       ...defaultConfig,
       ...(data || {}),
+      catalogBanners: Array.isArray(data && data.catalogBanners) ? data.catalogBanners : [],
       bloodBookingConfig: normalizeBloodBookingConfig(data && data.bloodBookingConfig),
     }
     return { success: true, config }

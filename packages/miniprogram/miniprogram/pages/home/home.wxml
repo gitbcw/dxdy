@@ -1,23 +1,22 @@
 <view class="page">
   <view wx:if="{{currentRole !== 'salesperson'}}" class="topbar">
-    <view>
+    <view class="topbar-name">
       <text class="top-title">{{displayName}}</text>
     </view>
-    <view class="identity-tag {{identityTagClass}}">{{identityTag}}</view>
+    <view wx:if="{{showSearchBar}}" class="search-bar">
+      <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
+      <input
+        class="search-input"
+        placeholder="{{searchPlaceholder}}、品牌、关键词"
+        value="{{searchKeyword}}"
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
+    </view>
   </view>
 
-  <view wx:if="{{showSearchBar}}" class="search-bar">
-    <image class="search-icon" src="{{searchIcon}}" mode="aspectFit" />
-    <input
-      class="search-input"
-      placeholder="{{searchPlaceholder}}、品牌、关键词"
-      value="{{searchKeyword}}"
-      confirm-type="search"
-      bindinput="onSearchInput"
-      bindconfirm="onSearchConfirm"
-    />
-    <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">×</view>
-  </view>
   <view wx:if="{{showSearchBar && searchSuggestions.length > 0}}" class="suggestion-panel">
     <view
       wx:for="{{searchSuggestions}}"
@@ -47,6 +46,17 @@
       <text wx:if="{{banner.rejectReason}}" class="cert-reason">驳回原因：{{banner.rejectReason}}</text>
     </view>
     <view wx:if="{{banner.actionText}}" class="cert-action">{{banner.actionText}}</view>
+  </view>
+
+  <view wx:if="{{showBloodInviteScanner}}" class="scan-invite-card" data-action="scanBloodInvite" bindtap="onQuickActionTap">
+    <view class="scan-icon-wrap">
+      <text class="scan-icon">扫</text>
+    </view>
+    <view class="scan-copy">
+      <text class="scan-title">扫码预约用血</text>
+      <text class="scan-desc">扫描医院客户分享的消费者预约二维码</text>
+    </view>
+    <view class="scan-action">去扫描</view>
   </view>
 
   <view wx:if="{{quickActions.length > 0}}" class="quick-grid role-{{currentRole}}">

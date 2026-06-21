@@ -95,7 +95,7 @@ function buildCargo(order, event) {
   const items = Array.isArray(order.items) ? order.items : []
   const count = items.reduce((sum, item) => sum + Number(item.quantity || 1), 0)
   const detailList = items.slice(0, 6).map((item) => ({
-    name: String(item.productName || item.name || '宠物医疗用品').slice(0, 32),
+    name: '宠物医疗用品',
     count: Number(item.quantity || 1),
   }))
   return {

@@ -91,7 +91,7 @@ Page({
     this.setData({ currentImageIndex: e.detail.current || 0 })
   },
 
-  async _loadReviews(productId: string) {
+  async _loadReviewsLegacy(productId: string) {
     try {
       const db = wx.cloud.database()
       const { data } = await db.collection('product_reviews')
@@ -108,6 +108,35 @@ Page({
         : 0
       this.setData({ reviews, averageRating: avg, reviewCount: reviews.length })
     } catch (_e) { /* skip */ }
+  },
+
+  async _loadReviews(productId: string) {
+    try {
+      const response = await wx.cloud.callFunction({
+        name: 'manageReview',
+        data: { action: 'listApprovedReviews', productId, limit: 20 },
+      })
+      const result = (response && response.result) as any
+      if (!result || !result.success) {
+        this.setData({ reviews: [], averageRating: 0, reviewCount: 0 })
+        return
+      }
+      const reviews = (result.reviews || []).map((r: any) => {
+        const rating = Math.max(1, Math.min(5, Number(r.rating || 5)))
+        return {
+          ...r,
+          ratingStars: '★'.repeat(rating) + '☆'.repeat(5 - rating),
+          dateText: (r.createdAt || '').slice(0, 10),
+        }
+      })
+      this.setData({
+        reviews,
+        averageRating: Number(result.averageRating || 0),
+        reviewCount: reviews.length,
+      })
+    } catch (_e) {
+      this.setData({ reviews: [], averageRating: 0, reviewCount: 0 })
+    }
   },
 
   onUnload() {

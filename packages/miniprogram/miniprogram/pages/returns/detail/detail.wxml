@@ -17,7 +17,10 @@
   <view class="note-card">
     <text class="note-title">商家留言</text>
     <text class="note-desc">{{note}}</text>
-    <text class="note-desc">预计退款金额：¥{{refundAmount}}</text>
+    <text wx:if="{{!isExchangeReturn}}" class="note-desc">预计退款金额：¥{{refundAmount}}</text>
+    <text wx:else class="note-desc">换货商品将通过新的换货发货订单配送。</text>
+    <text wx:if="{{record.exchangeOrderId}}" class="note-desc">换货订单：{{record.exchangeOrderId}}</text>
+    <view wx:if="{{record.exchangeOrderId}}" class="logistics-submit exchange-logistics-btn" bindtap="onViewExchangeLogistics">查看换货物流</view>
   </view>
 
   <!-- 寄回物流填写 -->

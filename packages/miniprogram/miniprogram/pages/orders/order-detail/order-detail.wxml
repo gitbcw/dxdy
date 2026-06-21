@@ -35,7 +35,7 @@
           </view>
           <text class="amount">¥{{item.totalText}}</text>
         </view>
-        <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}} · {{item.commissionText}}</view>
+        <view wx:if="{{item.returnRecord}}" class="notice amber">{{item.returnStatusText}}</view>
         <view wx:if="{{item.status === 'pending_payment' && item.paymentTimeout}}" class="timeout-tip {{item.paymentTimeout.expired ? 'expired' : ''}}">
           <text>{{item.paymentTimeout.notice}}</text>
         </view>
@@ -46,7 +46,8 @@
             data-id="{{item.id}}"
             catchtap="onLogisticsFromList"
           >查看物流</view>
-          <view wx:if="{{item.status === 'completed'}}" class="ghost-btn" data-id="{{item.id}}" catchtap="onReturnFromList">申请售后</view>
+          <view wx:if="{{item.status === 'completed' && (!item.returnRecord || item.returnRecord.status === 'rejected')}}" class="ghost-btn" data-id="{{item.id}}" catchtap="onReturnFromList">申请售后</view>
+          <view wx:if="{{item.returnRecord && item.returnRecord.status !== 'rejected'}}" class="ghost-btn" data-id="{{item.id}}" catchtap="onReturnFromList">查看售后</view>
           <view wx:if="{{item.canDelete}}" class="danger-btn" data-id="{{item.id}}" catchtap="onDeleteFromList">删除订单</view>
           <view class="orange-btn">查看详情</view>
         </view>

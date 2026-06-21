@@ -265,7 +265,34 @@ export async function fetchClerks(operatorId?: string): Promise<any[]> {
 // ===== Returns =====
 
 export async function fetchReturns(): Promise<any[]> {
-  return readCollection('returns') as any
+  const returns = await readCollection('returns') as any[]
+  const cloudFiles = Array.from(new Set(returns
+    .flatMap(record => Array.isArray(record.vouchers) ? record.vouchers : [])
+    .filter((file): file is string => typeof file === 'string' && file.startsWith('cloud://'))))
+
+  if (!cloudFiles.length) {
+    return returns.map(record => ({
+      ...record,
+      voucherUrls: Array.isArray(record.vouchers) ? record.vouchers : [],
+    }))
+  }
+
+  let urlMap = new Map<string, string>()
+  try {
+    const fileList = await adminRequest<Array<{ fileID?: string; tempFileURL?: string }>>(
+      'getTempFileUrls',
+      'returns',
+      { fileList: cloudFiles },
+    )
+    urlMap = new Map((fileList || []).map(file => [String(file.fileID || ''), String(file.tempFileURL || '')]))
+  } catch {
+    urlMap = new Map()
+  }
+
+  return returns.map(record => ({
+    ...record,
+    voucherUrls: (Array.isArray(record.vouchers) ? record.vouchers : []).map((file: string) => urlMap.get(file) || file),
+  }))
 }
 
 // ===== Finance =====
@@ -282,11 +309,48 @@ export async function fetchFinanceData() {
 
 export async function fetchUsers() {
   const users: any[] = await readCollection('users')
+  const cloudFiles = Array.from(new Set(users
+    .flatMap((user: any) => [
+      user.verificationInfo?.businessLicense,
+      user.verificationInfo?.sitePhoto,
+      user.agentApplication?.idCardFront,
+      user.agentApplication?.idCardBack,
+    ])
+    .filter((file): file is string => typeof file === 'string' && file.startsWith('cloud://'))))
+
+  let urlMap = new Map<string, string>()
+  if (cloudFiles.length > 0) {
+    try {
+      const fileList = await adminRequest<Array<{ fileID?: string; tempFileURL?: string }>>(
+        'getTempFileUrls',
+        'users',
+        { fileList: cloudFiles },
+      )
+      urlMap = new Map((fileList || []).map(file => [String(file.fileID || ''), String(file.tempFileURL || '')]))
+    } catch {
+      urlMap = new Map()
+    }
+  }
+
+  const usersWithImageUrls = users.map(user => ({
+    ...user,
+    verificationInfo: user.verificationInfo ? {
+      ...user.verificationInfo,
+      businessLicenseUrl: urlMap.get(user.verificationInfo.businessLicense) || user.verificationInfo.businessLicense || '',
+      sitePhotoUrl: urlMap.get(user.verificationInfo.sitePhoto) || user.verificationInfo.sitePhoto || '',
+    } : user.verificationInfo,
+    agentApplication: user.agentApplication ? {
+      ...user.agentApplication,
+      idCardFrontUrl: urlMap.get(user.agentApplication.idCardFront) || user.agentApplication.idCardFront || '',
+      idCardBackUrl: urlMap.get(user.agentApplication.idCardBack) || user.agentApplication.idCardBack || '',
+    } : user.agentApplication,
+  }))
+
   return {
-    customers: users.filter((u: any) => u.role === 'customer'),
-    salespersons: users.filter((u: any) => u.role === 'salesperson'),
-    agentApplications: users.filter((u: any) => u.agentStatus === 'pending_review'),
-    clerks: users.filter((u: any) => u.role === 'clerk'),
+    customers: usersWithImageUrls.filter((u: any) => u.role === 'customer'),
+    salespersons: usersWithImageUrls.filter((u: any) => u.role === 'salesperson'),
+    agentApplications: usersWithImageUrls.filter((u: any) => u.agentStatus === 'pending_review'),
+    clerks: usersWithImageUrls.filter((u: any) => u.role === 'clerk'),
   }
 }
 
@@ -392,6 +456,7 @@ export async function fetchSystemConfig(): Promise<SystemConfig> {
   return {
     ...defaultSystemConfig,
     ...saved,
+    catalogBanners: Array.isArray(saved.catalogBanners) ? saved.catalogBanners : defaultSystemConfig.catalogBanners,
     bloodBookingConfig: {
       ...defaultSystemConfig.bloodBookingConfig,
       ...(saved.bloodBookingConfig || {}),

@@ -330,6 +330,38 @@ async function lockBloodCommission(order, paidAt) {
   })
 }
 
+async function syncProductSales(order, paidAt) {
+  if (!order || order.salesCountedAt) return
+  if (order.type === 'recharge' || order.type === 'card_order' || order.type === 'booking') return
+
+  const totals = {}
+  for (const item of (order.items || [])) {
+    const productId = String(item.productId || '').trim()
+    const quantity = Math.max(0, Number(item.quantity || 0))
+    if (!productId || quantity <= 0) continue
+    totals[productId] = (totals[productId] || 0) + quantity
+  }
+
+  const productIds = Object.keys(totals)
+  if (!productIds.length) return
+
+  for (const productId of productIds) {
+    await db.collection('products').doc(productId).update({
+      data: {
+        salesCount: _.inc(totals[productId]),
+        updatedAt: paidAt,
+      },
+    })
+  }
+
+  await db.collection('orders').doc(order._id).update({
+    data: {
+      salesCountedAt: paidAt,
+      updatedAt: paidAt,
+    },
+  })
+}
+
 async function markPaid(order, method, actualAmount, cardUsage = null) {
   const paidAt = formatDateTime(new Date())
   const nextStatus = getNextStatus(order.type)
@@ -410,6 +442,10 @@ async function markPaid(order, method, actualAmount, cardUsage = null) {
 
   try {
     await lockBloodCommission(order, paidAt)
+  } catch (_e) {}
+
+  try {
+    await syncProductSales(order, paidAt)
   } catch (_e) {}
 
   if (nextStatus === 'completed' && order.type !== 'card_order' && order.salespersonId) {

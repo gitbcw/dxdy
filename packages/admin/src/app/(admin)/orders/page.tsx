@@ -80,6 +80,15 @@ const doneStatuses: OrderStatus[] = [
   'cancelled',
 ];
 
+type ShippingWithColdChain = Order['shipping'] & {
+  coldChain?: {
+    packageType?: string;
+    method?: string;
+    weight?: string;
+    boxTemperature?: string;
+  };
+};
+
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -235,6 +244,31 @@ export default function OrdersPage() {
       user?.permissions?.order_price_adjust === true;
   }
 
+  function requiresColdChainShipping(order: Order | null) {
+    if (!order || order.type === 'booking') return false;
+    return (order.items || []).some(item => {
+      const itemWithType = item as typeof item & { productType?: string; isBloodPack?: boolean };
+      if (itemWithType.productType === 'blood_booking') return false;
+      return itemWithType.isBloodPack === true || /血/.test(item.productName || '');
+    });
+  }
+
+  function openShipDialog(order: Order) {
+    const shipping = (order.shipping || {}) as ShippingWithColdChain;
+    setShipOrder(order);
+    setShipCompany(shipping.company || '');
+    setShipTrackingNo(shipping.trackingNo || '');
+    setShipPackageType(shipping.coldChain?.packageType || '');
+    setShipColdChain(shipping.coldChain?.method || '');
+    setShipWeight(shipping.coldChain?.weight || '');
+    setShipTemp(shipping.coldChain?.boxTemperature || '');
+    setShipModifyReason('');
+    setShipAbnormal(false);
+    setShipAbnormalType('');
+    setShipAbnormalReason('');
+    setErrorMsg('');
+  }
+
   async function handleAdjustPrice() {
     if (!adjustOrder || !newPrice || !user) return;
     const price = parseFloat(newPrice);
@@ -303,8 +337,7 @@ export default function OrdersPage() {
       setErrorMsg('请填写物流公司和物流单号');
       return;
     }
-    const hasBlood = (shipOrder.items || []).some(item => /血/.test(item.productName || ''));
-    if (hasBlood && (!shipPackageType || !shipColdChain || !shipTemp)) {
+    if (requiresColdChainShipping(shipOrder) && (!shipPackageType || !shipColdChain || !shipTemp)) {
       setErrorMsg('血包订单请补全冷链信息（包装类型、冷链方式、箱内温度）');
       return;
     }
@@ -500,17 +533,12 @@ export default function OrdersPage() {
                           指派
                         </Button>
                       )}
-                      {(order.status === 'pending_shipment' || order.status === 'confirmed') && order.clerkId && !(order.type === 'booking' && (order.booking?.urgent || order.shipping?.urgent)) && (
+                      {(order.status === 'pending_shipment' || order.status === 'confirmed') && !(order.type === 'booking' && (order.booking?.urgent || order.shipping?.urgent)) && (
                         <Button
                           variant="default"
                           size="sm"
                           disabled={submittingId === order.id}
-                          onClick={() => {
-                            setShipOrder(order);
-                            setShipCompany(order.shipping.company || '');
-                            setShipTrackingNo(order.shipping.trackingNo || '');
-                            setErrorMsg('');
-                          }}
+                          onClick={() => openShipDialog(order)}
                         >
                           发货
                         </Button>
@@ -721,7 +749,7 @@ export default function OrdersPage() {
             </div>
 
             {/* 冷链信息 — 血包订单必填 */}
-            {(shipOrder?.items || []).some(item => /血/.test(item.productName || '')) && (
+            {requiresColdChainShipping(shipOrder) && (
               <div className="space-y-3 rounded-lg border p-3">
                 <p className="text-sm font-semibold">冷链信息（血包订单必填）</p>
                 <div className="grid grid-cols-2 gap-3">

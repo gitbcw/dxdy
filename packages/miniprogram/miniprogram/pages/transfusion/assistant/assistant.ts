@@ -140,10 +140,11 @@ Page({
 
   onLoad() {
     const app = getApp()
-    const role = app.globalData.userRole || (app.globalData.userInfo?.customerType === 'personal' ? 'customer_personal' : '')
-    if (role !== 'customer_personal') return
-    wx.showToast({ title: '个人客户不能使用门店功能', icon: 'none' })
-    setTimeout(() => wx.navigateBack(), 300)
+    const user = app.globalData.userInfo || {}
+    const role = app.globalData.userRole
+    if (role === 'customer_institution' || user.customerType === 'institution') return
+    wx.showToast({ title: '仅医院客户可使用', icon: 'none' })
+    setTimeout(() => wx.navigateBack(), 400)
   },
 
   selectSpecies(e: any) {

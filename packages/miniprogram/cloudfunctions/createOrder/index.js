@@ -3,6 +3,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const BLOOD_BOOKING_PRODUCT_IMAGE = '/assets/generated/optimized/product-blood-booking.png'
 
 function formatDate(date) {
   const y = date.getFullYear()
@@ -13,6 +14,14 @@ function formatDate(date) {
 
 function formatDateTime(date) {
   return `${formatDate(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function parseBeijingDateTime(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/)
+  if (!match) return null
+  const [, year, month, day, hours, minutes] = match
+  const time = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hours) - 8, Number(minutes), 0)
+  return Number.isFinite(time) ? new Date(time) : null
 }
 
 function error(message, code = 'BAD_REQUEST') {
@@ -125,8 +134,8 @@ async function getBloodBookingInvite(inviteId) {
   try {
     const { data } = await db.collection('blood_booking_invites').doc(inviteId).get()
     if (!data || data.status !== 'active') return null
-    const expiresAt = new Date(String(data.expiresAt || '').replace(/-/g, '/'))
-    if (Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) return null
+    const expiresAt = parseBeijingDateTime(data.expiresAt)
+    if (expiresAt && expiresAt.getTime() < Date.now()) return null
     return data
   } catch (_e) {
     return null
@@ -170,7 +179,7 @@ async function buildOrderItems(rawItems, customer, systemConfig, booking = {}) {
       items.push({
         productId: raw.productId || `blood_booking_${species}`,
         productName: raw.productName || `${speciesLabel}预约`,
-        productImage: raw.productImage || '',
+        productImage: raw.productImage || BLOOD_BOOKING_PRODUCT_IMAGE,
         spec: raw.spec || `${bloodType} · ${volumeMl}ml`,
         quantity: 1,
         unitPrice,

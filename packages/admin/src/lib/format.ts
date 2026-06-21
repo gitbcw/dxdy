@@ -79,6 +79,7 @@ export const defaultSystemConfig: SystemConfig = {
     { amount: 1000, bonus: 100, label: '充1000送100' },
   ],
   referralRewardPoints: 500,
+  catalogBanners: [],
   bloodBookingConfig: {
     dogBloodTypes: [
       'DEA1.1阳性',

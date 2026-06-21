@@ -66,6 +66,30 @@ function isHiddenForUser(order, user) {
   return hiddenBy.includes(user._id)
 }
 
+async function getReturnByOrderId(orderId) {
+  if (!orderId) return null
+  const { data } = await db.collection('returns')
+    .where({ orderId })
+    .orderBy('createdAt', 'desc')
+    .limit(1)
+    .get()
+  return data && data[0] ? normalize(data[0]) : null
+}
+
+async function attachReturnRecords(orders) {
+  const normalized = orders.map(normalize)
+  const result = []
+  for (const order of normalized) {
+    const returnRecord = order.returnRecordId ? await getReturnByOrderId(order.id) : null
+    result.push({
+      ...order,
+      returnRecord,
+      returnStatusText: returnRecord ? returnRecord.status : '',
+    })
+  }
+  return result
+}
+
 exports.main = async (event = {}) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID || ''
@@ -90,7 +114,8 @@ exports.main = async (event = {}) => {
       const { data: order } = await db.collection('orders').doc(orderId).get()
       if (!canReadOrder(user, order)) return error('No permission to read this order', 'FORBIDDEN')
       if (isHiddenForUser(order, user)) return error('Order not found', 'NOT_FOUND')
-      return { success: true, order: normalize(order) }
+      const [attached] = await attachReturnRecords([order])
+      return { success: true, order: attached }
     } catch (e) {
       return error('Order not found', 'NOT_FOUND')
     }
@@ -104,7 +129,8 @@ exports.main = async (event = {}) => {
     if (!order) return error('Order not found', 'NOT_FOUND')
     if (!canReadOrder(user, order)) return error('No permission to read this order', 'FORBIDDEN')
     if (isHiddenForUser(order, user)) return error('Order not found', 'NOT_FOUND')
-    return { success: true, order: normalize(order) }
+    const [attached] = await attachReturnRecords([order])
+    return { success: true, order: attached }
   }
 
   if (action === 'deleteOrder') {
@@ -156,8 +182,8 @@ exports.main = async (event = {}) => {
   if (event.status) cond.status = String(event.status)
 
   const { data } = await db.collection('orders').where(cond).orderBy('createdAt', 'desc').limit(500).get()
-  const orders = (data || [])
+  const readableOrders = (data || [])
     .filter(order => canReadOrder(user, order) && !isHiddenForUser(order, user))
-    .map(normalize)
+  const orders = await attachReturnRecords(readableOrders)
   return { success: true, orders }
 }

@@ -40,7 +40,8 @@ function canReadOrder(user, order, openid) {
   if (order.customerId === user._id) return true
   if (order.salespersonId === user._id) return true
   if (order.clerkId === user._id) return true
-  if (user.role === 'admin') return true
+  if (['admin', 'system_admin', 'service'].includes(user.role)) return true
+  if (user.permissions && user.permissions.manage_orders === true) return true
   if (order.customerOpenid && order.customerOpenid === openid) return true
   if (order._openid && order._openid === openid) return true
   return false

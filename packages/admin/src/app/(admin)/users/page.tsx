@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -209,6 +209,53 @@ export default function UsersPage() {
     );
   }
 
+  function VerificationImage({ label, src }: { label: string; src?: string }) {
+    if (!src) return <DetailRow label={label} value="-" />;
+    return (
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <a href={src} target="_blank" rel="noreferrer" className="block rounded-md border bg-muted/20 p-2">
+          <img src={src} alt={label} className="h-40 w-full rounded object-contain" />
+        </a>
+      </div>
+    );
+  }
+
+  function renderVerificationInfoBlock(verificationInfo: Customer['verificationInfo'] | Salesperson['verificationInfo']) {
+    const isCustomerInfo = !!verificationInfo && ('contactName' in verificationInfo || 'hospitalName' in verificationInfo || 'businessLicense' in verificationInfo);
+    if (!isCustomerInfo) {
+      return (
+        <div className="grid gap-4 md:grid-cols-2">
+          <DetailRow label="真实姓名" value={verificationInfo?.realName} />
+          <DetailRow label="身份证号" value={verificationInfo?.idCard} />
+          <DetailRow label="驳回原因" value={verificationInfo?.rejectReason} />
+        </div>
+      );
+    }
+
+    const info = verificationInfo as Customer['verificationInfo'];
+    return (
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <DetailRow label="门店名称" value={info?.hospitalName} />
+          <DetailRow label="法人名称" value={info?.legalPerson} />
+          <DetailRow label="联系人姓名" value={info?.contactName} />
+          <DetailRow label="联系电话" value={info?.contactPhone} />
+          <DetailRow label="所在地区" value={info?.region} />
+          <DetailRow label="详细地址" value={info?.address} />
+          <DetailRow label="提交时间" value={info?.submittedAt} />
+          <DetailRow label="审核时间" value={info?.reviewedAt} />
+          <DetailRow label="审核人" value={info?.reviewerName} />
+          <DetailRow label="驳回原因" value={info?.rejectReason} />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <VerificationImage label="营业执照" src={info?.businessLicenseUrl || info?.businessLicense} />
+          <VerificationImage label="经营场所照片" src={info?.sitePhotoUrl || info?.sitePhoto} />
+        </div>
+      </div>
+    );
+  }
+
   function renderUserDetail(target: DetailUser) {
     const customer = target as Customer;
     const salesperson = target as Salesperson;
@@ -255,13 +302,7 @@ export default function UsersPage() {
         {verificationInfo && (
           <div className="space-y-3">
             <h3 className="text-sm font-medium">认证信息</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <DetailRow label="联系人/姓名" value={'contactName' in verificationInfo ? verificationInfo.contactName : verificationInfo.realName} />
-              <DetailRow label="联系电话" value={'contactPhone' in verificationInfo ? verificationInfo.contactPhone : '-'} />
-              <DetailRow label="营业执照" value={'businessLicense' in verificationInfo ? verificationInfo.businessLicense : '-'} />
-              <DetailRow label="身份证号" value={'idCard' in verificationInfo ? verificationInfo.idCard : '-'} />
-              <DetailRow label="驳回原因" value={verificationInfo.rejectReason} />
-            </div>
+            {renderVerificationInfoBlock(verificationInfo)}
           </div>
         )}
 
@@ -535,8 +576,8 @@ export default function UsersPage() {
       </Dialog>
 
       <Dialog open={!!reviewTarget} onOpenChange={() => setReviewTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex !max-h-[90vh] !w-[min(92vw,48rem)] !max-w-[min(92vw,48rem)] flex-col overflow-hidden p-0">
+          <DialogHeader className="shrink-0 border-b px-6 py-4">
             <DialogTitle>
               {reviewTarget?.type === 'agent'
                 ? '代理商申请审核'
@@ -546,15 +587,15 @@ export default function UsersPage() {
             </DialogTitle>
           </DialogHeader>
           {reviewTarget && (
-            <div className="space-y-3 py-4">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-6 py-4">
               <div>
                 <p className="text-sm text-muted-foreground">用户</p>
                 <p>{reviewTarget.user.nickname} ({reviewTarget.user.phone})</p>
               </div>
               {reviewTarget.type === 'verification' && reviewTarget.user.role === 'customer' && (reviewTarget.user as Customer).verificationInfo && (
-                <div>
-                  <p className="text-sm text-muted-foreground">联系人</p>
-                  <p>{(reviewTarget.user as Customer).verificationInfo!.contactName}</p>
+                <div className="rounded-md border p-3">
+                  <p className="mb-3 text-sm font-medium">门店认证资料</p>
+                  {renderVerificationInfoBlock((reviewTarget.user as Customer).verificationInfo)}
                 </div>
               )}
               {reviewTarget.type === 'verification' && reviewTarget.user.role === 'salesperson' && (reviewTarget.user as Salesperson).verificationInfo && (
@@ -575,7 +616,7 @@ export default function UsersPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t bg-background px-6 py-4">
             <Button variant="destructive" onClick={() => handleReview(false)}>拒绝</Button>
             <Button onClick={() => handleReview(true)}>通过</Button>
           </DialogFooter>

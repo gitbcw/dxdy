@@ -3,6 +3,8 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const INSTITUTION_VERIFICATION_NOTICE_TEMPLATE_ID = '1emYXctz9fIJ8cyXNvQla-fZNgIRlqNMkNtekHLuDuI'
+const VERIFY_PAGE = 'pages/verify/verify'
 
 function formatBeijingLogTime(date = new Date()) {
   const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
@@ -91,6 +93,44 @@ function getOperatorName(user, fallback) {
   return fallback || user.realName || user.nickname || user.name || user.username || '客服'
 }
 
+function getUserOpenid(user) {
+  return user && (user._openid || user.boundOpenid || user.openid || '')
+}
+
+function truncateTemplateValue(value, maxLength) {
+  const text = String(value || '')
+  return text.length > maxLength ? text.slice(0, maxLength) : text
+}
+
+async function sendVerificationNotice(target, approved, rejectReason, reviewedAt) {
+  if (!target || target.role !== 'customer') return { success: false, error: '非医院客户认证通知' }
+  const touser = getUserOpenid(target)
+  if (!touser) return { success: false, error: '医院客户未绑定微信 openid' }
+  if (!cloud.openapi || !cloud.openapi.subscribeMessage || !cloud.openapi.subscribeMessage.send) {
+    return { success: false, error: '当前云函数 SDK 不支持订阅消息发送' }
+  }
+
+  try {
+    const info = target.verificationInfo || {}
+    const resultText = approved ? '门店认证已通过' : '门店认证未通过'
+    await cloud.openapi.subscribeMessage.send({
+      touser,
+      templateId: INSTITUTION_VERIFICATION_NOTICE_TEMPLATE_ID,
+      page: VERIFY_PAGE,
+      miniprogramState: 'formal',
+      lang: 'zh_CN',
+      data: {
+        thing1: { value: truncateTemplateValue(info.hospitalName || target.nickname || '门店认证', 20) },
+        phrase2: { value: truncateTemplateValue(approved ? '已通过' : '未通过', 5) },
+        time3: { value: reviewedAt || formatDateTime(new Date()) },
+        thing4: { value: truncateTemplateValue(approved ? '认证通过，可使用门店功能' : (rejectReason || resultText), 20) },
+      },
+    })
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message || '订阅消息发送失败' }
+  }
+}
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID || ''
@@ -164,5 +204,6 @@ exports.main = async (event) => {
   })
 
   const updated = await getUser(target._id)
-  return { success: true, user: normalize(updated) }
+  const noticeResult = await sendVerificationNotice(updated || target, event.approved, rejectReason, now)
+  return { success: true, user: normalize(updated), noticeResult }
 }

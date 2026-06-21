@@ -46,6 +46,39 @@ function getStatusText(status) {
   return map[status] || status
 }
 
+async function completeLinkedExchangeReturn(order, now, user, operatorName) {
+  if (!order || order.type !== 'exchange' || !order.returnId) return
+  try {
+    const { data: record } = await db.collection('returns').doc(order.returnId).get()
+    if (!record || record.status === 'exchange_completed') return
+    await db.collection('returns').doc(order.returnId).update({
+      data: {
+        status: 'exchange_completed',
+        exchangeOrderId: order._id,
+        updatedAt: now,
+        timeline: db.command.push({
+          status: 'exchange_completed',
+          title: '换货完成',
+          time: now,
+          desc: `换货订单 ${order.orderNo || order._id} 已完成，换货流程结束`,
+        }),
+      },
+    })
+    await db.collection('logs').add({
+      data: {
+        operatorId: user._id,
+        operatorName,
+        operatorRole: user.role,
+        action: '换货完成',
+        target: order.returnId,
+        detail: `换货订单 ${order.orderNo || order._id} 已完成，自动更新售后单 ${record.afterNo || order.returnId} 为换货完成`,
+        result: 'success',
+        createdAt: formatBeijingLogTime(),
+      },
+    })
+  } catch (_e) { /* non-critical */ }
+}
+
 function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100
 }
@@ -495,6 +528,9 @@ exports.main = async (event) => {
   }
 
   const operatorName = String(event.operatorName || '').trim() || user.realName || user.nickname || user.name || user.username || '用户'
+  if (status === 'completed' && order.type === 'exchange') {
+    await completeLinkedExchangeReturn(order, now, user, operatorName)
+  }
   await db.collection('logs').add({
     data: {
       operatorId: user._id,

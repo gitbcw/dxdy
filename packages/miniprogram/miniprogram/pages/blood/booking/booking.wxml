@@ -22,6 +22,15 @@
   </view>
 
   <view wx:else class="content">
+    <view wx:if="{{isInstitution && isVerified}}" class="share-card" bindtap="onShareConsumerTap">
+      <view class="share-icon">码</view>
+      <view class="share-copy">
+        <text class="share-title">分享消费者预约</text>
+        <text class="share-desc">生成预约二维码，个人客户扫码后可直接提交用血预约。</text>
+      </view>
+      <text class="share-action">去分享 ></text>
+    </view>
+
     <view class="form-card">
       <text class="card-title">用血信息</text>
       <view class="species-grid">

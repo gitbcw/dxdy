@@ -31,7 +31,11 @@ next-env.d.ts
 
 # WeChat DevTools generated page bundles
 packages/miniprogram/miniprogram/app.js
+packages/miniprogram/miniprogram/components/**/*.js
+packages/miniprogram/miniprogram/custom-tab-bar/**/*.js
 packages/miniprogram/miniprogram/pages/**/*.js
+packages/miniprogram/miniprogram/services/**/*.js
+packages/miniprogram/miniprogram/shared/**/*.js
 
 # Claude
 .claude/

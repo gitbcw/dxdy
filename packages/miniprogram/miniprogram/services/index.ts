@@ -7,10 +7,14 @@
 const db = wx.cloud.database()
 const _ = db.command
 
+export const CLERK_ORDER_NOTICE_TEMPLATE_ID = 'GMGexaXG4P9-8zxbeizBeunw5ax6AJb-B4fsDvuc8qQ'
+export const INSTITUTION_VERIFICATION_NOTICE_TEMPLATE_ID = '1emYXctz9fIJ8cyXNvQla-fZNgIRlqNMkNtekHLuDuI'
+
 export const GENERATED_ASSETS = {
   loginHero: '/assets/generated/optimized/login-vet-hero.jpg',
   loginFullscreen: '/assets/generated/optimized/login-fullscreen-bg-v3.png',
   homeBanner: '/assets/generated/optimized/home-vet-banner.jpg',
+  bloodBooking: '/assets/generated/optimized/product-blood-booking.png',
   bloodBag: '/assets/generated/optimized/product-blood-bag.webp',
   vaccineKit: '/assets/generated/optimized/product-vaccine-kit.webp',
   testCard: '/assets/generated/optimized/product-test-card.webp',
@@ -92,10 +96,13 @@ function isLocalTempFile(path?: string): boolean {
 
 async function uploadLocalFile(localPath: string, cloudPath: string) {
   if (!isLocalTempFile(localPath)) return localPath
-  const { fileID } = await wx.cloud.uploadFile({
-    cloudPath,
-    filePath: localPath,
-  })
+  const { fileID } = await Promise.race([
+    wx.cloud.uploadFile({
+      cloudPath,
+      filePath: localPath,
+    }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('图片上传超时，请重试')), 20000)),
+  ]) as any
   return fileID
 }
 
@@ -180,10 +187,16 @@ export function checkPointsExpiry(user: any, expiryDays?: number): { balance: nu
 export function getProductVisualImage(productOrName: any): string {
   const firstImage = Array.isArray(productOrName?.images) ? productOrName.images[0] : ''
   if (firstImage && typeof firstImage === 'string' && !firstImage.startsWith('data:image/')) return firstImage
+  if (
+    productOrName?.productType === 'blood_booking' ||
+    productOrName?.bookingRequest === true ||
+    productOrName?.bloodBooking === true
+  ) return GENERATED_ASSETS.bloodBooking
 
   const name = typeof productOrName === 'string'
     ? productOrName
     : String(productOrName?.name || productOrName?.productName || '')
+  if (/用血预约|预约用血|血预约|blood_booking/i.test(name)) return GENERATED_ASSETS.bloodBooking
   if (productOrName?.isBloodPack || /血|红细胞|血包/.test(name)) return GENERATED_ASSETS.bloodBag
   if (/检测|试纸|检验|报告/.test(name)) return GENERATED_ASSETS.testCard
   return GENERATED_ASSETS.vaccineKit
@@ -1416,17 +1429,33 @@ export async function bindSalesperson(customerId: string, salespersonId: string)
 }
 
 export async function submitVerification(userId: string, info: any) {
-  const now = formatDateTime(new Date())
   const basePath = `verification/${userId}/${Date.now()}`
   const businessLicense = await uploadLocalFile(info.businessLicense, `${basePath}-business-license.jpg`)
   const sitePhoto = info.sitePhoto
     ? await uploadLocalFile(info.sitePhoto, `${basePath}-site-photo.jpg`)
     : ''
 
+  const { result } = await wx.cloud.callFunction({
+    name: 'submitVerification',
+    data: {
+      userId,
+      info: {
+        ...info,
+        businessLicense,
+        sitePhoto,
+      },
+    },
+  }) as any
+  if (!result?.success) {
+    throw new Error(result?.error || '提交认证失败')
+  }
+  return result.user
+}
+
+export async function submitVerificationLegacy(userId: string, info: any) {
+  const now = formatDateTime(new Date())
   const verificationInfo = {
     ...info,
-    businessLicense,
-    sitePhoto,
     submittedAt: now,
     rejectReason: '',
   }
@@ -1507,14 +1536,14 @@ export async function getSystemConfig() {
       commissionRate: 0.2, commissionLockDays: 15, minWithdrawAmount: 100,
       withdrawReviewEnabled: true, paymentTimeoutMinutes: 30, returnDeadlineDays: 7,
       returnAddress: '', reviewTimeoutHours: 24, stockWarningThreshold: 10,
-      pointsRate: 1, pointsExpiryDays: 365, rechargeTiers: [],
+      pointsRate: 1, pointsExpiryDays: 365, rechargeTiers: [], catalogBanners: [],
     }
   } catch {
     return {
       commissionRate: 0.2, commissionLockDays: 15, minWithdrawAmount: 100,
       withdrawReviewEnabled: true, paymentTimeoutMinutes: 30, returnDeadlineDays: 7,
       returnAddress: '', reviewTimeoutHours: 24, stockWarningThreshold: 10,
-      pointsRate: 1, pointsExpiryDays: 365, rechargeTiers: [],
+      pointsRate: 1, pointsExpiryDays: 365, rechargeTiers: [], catalogBanners: [],
     }
   }
 }

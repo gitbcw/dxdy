@@ -33,6 +33,16 @@ export interface Customer extends User {
   verificationStatus: VerificationStatus;
   verificationInfo?: {
     businessLicense: string;
+    businessLicenseUrl?: string;
+    sitePhoto?: string;
+    sitePhotoUrl?: string;
+    hospitalName?: string;
+    legalPerson?: string;
+    region?: string;
+    address?: string;
+    submittedAt?: string;
+    reviewedAt?: string;
+    reviewerName?: string;
     contactName: string;
     contactPhone: string;
     rejectReason?: string;
@@ -246,6 +256,15 @@ export interface Order {
 
 export interface RechargeTier { amount: number; bonus: number; label?: string; }
 
+export interface CatalogBanner {
+  id: string;
+  title?: string;
+  imageUrl: string;
+  productId: string;
+  enabled?: boolean;
+  sortOrder?: number;
+}
+
 export interface BloodBookingPriceRule {
   species: 'dog' | 'cat';
   bloodType: string;
@@ -280,6 +299,7 @@ export interface SystemConfig {
   rechargeTiers: RechargeTier[];
   referralRewardPoints: number;
   bloodBookingConfig: BloodBookingConfig;
+  catalogBanners: CatalogBanner[];
 }
 
 export interface OperationLog {
@@ -326,7 +346,7 @@ export interface UserCoupon {
 
 // --- 售后 ---
 
-export type ReturnType = 'refund_return' | 'refund_only' | 'exchange';
+export type ReturnType = 'refund_return' | 'exchange';
 export type ReturnStatus =
   | 'pending_review' | 'approved' | 'rejected'
   | 'pending_return_ship' | 'returned' | 'verifying'
@@ -342,8 +362,12 @@ export interface ReturnRecord {
   type: ReturnType;
   status: ReturnStatus;
   reason: string;
+  description?: string;
   items: ReturnItem[];
+  vouchers?: string[];
+  voucherUrls?: string[];
   refundAmount?: number;
+  exchangeOrderId?: string;
   exchangeItem?: { productId: string; productName: string; spec: string; quantity: number; unitPrice: number };
   sendLogistics: { trackingNo: string; company: string } | null;
   receiveLogistics: { trackingNo: string; company: string } | null;
