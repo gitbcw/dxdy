@@ -85,14 +85,15 @@ function getTargetStatus(event) {
     return status
   }
   if (typeof event.approved === 'boolean') return event.approved ? 'approved' : 'rejected'
-  if (event.action === 'pay' || event.action === 'paid' || event.action === 'auto_pay') return 'approved'
+  if (event.action === 'paid' || event.action === 'manual_paid') return 'paid'
+  if (event.action === 'pay' || event.action === 'auto_pay') return 'approved'
   return ''
 }
 
 function canTransition(current, target) {
-  if (current === 'pending_review') return ['approved', 'rejected'].includes(target)
-  if (current === 'approved' || current === 'transfer_failed') return target === 'approved'
-  if (current === 'transferring') return target === 'paid'
+  if (current === 'pending_review') return ['approved', 'rejected', 'paid'].includes(target)
+  if (current === 'approved' || current === 'transfer_failed') return ['approved', 'paid'].includes(target)
+  if (current === 'transferring') return false
   return false
 }
 
@@ -103,7 +104,7 @@ function getStatusText(status) {
     rejected: '提现审核驳回',
     transferring: '微信零钱打款中',
     transfer_failed: '微信零钱打款失败',
-    paid: '微信零钱打款成功',
+    paid: '已打款',
   }
   return map[status] || status
 }
@@ -313,10 +314,14 @@ async function startWechatTransfer(record, user, note, now, operatorName) {
 async function markPaid(record, user, note, now, operatorName) {
   const updateResult = await db.collection('withdrawals').where({
     _id: record._id,
-    status: 'transferring',
+    status: _.in(['pending_review', 'approved', 'transfer_failed']),
   }).update({
     data: {
       status: 'paid',
+      reviewerId: user._id,
+      reviewedAt: record.reviewedAt || now,
+      payMode: 'manual_offline',
+      payModeText: '人工线下打款',
       completedAt: now,
       paidAt: now,
       payerId: user._id,
@@ -334,6 +339,7 @@ exports.main = async (event = {}) => {
 
   const id = String(event.id || event.withdrawalId || '').trim()
   const targetStatus = getTargetStatus(event)
+  const payMode = String(event.payMode || '').trim()
   if (!id) return error('提现记录参数缺失')
   if (!targetStatus) return error('状态参数缺失')
   if (!openid && !String(event.reviewerId || event.operatorId || '').trim()) {
@@ -360,6 +366,7 @@ exports.main = async (event = {}) => {
     const result = await startWechatTransfer(record, user, note, now, operatorName)
     if (!result.success) return result
   } else if (targetStatus === 'paid') {
+    if (payMode !== 'manual_offline') return error('手动确认打款必须使用人工线下打款方式', 'INVALID_PAY_MODE')
     const paid = await markPaid(record, user, note, now, operatorName)
     if (!paid) return error('提现状态已变化，请刷新后重试', 'INVALID_STATUS')
   }

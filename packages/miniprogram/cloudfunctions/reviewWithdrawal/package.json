@@ -1,7 +1,7 @@
 {
   "name": "reviewWithdrawal",
   "version": "1.0.0",
-  "description": "审核代理商提现，驳回退回余额，确认线下银行卡打款",
+  "description": "审核代理商提现，支持微信零钱自动打款和人工线下打款",
   "main": "index.js",
   "dependencies": {
     "wx-server-sdk": "~2.6.3"

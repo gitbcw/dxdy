@@ -46,6 +46,8 @@ type WithdrawalRecord = {
   paidAt?: string;
   reviewNote?: string;
   payNote?: string;
+  payMode?: string;
+  payModeText?: string;
   transferState?: string;
   transferError?: string;
 };
@@ -65,7 +67,7 @@ type InvoiceRecord = {
 };
 
 type ReviewTarget =
-  | { type: 'withdrawal'; record: WithdrawalRecord; action: 'approved' | 'rejected' | 'paid' }
+  | { type: 'withdrawal'; record: WithdrawalRecord; action: 'approved' | 'manual_paid' | 'rejected' }
   | { type: 'invoice'; record: InvoiceRecord; action: 'issued' | 'rejected' };
 
 const withdrawalStatusText: Record<string, string> = {
@@ -86,12 +88,17 @@ const invoiceStatusText: Record<string, string> = {
 
 function getWithdrawalActionText(action: ReviewTarget['action']) {
   const map: Record<string, string> = {
-    approved: '通过并自动打款',
+    approved: '通过并微信零钱自动打款',
+    manual_paid: '通过并人工线下打款',
     rejected: '驳回',
-    paid: '确认已打款',
     issued: '开票',
   };
   return map[action] || action;
+}
+
+function getWithdrawalLogAction(action: ReviewTarget['action']) {
+  if (action === 'manual_paid') return 'withdrawal_paid';
+  return `withdrawal_${action}`;
 }
 
 export default function FinancePage() {
@@ -153,19 +160,24 @@ export default function FinancePage() {
     };
     try {
       if (target.type === 'withdrawal') {
-        const params: { id: string; status?: string; approved?: boolean; note: string; operatorId: string; operatorName: string } = {
+        const params: { id: string; status?: string; approved?: boolean; payMode?: 'wechat_transfer' | 'manual_offline'; note: string; operatorId: string; operatorName: string } = {
           id: target.record.id,
           note,
           ...op,
         };
-        if (target.action === 'paid') params.status = 'paid';
-        else if (target.action === 'approved') params.approved = true;
+        if (target.action === 'manual_paid') {
+          params.status = 'paid';
+          params.payMode = 'manual_offline';
+        } else if (target.action === 'approved') {
+          params.approved = true;
+          params.payMode = 'wechat_transfer';
+        }
         else if (target.action === 'rejected') params.approved = false;
         const result = await reviewWithdrawal(params);
         if (!result.success) throw new Error(result.error || '处理失败');
         await writeAdminLog({
           operator: user,
-          action: `withdrawal_${target.action}`,
+          action: getWithdrawalLogAction(target.action),
           target: target.record.id,
           detail: `提现处理：${getWithdrawalActionText(target.action)}`,
         });
@@ -262,6 +274,7 @@ export default function FinancePage() {
                         <Badge variant={record.status === 'rejected' || record.status === 'transfer_failed' ? 'destructive' : 'outline'}>
                           {withdrawalStatusText[record.status || ''] || record.status}
                         </Badge>
+                        {record.payModeText ? <div className="mt-1 text-xs text-muted-foreground">{record.payModeText}</div> : null}
                         {record.transferError ? <div className="mt-1 max-w-[220px] text-xs text-destructive">{record.transferError}</div> : null}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{record.appliedAt || '-'}</TableCell>
@@ -269,12 +282,16 @@ export default function FinancePage() {
                         <div className="flex gap-2">
                           {record.status === 'pending_review' && (
                             <>
-                              <Button variant="outline" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>通过并打款</Button>
+                              <Button variant="outline" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>微信零钱打款</Button>
+                              <Button variant="outline" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'manual_paid' })}>人工打款</Button>
                               <Button variant="destructive" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'rejected' })}>驳回</Button>
                             </>
                           )}
                           {record.status === 'transfer_failed' && (
-                            <Button size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>重新打款</Button>
+                            <>
+                              <Button size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>重新自动打款</Button>
+                              <Button variant="outline" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'manual_paid' })}>人工打款</Button>
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -391,6 +408,9 @@ export default function FinancePage() {
                   <p>提现金额：¥{formatMoney(target.record.amount || 0)}</p>
                   <p>收款银行卡：{target.record.bankName || '-'} {target.record.cardNo ? `(${String(target.record.cardNo).slice(-4)})` : ''}</p>
                   <p>处理动作：{getWithdrawalActionText(target.action)}</p>
+                  {target.action === 'manual_paid' ? (
+                    <p className="mt-1 text-muted-foreground">请确认已完成线下转账后再提交，提交后该提现会直接标记为已打款。</p>
+                  ) : null}
                 </div>
               )}
               {target.type === 'invoice' && target.action === 'issued' && (
@@ -418,7 +438,7 @@ export default function FinancePage() {
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="note">备注{target.action === 'rejected' ? '（驳回必填）' : target.action === 'approved' ? '（将发起微信零钱自动打款）' : ''}</Label>
+                <Label htmlFor="note">备注{target.action === 'rejected' ? '（驳回必填）' : target.action === 'approved' ? '（将发起微信零钱自动打款）' : target.action === 'manual_paid' ? '（建议填写线下打款凭证/流水号）' : ''}</Label>
                 <Input id="note" value={note} onChange={event => setNote(event.target.value)} />
               </div>
             </div>

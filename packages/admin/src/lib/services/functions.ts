@@ -75,7 +75,7 @@ export async function reviewReturn(params: {
 // ===== Finance =====
 
 export async function reviewWithdrawal(params: {
-  id: string; status?: string; approved?: boolean; note?: string; operatorId: string; operatorName: string
+  id: string; status?: string; approved?: boolean; payMode?: 'wechat_transfer' | 'manual_offline'; note?: string; operatorId: string; operatorName: string
 }) {
   return callFunction<CloudFunctionResult>('reviewWithdrawal', params)
 }
