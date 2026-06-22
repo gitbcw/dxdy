@@ -24,6 +24,7 @@ type RechargeOrder = {
   orderNo?: string;
   customerId?: string;
   amount?: number;
+  type?: string;
   rechargeTier?: { amount: number; bonus: number; label?: string };
   status?: string;
   createdAt?: string;
@@ -33,12 +34,20 @@ type RechargeOrder = {
 type WithdrawalRecord = {
   id: string;
   salespersonId?: string;
+  salespersonName?: string;
+  salespersonPhone?: string;
   amount?: number;
   bankName?: string;
   cardNo?: string;
+  holderName?: string;
   status?: string;
   appliedAt?: string;
+  reviewedAt?: string;
+  paidAt?: string;
   reviewNote?: string;
+  payNote?: string;
+  transferState?: string;
+  transferError?: string;
 };
 
 type InvoiceRecord = {
@@ -61,8 +70,10 @@ type ReviewTarget =
 
 const withdrawalStatusText: Record<string, string> = {
   pending_review: '待审核',
-  approved: '已通过',
+  approved: '审核通过',
   rejected: '已驳回',
+  transferring: '微信零钱打款中',
+  transfer_failed: '微信零钱打款失败',
   paid: '已打款',
   completed: '已打款',
 };
@@ -72,6 +83,16 @@ const invoiceStatusText: Record<string, string> = {
   issued: '已开票',
   rejected: '已驳回',
 };
+
+function getWithdrawalActionText(action: ReviewTarget['action']) {
+  const map: Record<string, string> = {
+    approved: '通过并自动打款',
+    rejected: '驳回',
+    paid: '确认已打款',
+    issued: '开票',
+  };
+  return map[action] || action;
+}
 
 export default function FinancePage() {
   const { user } = useAuth();
@@ -99,7 +120,7 @@ export default function FinancePage() {
       const [data, usersData, allOrders] = await Promise.all([fetchFinanceData(), fetchUsers(), fetchOrders()]);
       setWithdrawals(data.withdrawals || []);
       setInvoices(data.invoices || []);
-      setRecharges((allOrders || []).filter((o: any) => o.type === 'recharge'));
+      setRecharges(((allOrders || []) as RechargeOrder[]).filter(order => order.type === 'recharge'));
       const map: Record<string, string> = {};
       for (const u of usersData.salespersons || []) {
         map[u.id] = u.realName || u.nickname || u.name || u.phone || u.id;
@@ -142,7 +163,12 @@ export default function FinancePage() {
         else if (target.action === 'rejected') params.approved = false;
         const result = await reviewWithdrawal(params);
         if (!result.success) throw new Error(result.error || '处理失败');
-        await writeAdminLog({ operator: user, action: `withdrawal_${target.action}`, target: target.record.id, detail: `提现处理: ${target.action}` });
+        await writeAdminLog({
+          operator: user,
+          action: `withdrawal_${target.action}`,
+          target: target.record.id,
+          detail: `提现处理：${getWithdrawalActionText(target.action)}`,
+        });
       } else {
         const result = await processInvoice({
           id: target.record.id,
@@ -155,7 +181,12 @@ export default function FinancePage() {
           ...op,
         });
         if (!result.success) throw new Error(result.error || '处理失败');
-        await writeAdminLog({ operator: user, action: `invoice_${target.action}`, target: target.record.id, detail: `发票处理: ${target.action}` });
+        await writeAdminLog({
+          operator: user,
+          action: `invoice_${target.action}`,
+          target: target.record.id,
+          detail: `发票处理：${target.action === 'issued' ? '开票' : '驳回'}`,
+        });
       }
       setTarget(null);
       await loadFinance();
@@ -185,10 +216,10 @@ export default function FinancePage() {
         </TabsList>
 
         <TabsContent value="withdrawals">
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">待审核</p><p className="text-2xl font-bold">{withdrawals.filter(w => w.status === 'pending_review').length} 笔</p></CardContent></Card>
+          <div className="mb-4 grid grid-cols-3 gap-4">
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">待审核</p><p className="text-2xl font-bold">{pendingWithdrawals} 笔</p></CardContent></Card>
             <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">待审核金额</p><p className="text-2xl font-bold">¥{formatMoney(withdrawals.filter(w => w.status === 'pending_review').reduce((s, w) => s + (w.amount || 0), 0))}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计提现</p><p className="text-2xl font-bold">¥{formatMoney(withdrawals.filter(w => w.status === 'paid' || w.status === 'completed').reduce((s, w) => s + (w.amount || 0), 0))}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计微信零钱打款</p><p className="text-2xl font-bold">¥{formatMoney(withdrawals.filter(w => w.status === 'paid' || w.status === 'completed').reduce((s, w) => s + (w.amount || 0), 0))}</p></CardContent></Card>
           </div>
           <Card>
             <CardContent className="p-0">
@@ -210,24 +241,40 @@ export default function FinancePage() {
                       <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">正在读取提现记录...</TableCell>
                     </TableRow>
                   )}
+                  {!loading && withdrawals.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">暂无提现记录</TableCell>
+                    </TableRow>
+                  )}
                   {!loading && withdrawals.map(record => (
                     <TableRow key={record.id}>
                       <TableCell className="font-mono text-sm">{record.id}</TableCell>
-                      <TableCell className="text-sm">{salespersonMap[record.salespersonId || ''] || record.salespersonId || '-'}</TableCell>
+                      <TableCell className="text-sm">
+                        {record.salespersonName || salespersonMap[record.salespersonId || ''] || record.salespersonId || '-'}
+                        {record.salespersonPhone ? <div className="text-xs text-muted-foreground">{record.salespersonPhone}</div> : null}
+                      </TableCell>
                       <TableCell>¥{formatMoney(record.amount || 0)}</TableCell>
-                      <TableCell>{record.bankName || '-'} {record.cardNo ? `(${String(record.cardNo).slice(-4)})` : ''}</TableCell>
-                      <TableCell><Badge variant={record.status === 'rejected' ? 'destructive' : 'outline'}>{withdrawalStatusText[record.status || ''] || record.status}</Badge></TableCell>
+                      <TableCell>
+                        {record.bankName || '-'} {record.cardNo ? `(${String(record.cardNo).slice(-4)})` : ''}
+                        {record.holderName ? <div className="text-xs text-muted-foreground">持卡人：{record.holderName}</div> : null}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={record.status === 'rejected' || record.status === 'transfer_failed' ? 'destructive' : 'outline'}>
+                          {withdrawalStatusText[record.status || ''] || record.status}
+                        </Badge>
+                        {record.transferError ? <div className="mt-1 max-w-[220px] text-xs text-destructive">{record.transferError}</div> : null}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{record.appliedAt || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           {record.status === 'pending_review' && (
                             <>
-                              <Button variant="outline" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>通过</Button>
+                              <Button variant="outline" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>通过并打款</Button>
                               <Button variant="destructive" size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'rejected' })}>驳回</Button>
                             </>
                           )}
-                          {record.status === 'approved' && (
-                            <Button size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'paid' })}>确认打款</Button>
+                          {record.status === 'transfer_failed' && (
+                            <Button size="sm" onClick={() => openTarget({ type: 'withdrawal', record, action: 'approved' })}>重新打款</Button>
                           )}
                         </div>
                       </TableCell>
@@ -287,7 +334,7 @@ export default function FinancePage() {
         </TabsContent>
 
         <TabsContent value="recharges">
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="mb-4 grid grid-cols-3 gap-4">
             <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计充值</p><p className="text-2xl font-bold">¥{formatMoney(recharges.reduce((s, r) => s + (r.amount || 0), 0))}</p></CardContent></Card>
             <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">累计赠送</p><p className="text-2xl font-bold">¥{formatMoney(recharges.reduce((s, r) => s + (r.rechargeTier?.bonus || 0), 0))}</p></CardContent></Card>
             <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">充值笔数</p><p className="text-2xl font-bold">{recharges.length}</p></CardContent></Card>
@@ -316,7 +363,7 @@ export default function FinancePage() {
                       <TableCell className="font-mono text-sm">{r.orderNo || r.id}</TableCell>
                       <TableCell>{salespersonMap[r.customerId || ''] || r.customerId || '-'}</TableCell>
                       <TableCell>¥{formatMoney(r.amount || 0)}</TableCell>
-                      <TableCell>{((r.rechargeTier as any)?.bonus || 0) > 0 ? `¥${formatMoney((r.rechargeTier as any).bonus)}` : '-'}</TableCell>
+                      <TableCell>{(r.rechargeTier?.bonus || 0) > 0 ? `¥${formatMoney(r.rechargeTier?.bonus || 0)}` : '-'}</TableCell>
                       <TableCell><Badge variant="outline">{r.status === 'completed' ? '已完成' : r.status}</Badge></TableCell>
                       <TableCell className="text-sm text-muted-foreground">{r.paidAt || r.createdAt || '-'}</TableCell>
                     </TableRow>
@@ -339,6 +386,13 @@ export default function FinancePage() {
                 <p className="text-sm text-muted-foreground">记录</p>
                 <p className="font-mono">{target.record.id}</p>
               </div>
+              {target.type === 'withdrawal' && (
+                <div className="rounded-md bg-muted p-3 text-sm">
+                  <p>提现金额：¥{formatMoney(target.record.amount || 0)}</p>
+                  <p>收款银行卡：{target.record.bankName || '-'} {target.record.cardNo ? `(${String(target.record.cardNo).slice(-4)})` : ''}</p>
+                  <p>处理动作：{getWithdrawalActionText(target.action)}</p>
+                </div>
+              )}
               {target.type === 'invoice' && target.action === 'issued' && (
                 <>
                   <div className="space-y-2">
@@ -364,7 +418,7 @@ export default function FinancePage() {
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="note">备注{target.action === 'rejected' ? '（驳回必填）' : ''}</Label>
+                <Label htmlFor="note">备注{target.action === 'rejected' ? '（驳回必填）' : target.action === 'approved' ? '（将发起微信零钱自动打款）' : ''}</Label>
                 <Input id="note" value={note} onChange={event => setNote(event.target.value)} />
               </div>
             </div>

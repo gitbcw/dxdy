@@ -3,8 +3,11 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
+const _ = db.command
+const MIN_WECHAT_WITHDRAW_AMOUNT = 0.3
+const MAX_WECHAT_WITHDRAW_AMOUNT = 200
 
-function formatBeijingLogTime(date = new Date()) {
+function formatBeijingTime(date = new Date()) {
   const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
   const y = beijing.getUTCFullYear()
   const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
@@ -12,23 +15,17 @@ function formatBeijingLogTime(date = new Date()) {
   const h = String(beijing.getUTCHours()).padStart(2, '0')
   const min = String(beijing.getUTCMinutes()).padStart(2, '0')
   const s = String(beijing.getUTCSeconds()).padStart(2, '0')
-  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
-}
-const _ = db.command
-
-function formatDate(date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function formatDateTime(date) {
-  return `${formatDate(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  return `${y}-${m}-${d} ${h}:${min}:${s}+08:00`
 }
 
 function error(message, code = 'BAD_REQUEST') {
   return { success: false, code, error: message }
+}
+
+function normalize(doc) {
+  if (!doc) return doc
+  const { _id, _openid, ...rest } = doc
+  return { id: _id, ...rest }
 }
 
 async function getCurrentUser(openid, userId) {
@@ -40,12 +37,12 @@ async function getCurrentUser(openid, userId) {
       if (user.boundOpenid && user.boundOpenid !== openid) return null
       if (!user._openid && !user.boundOpenid) {
         await db.collection('users').doc(user._id).update({
-          data: { boundOpenid: openid, updatedAt: formatDateTime(new Date()) },
+          data: { boundOpenid: openid, updatedAt: formatBeijingTime() },
         })
         return { ...user, boundOpenid: openid }
       }
       return user
-    } catch (e) {
+    } catch (_e) {
       return null
     }
   }
@@ -56,33 +53,40 @@ async function getCurrentUser(openid, userId) {
   return boundUsers && boundUsers.length ? boundUsers[0] : null
 }
 
-exports.main = async (event) => {
+function canRequestWithdrawal(user) {
+  if (!user) return false
+  return user.role === 'salesperson' || user.agentStatus === 'approved'
+}
+
+exports.main = async (event = {}) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
   if (!openid) return error('登录状态无效', 'UNAUTHORIZED')
 
   const user = await getCurrentUser(openid, String(event.salespersonId || event.userId || '').trim())
-  if (!user) return error('当前账号未绑定代理商用户', 'FORBIDDEN')
-  if (user.role !== 'salesperson' && user.agentStatus !== 'approved') return error('仅已通过代理商可申请提现', 'FORBIDDEN')
+  if (!user) return error('当前微信未绑定代理商账号', 'FORBIDDEN')
+  if (!canRequestWithdrawal(user)) return error('仅已通过认证的代理商可申请提现', 'FORBIDDEN')
 
   const amount = Math.round(Number(event.amount) * 100) / 100
   const bankCardId = String(event.bankCardId || '').trim()
   if (!Number.isFinite(amount) || amount <= 0) return error('请输入有效提现金额')
+  if (amount < MIN_WECHAT_WITHDRAW_AMOUNT || amount >= MAX_WECHAT_WITHDRAW_AMOUNT) {
+    return error('单笔提现金额需满足：0.30 元 <= 金额 < 200 元', 'WITHDRAW_AMOUNT_LIMIT')
+  }
   if (!bankCardId) return error('请选择提现银行卡')
 
-  // 读取最低提现金额配置
-  let minWithdrawAmount = 100
+  let minWithdrawAmount = MIN_WECHAT_WITHDRAW_AMOUNT
   try {
     const { data: configDoc } = await db.collection('config').doc('system').get()
     if (configDoc && typeof configDoc.minWithdrawAmount === 'number') {
       minWithdrawAmount = configDoc.minWithdrawAmount
     }
-  } catch (_e) { /* use default */ }
+  } catch (_e) {
+    // Use default minimum amount.
+  }
   if (amount < minWithdrawAmount) return error(`提现金额需满${minWithdrawAmount}元`)
 
-  const available = user.commission && typeof user.commission.available === 'number'
-    ? user.commission.available
-    : 0
+  const available = Number(user.commission?.available || 0)
   if (available < amount) return error('超过可提现金额', 'INSUFFICIENT_BALANCE')
 
   const bankCard = Array.isArray(user.bankCards)
@@ -90,16 +94,24 @@ exports.main = async (event) => {
     : null
   if (!bankCard) return error('银行卡不存在')
 
-  const now = formatDateTime(new Date())
-  const record = {
+  const now = formatBeijingTime()
+  const withdrawalRecord = {
+    _openid: openid,
     salespersonId: user._id,
     salespersonOpenid: openid,
+    salespersonName: user.realName || user.nickname || user.name || user.phone || '代理商',
+    salespersonPhone: user.phone || '',
     amount,
     bankCardId,
-    bankName: bankCard.bankName,
-    cardNo: bankCard.cardNo,
+    bankName: bankCard.bankName || '',
+    cardNo: bankCard.cardNo || '',
+    holderName: bankCard.holderName || '',
     status: 'pending_review',
+    payMode: 'offline_bank_transfer',
+    payModeText: '线下银行卡打款',
     appliedAt: now,
+    createdAt: now,
+    updatedAt: now,
   }
 
   const updateResult = await db.collection('users').where({
@@ -112,13 +124,15 @@ exports.main = async (event) => {
       updatedAt: now,
     },
   })
-  if (!updateResult.stats || updateResult.stats.updated < 1) return error('超过可提现金额', 'INSUFFICIENT_BALANCE')
+  if (!updateResult.stats || updateResult.stats.updated < 1) {
+    return error('超过可提现金额', 'INSUFFICIENT_BALANCE')
+  }
 
-  let _id = ''
+  let id = ''
   try {
-    const addResult = await db.collection('withdrawals').add({ data: record })
-    _id = addResult._id
-  } catch (e) {
+    const addResult = await db.collection('withdrawals').add({ data: withdrawalRecord })
+    id = addResult._id
+  } catch (_e) {
     await db.collection('users').doc(user._id).update({
       data: {
         'commission.available': _.inc(amount),
@@ -132,15 +146,15 @@ exports.main = async (event) => {
   await db.collection('logs').add({
     data: {
       operatorId: user._id,
-      operatorName: user.nickname || user.realName || user.phone || bankCard.holderName || '代理商',
+      operatorName: withdrawalRecord.salespersonName,
       operatorRole: user.role || 'salesperson',
       action: '提交提现申请',
-      target: _id,
-      detail: `申请提现 ¥${amount} 至 ${bankCard.bankName}（${String(bankCard.cardNo || '').slice(-4)}）`,
+      target: id,
+      detail: `申请提现 ¥${amount} 至 ${withdrawalRecord.bankName}（${String(withdrawalRecord.cardNo).slice(-4)}），等待平台线下打款`,
       result: 'success',
-      createdAt: formatBeijingLogTime(),
+      createdAt: now,
     },
   })
 
-  return { success: true, record: { ...record, id: _id } }
+  return { success: true, record: normalize({ _id: id, ...withdrawalRecord }) }
 }

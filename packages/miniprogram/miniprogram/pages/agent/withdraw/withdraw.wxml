@@ -51,7 +51,7 @@
       <text class="money-symbol">¥</text>
       <input class="amount-input" type="digit" placeholder="输入提现金额" value="{{amount}}" bindinput="onAmountInput" />
     </view>
-    <text class="hint">最低提现 {{minWithdrawAmount}} 元，提交后进入平台审核。</text>
+    <text class="hint">{{withdrawRuleText}}，审核通过后通过微信零钱自动打款。</text>
     <view class="primary-btn" bindtap="onSubmitWithdraw">提交提现申请</view>
   </view>
 

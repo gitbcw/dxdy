@@ -58,6 +58,25 @@ async function findReturnByRefundNo(outRefundNo) {
   return data && data[0] ? data[0] : null
 }
 
+async function findWithdrawalByTransfer(params) {
+  const outBillNo = params.out_bill_no || params.outBillNo || ''
+  if (outBillNo) {
+    const { data } = await db.collection('withdrawals').where({
+      transferOutBillNo: outBillNo,
+    }).limit(1).get()
+    if (data && data[0]) return data[0]
+  }
+
+  const transferBillNo = params.transfer_bill_no || params.transferBillNo || ''
+  if (transferBillNo) {
+    const { data } = await db.collection('withdrawals').where({
+      transferBillNo,
+    }).limit(1).get()
+    if (data && data[0]) return data[0]
+  }
+  return null
+}
+
 async function deductPointsIfNeeded(order, paidAt) {
   const points = getPlannedPoints(order)
   if (!points || points <= 0 || order.pricing?.pointsDeductedAt) return { success: true }
@@ -430,12 +449,81 @@ class OrderService {
   }
 
   async handlerTransfer(params, result) {
-    console.info('[OrderService] transfer accepted:', params.out_bill_no, result?.transfer_bill_no)
+    const now = formatDateTime(new Date())
+    const outBillNo = params.out_bill_no || ''
+    const transferBillNo = result?.transfer_bill_no || ''
+    console.info('[OrderService] transfer accepted:', outBillNo, transferBillNo)
+
+    if (!outBillNo) return true
+
+    await db.collection('withdrawals').where({
+      transferOutBillNo: outBillNo,
+    }).update({
+      data: {
+        transferBillNo,
+        transferState: result?.state || 'ACCEPTED',
+        transferAcceptedAt: now,
+        transferResult: result,
+        updatedAt: now,
+      },
+    })
     return true
   }
 
   async handlerTransferTrigger(params) {
-    console.info('[OrderService] transfer result:', params.out_bill_no, params.state)
+    const now = formatDateTime(new Date())
+    const outBillNo = params.out_bill_no || params.outBillNo || ''
+    const transferBillNo = params.transfer_bill_no || params.transferBillNo || ''
+    const state = params.state || params.status || params.transfer_state || ''
+    console.info('[OrderService] transfer result:', outBillNo, transferBillNo, state)
+
+    const withdrawal = await findWithdrawalByTransfer(params)
+    if (!withdrawal) {
+      console.warn('[OrderService] withdrawal not found for transfer callback:', outBillNo, transferBillNo)
+      return true
+    }
+
+    const successStates = ['SUCCESS', 'TRANSFER_SUCCESS']
+    const failStates = ['FAIL', 'FAILED', 'TRANSFER_FAIL', 'CANCELING', 'CANCELLED']
+
+    if (successStates.includes(state)) {
+      await db.collection('withdrawals').doc(withdrawal._id).update({
+        data: {
+          status: 'paid',
+          transferState: state,
+          transferBillNo: transferBillNo || withdrawal.transferBillNo || '',
+          transferCallback: params,
+          transferredAt: now,
+          completedAt: now,
+          paidAt: now,
+          updatedAt: now,
+        },
+      })
+      return true
+    }
+
+    if (failStates.includes(state)) {
+      await db.collection('withdrawals').doc(withdrawal._id).update({
+        data: {
+          status: 'transfer_failed',
+          transferState: state,
+          transferBillNo: transferBillNo || withdrawal.transferBillNo || '',
+          transferCallback: params,
+          transferError: params.fail_reason || params.failReason || params.message || '微信零钱打款失败',
+          transferFailedAt: now,
+          updatedAt: now,
+        },
+      })
+      if (withdrawal.salespersonId && withdrawal.status !== 'transfer_failed') {
+        await db.collection('users').doc(withdrawal.salespersonId).update({
+          data: {
+            'commission.available': _.inc(Number(withdrawal.amount || 0)),
+            'commission.withdrawn': _.inc(-Number(withdrawal.amount || 0)),
+            updatedAt: now,
+          },
+        })
+      }
+    }
     return true
   }
 }

@@ -4,7 +4,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
 
-function formatBeijingLogTime(date = new Date()) {
+function formatBeijingTime(date = new Date()) {
   const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000)
   const y = beijing.getUTCFullYear()
   const m = String(beijing.getUTCMonth() + 1).padStart(2, '0')
@@ -12,18 +12,7 @@ function formatBeijingLogTime(date = new Date()) {
   const h = String(beijing.getUTCHours()).padStart(2, '0')
   const min = String(beijing.getUTCMinutes()).padStart(2, '0')
   const s = String(beijing.getUTCSeconds()).padStart(2, '0')
-  return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + '+08:00'
-}
-
-function formatDate(date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function formatDateTime(date) {
-  return `${formatDate(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  return `${y}-${m}-${d} ${h}:${min}:${s}+08:00`
 }
 
 function error(message, code = 'BAD_REQUEST') {
@@ -70,12 +59,12 @@ async function getCurrentUser(openid, userId) {
       if (user.boundOpenid && user.boundOpenid !== openid) return null
       if (!user._openid && !user.boundOpenid) {
         await db.collection('users').doc(user._id).update({
-          data: { boundOpenid: openid, updatedAt: formatDateTime(new Date()) },
+          data: { boundOpenid: openid, updatedAt: formatBeijingTime() },
         })
         return { ...user, boundOpenid: openid }
       }
       return user
-    } catch (e) {
+    } catch (_e) {
       return null
     }
   }
@@ -86,7 +75,7 @@ async function getCurrentUser(openid, userId) {
   return boundUsers && boundUsers.length ? boundUsers[0] : null
 }
 
-exports.main = async (event) => {
+exports.main = async (event = {}) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
   if (!openid) return error('登录状态无效', 'UNAUTHORIZED')
@@ -94,7 +83,7 @@ exports.main = async (event) => {
   const user = await getCurrentUser(openid, String(event.userId || '').trim())
   if (!user) return error('当前账号未绑定用户', 'FORBIDDEN')
 
-  const now = formatDateTime(new Date())
+  const now = formatBeijingTime()
   if (event.action === 'delete') {
     const cardId = String(event.cardId || '').trim()
     if (!cardId) return error('请选择要删除的银行卡')
@@ -117,7 +106,7 @@ exports.main = async (event) => {
         target: user._id,
         detail: `${target.bankName || '银行卡'}（${String(target.cardNo || '').slice(-4)}）`,
         result: 'success',
-        createdAt: formatBeijingLogTime(),
+        createdAt: now,
       },
     })
 
@@ -156,7 +145,7 @@ exports.main = async (event) => {
       target: user._id,
       detail: `${bankCard.bankName}（${bankCard.cardNo.slice(-4)}）`,
       result: 'success',
-      createdAt: formatBeijingLogTime(),
+      createdAt: now,
     },
   })
 

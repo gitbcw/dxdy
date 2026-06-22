@@ -6,13 +6,14 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const db = cloud.database()
 
-const SMS_HOST = process.env.ALIYUN_SMS_HOST || 'gyytz.market.alicloudapi.com'
-const SMS_PATH = process.env.ALIYUN_SMS_PATH || '/sms/smsSend'
-const SMS_APPCODE = process.env.ALIYUN_SMS_APPCODE || ''
-const SMS_SIGN_ID = process.env.ALIYUN_SMS_SIGN_ID || ''
-const SMS_TEMPLATE_ID = process.env.ALIYUN_SMS_TEMPLATE_ID || ''
-const SMS_CODE_TEMPLATE_ID = process.env.ALIYUN_SMS_CODE_TEMPLATE_ID || SMS_TEMPLATE_ID
-const SMS_CODE_SIGN_ID = process.env.ALIYUN_SMS_CODE_SIGN_ID || SMS_SIGN_ID
+const SMS_HOST = process.env.GUOYANG_SMS_HOST || 'api.guoyangyun.com'
+const SMS_PATH = process.env.GUOYANG_SMS_PATH || '/api/sms/smsoto.htm'
+const SMS_APPKEY = process.env.GUOYANG_SMS_APPKEY || ''
+const SMS_APPSECRET = process.env.GUOYANG_SMS_APPSECRET || ''
+const SMS_SIGN_ID = process.env.GUOYANG_SMS_SIGN_ID || process.env.ALIYUN_SMS_SIGN_ID || ''
+const SMS_TEMPLATE_ID = process.env.GUOYANG_SMS_TEMPLATE_ID || process.env.ALIYUN_SMS_TEMPLATE_ID || ''
+const SMS_CODE_TEMPLATE_ID = process.env.GUOYANG_SMS_CODE_TEMPLATE_ID || process.env.ALIYUN_SMS_CODE_TEMPLATE_ID || SMS_TEMPLATE_ID
+const SMS_CODE_SIGN_ID = process.env.GUOYANG_SMS_CODE_SIGN_ID || process.env.ALIYUN_SMS_CODE_SIGN_ID || SMS_SIGN_ID
 const SMS_CODE_TTL_SECONDS = Math.max(Number(process.env.SMS_CODE_TTL_SECONDS || 300), 60)
 const SMS_CODE_INTERVAL_SECONDS = Math.max(Number(process.env.SMS_CODE_INTERVAL_SECONDS || 60), 30)
 const SMS_SECRET = process.env.SMS_CODE_SECRET || process.env.ADMIN_SESSION_SECRET || 'dxdy-sms-code-secret-v1'
@@ -109,7 +110,7 @@ function toSmsParam(params) {
 function providerSuccess(payload) {
   const code = payload?.code ?? payload?.Code ?? payload?.status ?? payload?.Status
   const success = payload?.success ?? payload?.Success
-  return success === true || code === 0 || code === '0' || code === 'OK' || code === '00000' || code === '200'
+  return success === true || code === 0 || code === '0'
 }
 
 function providerMessage(payload) {
@@ -127,12 +128,14 @@ function generateCode(length = 6) {
   return code
 }
 
-function requestAliyunSms({ mobile, smsSignId, templateId, params }) {
-  if (!SMS_APPCODE) {
-    return Promise.reject(new Error('短信接口未配置 AppCode'))
+function requestSmsProvider({ mobile, smsSignId, templateId, params }) {
+  if (!SMS_APPKEY || !SMS_APPSECRET) {
+    return Promise.reject(new Error('短信接口未配置 appkey/appsecret'))
   }
 
   const form = new URLSearchParams()
+  form.set('appkey', SMS_APPKEY)
+  form.set('appsecret', SMS_APPSECRET)
   form.set('mobile', mobile)
   form.set('smsSignId', smsSignId)
   form.set('templateId', templateId)
@@ -145,7 +148,6 @@ function requestAliyunSms({ mobile, smsSignId, templateId, params }) {
     method: 'POST',
     timeout: 10000,
     headers: {
-      Authorization: `APPCODE ${SMS_APPCODE}`,
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'Content-Length': Buffer.byteLength(body),
     },
@@ -247,7 +249,7 @@ async function sendCode(event, wxContext) {
     minute: Math.ceil(SMS_CODE_TTL_SECONDS / 60),
     ...(event.params || {}),
   })
-  const payload = await requestAliyunSms({ mobile: phone, smsSignId, templateId, params })
+  const payload = await requestSmsProvider({ mobile: phone, smsSignId, templateId, params })
   if (!providerSuccess(payload)) {
     return error(providerMessage(payload) || '短信发送失败', 'PROVIDER_ERROR', { provider: payload })
   }
@@ -283,7 +285,7 @@ async function sendTemplateSms(event, wxContext, user, adminPayload) {
   if (!smsSignId || !templateId) return error('短信签名或模板未配置', 'CONFIG_MISSING')
 
   const params = normalizeTemplateParams(event.params || {})
-  const payload = await requestAliyunSms({ mobile: phone, smsSignId, templateId, params })
+  const payload = await requestSmsProvider({ mobile: phone, smsSignId, templateId, params })
   const ok = providerSuccess(payload)
   const createdAt = formatDateTime(new Date())
   await writeSmsLog({

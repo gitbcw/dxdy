@@ -7,6 +7,10 @@ const {
   formatMoney,
 } = require('../../../services/index')
 
+const MIN_WECHAT_WITHDRAW_AMOUNT = 0.3
+const MAX_WECHAT_WITHDRAW_AMOUNT = 200
+const WECHAT_WITHDRAW_RULE_TEXT = '单笔提现金额需满足：0.30 元 <= 金额 < 200 元'
+
 function normalizeCardNo(value: string) {
   return String(value || '').replace(/\D/g, '')
 }
@@ -42,7 +46,9 @@ Page({
       holderName: '',
     },
     showBankForm: false,
-    minWithdrawAmount: 100,
+    minWithdrawAmount: MIN_WECHAT_WITHDRAW_AMOUNT,
+    maxWithdrawAmount: MAX_WECHAT_WITHDRAW_AMOUNT,
+    withdrawRuleText: WECHAT_WITHDRAW_RULE_TEXT,
   },
 
   onShow() {
@@ -75,9 +81,12 @@ Page({
   getStatusText(status: string) {
     const map: Record<string, string> = {
       pending_review: '审核中',
-      approved: '已通过',
+      approved: '审核通过',
+      transferring: '微信零钱打款中',
+      transfer_failed: '微信零钱打款失败',
       rejected: '已驳回',
       paid: '已打款',
+      completed: '已打款',
     }
     return map[status] || status
   },
@@ -193,8 +202,12 @@ Page({
       wx.showToast({ title: '请先添加银行卡', icon: 'none' })
       return
     }
-    if (!Number.isFinite(amount) || amount < this.data.minWithdrawAmount) {
-      wx.showToast({ title: `提现金额需满${this.data.minWithdrawAmount}元`, icon: 'none' })
+    if (!Number.isFinite(amount)) {
+      wx.showToast({ title: '请输入有效提现金额', icon: 'none' })
+      return
+    }
+    if (amount < MIN_WECHAT_WITHDRAW_AMOUNT || amount >= MAX_WECHAT_WITHDRAW_AMOUNT) {
+      wx.showToast({ title: WECHAT_WITHDRAW_RULE_TEXT, icon: 'none' })
       return
     }
     if (amount > available) {
@@ -203,7 +216,7 @@ Page({
     }
     wx.showModal({
       title: '确认提现',
-      content: `提现金额：¥${formatMoney(amount)}\n到账银行卡：${this.data.activeBankCard.bankName}（${this.data.activeBankCard.tailNo}）`,
+      content: `提现金额：¥${formatMoney(amount)}\n到账银行卡：${this.data.activeBankCard.bankName}（${this.data.activeBankCard.tailNo}）\n${WECHAT_WITHDRAW_RULE_TEXT}\n平台审核通过后将通过微信零钱自动打款。`,
       confirmText: '提交',
       success: async (res) => {
         if (!res.confirm) return
